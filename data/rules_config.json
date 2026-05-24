@@ -1,0 +1,13 @@
+{
+  "starting_money": 20,
+  "starting_score": 0,
+  "starting_bonds": 0,
+  "starting_locomotive_level": 1,
+  "starting_turn": 1,
+  "max_turns": 10,
+  "bond_value": 5,
+  "bond_penalty": 1,
+  "upgrade_cost_multiplier": 4,
+  "max_locomotive_level": 5,
+  "minimum_delivery_score": 1
+}

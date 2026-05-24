@@ -1,0 +1,82 @@
+{
+  "cities": [
+    {
+      "id": "A",
+      "name": "Albany",
+      "x": 0.1,
+      "y": 0.8,
+      "demand_color": "red",
+      "goods": ["blue"]
+    },
+    {
+      "id": "B",
+      "name": "Boston",
+      "x": 0.4,
+      "y": 0.8,
+      "demand_color": "blue",
+      "goods": ["red"]
+    },
+    {
+      "id": "C",
+      "name": "Chicago",
+      "x": 0.7,
+      "y": 0.8,
+      "demand_color": "yellow",
+      "goods": ["green"]
+    },
+    {
+      "id": "D",
+      "name": "Detroit",
+      "x": 0.1,
+      "y": 0.5,
+      "demand_color": "green",
+      "goods": ["yellow"]
+    },
+    {
+      "id": "E",
+      "name": "Erie",
+      "x": 0.4,
+      "y": 0.5,
+      "demand_color": "red",
+      "goods": ["green"]
+    },
+    {
+      "id": "F",
+      "name": "Fort Wayne",
+      "x": 0.7,
+      "y": 0.5,
+      "demand_color": "blue",
+      "goods": ["yellow"]
+    },
+    {
+      "id": "G",
+      "name": "Grand Rapids",
+      "x": 0.4,
+      "y": 0.2,
+      "demand_color": "yellow",
+      "goods": ["red"]
+    },
+    {
+      "id": "H",
+      "name": "Harrisburg",
+      "x": 0.7,
+      "y": 0.2,
+      "demand_color": "green",
+      "goods": ["blue"]
+    }
+  ],
+  "edges": [
+    {"id": "A-B", "source": "A", "target": "B", "cost": 3, "built": false},
+    {"id": "B-C", "source": "B", "target": "C", "cost": 4, "built": false},
+    {"id": "A-D", "source": "A", "target": "D", "cost": 4, "built": false},
+    {"id": "B-E", "source": "B", "target": "E", "cost": 3, "built": false},
+    {"id": "C-F", "source": "C", "target": "F", "cost": 5, "built": false},
+    {"id": "D-E", "source": "D", "target": "E", "cost": 2, "built": false},
+    {"id": "E-F", "source": "E", "target": "F", "cost": 3, "built": false},
+    {"id": "E-G", "source": "E", "target": "G", "cost": 4, "built": false},
+    {"id": "F-H", "source": "F", "target": "H", "cost": 4, "built": false},
+    {"id": "G-H", "source": "G", "target": "H", "cost": 3, "built": false},
+    {"id": "D-G", "source": "D", "target": "G", "cost": 5, "built": false},
+    {"id": "C-H", "source": "C", "target": "H", "cost": 6, "built": false}
+  ]
+}
