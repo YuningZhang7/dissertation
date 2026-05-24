@@ -1,31 +1,24 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import streamlit as st
 
-from agents.greedy_agent import choose_greedy_action
-from agents.random_agent import choose_random_action
+from railways.actions import Action
+from railways.environment import apply_action, reset_game
 from railways.game_state import GameState
 from railways.rules import (
-    apply_action,
-    build_track,
-    deliver_good,
+    count_empty_city_markers,
     describe_action,
+    get_engine_upgrade_cost,
+    get_legal_build_actions,
     get_legal_deliveries,
-    issue_bond,
-    next_turn,
-    upgrade_locomotive,
+    get_legal_upgrade_action,
+    get_legal_urbanize_actions,
 )
 from railways.visualization import draw_map
 
-BASE_DIR = Path(__file__).parent
-MAP_PATH = BASE_DIR / "data" / "toy_map.json"
-CONFIG_PATH = BASE_DIR / "data" / "rules_config.json"
-
 
 def create_game_state() -> GameState:
-    return GameState.from_files(MAP_PATH, CONFIG_PATH)
+    return reset_game()
 
 
 def initialise_session() -> None:
@@ -35,8 +28,12 @@ def initialise_session() -> None:
         st.session_state.last_message = "Game ready."
 
 
-def set_message(message: str) -> None:
-    st.session_state.last_message = message
+def submit_action(action: Action) -> None:
+    state: GameState = st.session_state.game_state
+    _, success, message = apply_action(state, action)
+    prefix = "OK" if success else "Failed"
+    st.session_state.last_message = f"{prefix}: {message}"
+    st.rerun()
 
 
 def main() -> None:
@@ -49,7 +46,10 @@ def main() -> None:
     state: GameState = st.session_state.game_state
 
     st.title("Railways of the World AI Simulator")
-    st.caption("Simplified single-player visual prototype for dissertation experiments.")
+    st.caption(
+        "Single-player rule-development prototype. Advanced AI agents will be "
+        "added after the rule engine is stabilised."
+    )
 
     if state.is_terminal():
         st.warning(
@@ -67,164 +67,178 @@ def main() -> None:
     with side_col:
         render_player_panel(state)
         render_manual_controls(state)
-        render_agent_controls(state)
         render_history(state)
 
 
 def render_player_panel(state: GameState) -> None:
     st.subheader("Player State")
     metric_col_a, metric_col_b = st.columns(2)
-    metric_col_a.metric("Turn", f"{state.player.turn} / {state.player.max_turns}")
+    metric_col_a.metric("Turn", f"{state.turn} / {state.config.max_turns}")
+    metric_col_b.metric("Phase", state.phase)
+    metric_col_a.metric("Actions Left", state.actions_remaining)
     metric_col_b.metric("Money", state.player.money)
     metric_col_a.metric("Score", state.player.score)
     metric_col_b.metric("Final Estimate", state.final_score())
     metric_col_a.metric("Bonds", state.player.bonds)
-    metric_col_b.metric("Locomotive", state.player.locomotive_level)
-    st.metric("Delivered Goods", state.player.delivered_goods_count)
+    metric_col_b.metric(
+        "Interest Due",
+        state.player.bonds * state.config.bond_interest,
+    )
+    metric_col_a.metric("Engine Level", state.player.locomotive_level)
+    metric_col_b.metric("Delivered", state.player.delivered_goods_count)
+    metric_col_a.metric("Major Line Bonus", state.player.major_line_bonus)
+    metric_col_b.metric("Empty Markers", count_empty_city_markers(state))
 
 
 def render_manual_controls(state: GameState) -> None:
     st.subheader("Manual Actions")
     controls_disabled = state.is_terminal()
 
-    unbuilt_edges = [edge for edge in state.edges.values() if not edge.built]
-    edge_labels = {
-        f"{edge.id}: {edge.source}-{edge.target}, cost {edge.cost}": edge.id
-        for edge in unbuilt_edges
-    }
-    selected_edge_label = st.selectbox(
-        "Build track",
-        options=list(edge_labels.keys()),
-        disabled=controls_disabled or not edge_labels,
-    )
-    if st.button("Build Track", disabled=controls_disabled or not edge_labels):
-        edge_id = edge_labels[selected_edge_label]
-        if build_track(state, edge_id):
-            set_message(f"Built track {edge_id}.")
-        else:
-            set_message(f"Could not build track {edge_id}. Check money and status.")
-        st.rerun()
-
-    bond_col, upgrade_col = st.columns(2)
-    with bond_col:
-        if st.button("Issue Bond", disabled=controls_disabled):
-            issue_bond(state)
-            set_message("Issued one bond.")
-            st.rerun()
-    with upgrade_col:
-        upgrade_cost = state.player.locomotive_level * state.config.upgrade_cost_multiplier
-        if st.button(
-            f"Upgrade (${upgrade_cost})",
-            disabled=controls_disabled
-            or state.player.locomotive_level >= state.config.max_locomotive_level,
-        ):
-            if upgrade_locomotive(state):
-                set_message("Locomotive upgraded.")
-            else:
-                set_message("Could not upgrade locomotive.")
-            st.rerun()
-
+    render_build_controls(state, controls_disabled)
     st.divider()
     render_delivery_controls(state, controls_disabled)
+    st.divider()
+    render_upgrade_and_urbanize_controls(state, controls_disabled)
+    st.divider()
+    render_turn_controls(state, controls_disabled)
 
-    turn_col, reset_col = st.columns(2)
-    with turn_col:
-        if st.button("Next Turn", disabled=state.player.turn > state.player.max_turns):
-            next_turn(state)
-            set_message(f"Advanced to turn {state.player.turn}.")
-            st.rerun()
-    with reset_col:
-        if st.button("Reset Game"):
-            st.session_state.game_state = create_game_state()
-            set_message("Game reset.")
-            st.rerun()
+
+def render_build_controls(state: GameState, controls_disabled: bool) -> None:
+    build_actions = get_legal_build_actions(state)
+    build_labels = {
+        (
+            f"{action.params['edge_id']}: "
+            f"{state.edges[action.params['edge_id']].source}-"
+            f"{state.edges[action.params['edge_id']].target}, "
+            f"cost {state.edges[action.params['edge_id']].cost}"
+        ): action
+        for action in build_actions
+    }
+
+    selected_label = st.selectbox(
+        "Build track",
+        options=list(build_labels.keys()),
+        disabled=controls_disabled or not build_labels,
+    )
+    if st.button("Build Track", disabled=controls_disabled or not build_labels):
+        submit_action(build_labels[selected_label])
 
 
 def render_delivery_controls(state: GameState, controls_disabled: bool) -> None:
-    city_labels = {
-        f"{city.id}: {city.name}": city.id for city in state.cities.values()
+    delivery_actions = get_legal_deliveries(state)
+    delivery_labels = {
+        (
+            f"{action.params['good_color']} "
+            f"{action.params['source']} -> {action.params['target']} "
+            f"via {'-'.join(action.params['path'])} "
+            f"(+{action.params['score']})"
+        ): action
+        for action in delivery_actions
     }
-    source_label = st.selectbox(
-        "Delivery source",
-        options=list(city_labels.keys()),
-        disabled=controls_disabled,
+
+    selected_label = st.selectbox(
+        "Legal delivery",
+        options=list(delivery_labels.keys()),
+        disabled=controls_disabled or not delivery_labels,
     )
-    source_id = city_labels[source_label]
-    source_city = state.cities[source_id]
+    st.caption(f"Legal deliveries available: {len(delivery_actions)}")
+    if st.button("Deliver Good", disabled=controls_disabled or not delivery_labels):
+        submit_action(delivery_labels[selected_label])
 
-    target_label = st.selectbox(
-        "Delivery target",
-        options=list(city_labels.keys()),
-        disabled=controls_disabled,
+
+def render_upgrade_and_urbanize_controls(
+    state: GameState,
+    controls_disabled: bool,
+) -> None:
+    upgrade_action = get_legal_upgrade_action(state)
+    next_level = state.player.locomotive_level + 1
+    upgrade_cost = get_engine_upgrade_cost(state, next_level)
+
+    upgrade_col, urbanize_col = st.columns(2)
+    with upgrade_col:
+        if st.button(
+            f"Upgrade Engine (${upgrade_cost})",
+            disabled=controls_disabled or upgrade_action is None,
+        ):
+            submit_action(Action.upgrade_engine())
+
+    urbanize_actions = get_legal_urbanize_actions(state)
+    urbanize_labels = {
+        f"{state.cities[action.params['city_id']].id}: "
+        f"{state.cities[action.params['city_id']].name}": action
+        for action in urbanize_actions
+    }
+    demand_color = st.selectbox(
+        "Urbanize demand",
+        options=state.config.allowed_good_colors,
+        disabled=controls_disabled or not urbanize_labels,
     )
-    target_id = city_labels[target_label]
-
-    goods_options = sorted(set(source_city.goods))
-    selected_good = st.selectbox(
-        "Good color",
-        options=goods_options,
-        disabled=controls_disabled or not goods_options,
-    )
-
-    legal_deliveries = get_legal_deliveries(state)
-    st.caption(f"Legal deliveries available: {len(legal_deliveries)}")
-
-    if st.button("Deliver Good", disabled=controls_disabled or not goods_options):
-        if deliver_good(state, source_id, target_id, selected_good):
-            set_message(f"Delivered {selected_good} from {source_id} to {target_id}.")
-        else:
-            set_message(
-                "Delivery failed. Check source goods, target demand, built path, "
-                "and locomotive level."
-            )
-        st.rerun()
-
-
-def render_agent_controls(state: GameState) -> None:
-    st.subheader("Baseline Agents")
-    controls_disabled = state.is_terminal()
-    random_col, greedy_col = st.columns(2)
-
-    with random_col:
-        if st.button("Random Action", disabled=controls_disabled):
-            action = choose_random_action(state)
-            success = apply_action(state, action)
-            set_message(
-                f"Random agent chose: {describe_action(action)} "
-                f"({'ok' if success else 'failed'})."
-            )
-            st.rerun()
-
-    with greedy_col:
-        if st.button("Greedy Action", disabled=controls_disabled):
-            action = choose_greedy_action(state)
-            success = apply_action(state, action)
-            set_message(
-                f"Greedy agent chose: {describe_action(action)} "
-                f"({'ok' if success else 'failed'})."
-            )
-            st.rerun()
-
-    if st.button("Run Greedy Until End", disabled=controls_disabled):
-        steps = 0
-        while not state.is_terminal() and steps < 200:
-            action = choose_greedy_action(state)
-            apply_action(state, action)
-            steps += 1
-        set_message(
-            f"Greedy run finished in {steps} actions. Final score: {state.final_score()}."
+    with urbanize_col:
+        selected_city = st.selectbox(
+            "Urbanize city",
+            options=list(urbanize_labels.keys()),
+            disabled=controls_disabled or not urbanize_labels,
         )
+        if st.button("Urbanize", disabled=controls_disabled or not urbanize_labels):
+            base_action = urbanize_labels[selected_city]
+            submit_action(
+                Action.urbanize(
+                    str(base_action.params["city_id"]),
+                    demand_color=demand_color,
+                )
+            )
+
+
+def render_turn_controls(state: GameState, controls_disabled: bool) -> None:
+    bond_col, pass_col, end_col = st.columns(3)
+    with bond_col:
+        if st.button(
+            "Issue Bond",
+            disabled=controls_disabled or not state.config.allow_voluntary_bonds,
+        ):
+            submit_action(Action.issue_bond())
+    with pass_col:
+        if st.button("Pass Action", disabled=controls_disabled):
+            submit_action(Action.pass_action())
+    with end_col:
+        if st.button("End Turn", disabled=state.is_terminal()):
+            submit_action(Action.next_turn())
+
+    if st.button("Reset Game"):
+        st.session_state.game_state = create_game_state()
+        st.session_state.last_message = "Game reset."
         st.rerun()
 
 
 def render_history(state: GameState) -> None:
     st.subheader("Action History")
-    if not state.player.action_history:
+    previews = get_preview_actions(state)
+    preview_text = ", ".join(describe_action(action) for action in previews) or "none"
+    st.caption(
+        "Recent actions from the rules engine. "
+        f"Next legal-action examples: {preview_text}"
+    )
+    if not state.action_history:
         st.caption("No actions yet.")
         return
 
-    for item in reversed(state.player.action_history[-12:]):
+    for item in reversed(state.action_history[-14:]):
         st.write(item)
+
+
+def get_preview_actions(state: GameState) -> list[Action]:
+    if state.is_terminal():
+        return []
+
+    previews: list[Action] = []
+    previews.extend(get_legal_build_actions(state)[:1])
+    previews.extend(get_legal_deliveries(state)[:1])
+    upgrade = get_legal_upgrade_action(state)
+    if upgrade is not None:
+        previews.append(upgrade)
+    previews.extend(get_legal_urbanize_actions(state)[:1])
+    previews.append(Action.pass_action())
+    return previews[:4]
 
 
 if __name__ == "__main__":

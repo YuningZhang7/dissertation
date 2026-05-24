@@ -4,12 +4,20 @@ from copy import deepcopy
 from pathlib import Path
 
 from railways.map_loader import load_config, load_map
-from railways.models import City, GameConfig, PlayerState, RailwayEdge
+from railways.models import (
+    City,
+    GameConfig,
+    MajorLine,
+    PHASE_ACTION,
+    PHASE_GAME_OVER,
+    PlayerState,
+    RailwayEdge,
+)
 from railways.scoring import compute_final_score
 
 
 class GameState:
-    """Mutable game state for one single-player simulation."""
+    """Mutable state for one single-player rules simulation."""
 
     def __init__(
         self,
@@ -17,13 +25,32 @@ class GameState:
         edges: dict[str, RailwayEdge],
         config: GameConfig | None = None,
         player: PlayerState | None = None,
+        major_lines: dict[str, MajorLine] | None = None,
+        turn: int | None = None,
+        phase: str = PHASE_ACTION,
+        actions_remaining: int | None = None,
+        end_triggered: bool = False,
+        extra_turns_remaining: int = 0,
+        action_history: list[str] | None = None,
     ) -> None:
         self.config = config or GameConfig()
         self._initial_cities = deepcopy(cities)
         self._initial_edges = deepcopy(edges)
+        self._initial_major_lines = deepcopy(major_lines or {})
         self.cities = deepcopy(cities)
         self.edges = deepcopy(edges)
+        self.major_lines = deepcopy(major_lines or {})
         self.player = deepcopy(player) if player else self.config.create_initial_player()
+        self.turn = turn if turn is not None else self.config.initial_turn
+        self.phase = phase
+        self.actions_remaining = (
+            actions_remaining
+            if actions_remaining is not None
+            else self.config.actions_per_turn
+        )
+        self.end_triggered = end_triggered
+        self.extra_turns_remaining = extra_turns_remaining
+        self.action_history = list(action_history or [])
         self._sync_built_edges()
 
     @classmethod
@@ -32,30 +59,45 @@ class GameState:
         map_path: str | Path,
         config_path: str | Path,
     ) -> "GameState":
-        cities, edges = load_map(map_path)
+        cities, edges, major_lines = load_map(map_path)
         config = load_config(config_path)
-        return cls(cities=cities, edges=edges, config=config)
+        return cls(
+            cities=cities,
+            edges=edges,
+            major_lines=major_lines,
+            config=config,
+        )
 
     def reset(self) -> None:
         self.cities = deepcopy(self._initial_cities)
         self.edges = deepcopy(self._initial_edges)
+        self.major_lines = deepcopy(self._initial_major_lines)
         self.player = self.config.create_initial_player()
+        self.turn = self.config.initial_turn
+        self.phase = PHASE_ACTION
+        self.actions_remaining = self.config.actions_per_turn
+        self.end_triggered = False
+        self.extra_turns_remaining = 0
+        self.action_history = []
         self._sync_built_edges()
 
     def copy(self) -> "GameState":
         return deepcopy(self)
 
     def is_terminal(self) -> bool:
-        return self.player.turn > self.player.max_turns
+        return self.phase == PHASE_GAME_OVER
 
     def final_score(self) -> int:
-        return compute_final_score(self.player, self.config)
+        return compute_final_score(self)
 
     def get_city(self, city_id: str) -> City | None:
         return self.cities.get(city_id)
 
     def get_edge(self, edge_id: str) -> RailwayEdge | None:
         return self.edges.get(edge_id)
+
+    def record(self, message: str) -> None:
+        self.action_history.append(message)
 
     def _sync_built_edges(self) -> None:
         self.player.built_edges = {

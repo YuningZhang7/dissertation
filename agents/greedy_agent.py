@@ -1,51 +1,61 @@
 from __future__ import annotations
 
+from railways.actions import Action
+from railways.environment import apply_action
 from railways.game_state import GameState
 from railways.rules import (
-    Action,
-    build_track,
     get_legal_build_actions,
     get_legal_deliveries,
+    get_legal_upgrade_action,
+    get_legal_urbanize_actions,
 )
 
 
 def choose_greedy_action(state: GameState) -> Action:
     deliveries = get_legal_deliveries(state)
     if deliveries:
-        return max(deliveries, key=lambda action: (action["score"], action["path_length"]))
+        return max(
+            deliveries,
+            key=lambda action: (
+                action.params["score"],
+                action.params["path_length"],
+            ),
+        )
 
     build_actions = _ranked_build_actions(state)
     if build_actions:
         return build_actions[0]
 
-    upgrade_cost = state.player.locomotive_level * state.config.upgrade_cost_multiplier
-    if (
-        state.player.locomotive_level < state.config.max_locomotive_level
-        and state.player.money >= upgrade_cost
-    ):
-        return {"type": "upgrade_locomotive"}
+    upgrade_action = get_legal_upgrade_action(state)
+    if upgrade_action is not None:
+        return upgrade_action
+
+    urbanize_actions = get_legal_urbanize_actions(state)
+    if urbanize_actions:
+        return urbanize_actions[0]
 
     if state.player.money < _cheapest_unbuilt_edge_cost(state):
-        return {"type": "issue_bond"}
+        return Action.issue_bond()
 
-    return {"type": "next_turn"}
+    return Action.pass_action()
 
 
 def _ranked_build_actions(state: GameState) -> list[Action]:
     candidates = []
-    for edge in get_legal_build_actions(state):
+    for action in get_legal_build_actions(state):
         simulated = state.copy()
-        build_track(simulated, edge.id)
+        apply_action(simulated, action)
         deliveries_after_build = get_legal_deliveries(simulated)
         delivery_count = len(deliveries_after_build)
         best_delivery_score = max(
-            (delivery["score"] for delivery in deliveries_after_build),
+            (delivery.params["score"] for delivery in deliveries_after_build),
             default=0,
         )
+        edge = state.edges[action.params["edge_id"]]
 
         candidates.append(
             {
-                "action": {"type": "build", "edge_id": edge.id},
+                "action": action,
                 "delivery_count": delivery_count,
                 "best_delivery_score": best_delivery_score,
                 "cost": edge.cost,

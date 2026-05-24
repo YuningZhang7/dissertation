@@ -9,6 +9,7 @@ DEMAND_COLORS = {
     "blue": "#1f77b4",
     "yellow": "#f2c94c",
     "green": "#2ca02c",
+    None: "#9aa0a6",
 }
 
 
@@ -22,6 +23,7 @@ def draw_map(state: GameState) -> go.Figure:
         line_width = 5 if edge.built else 2
         line_dash = "solid" if edge.built else "dash"
         status = "built" if edge.built else "available"
+        owner = edge.owner or "none"
 
         fig.add_trace(
             go.Scatter(
@@ -30,7 +32,10 @@ def draw_map(state: GameState) -> go.Figure:
                 mode="lines",
                 line=dict(color=line_color, width=line_width, dash=line_dash),
                 hoverinfo="text",
-                text=f"{edge.id}<br>Cost: {edge.cost}<br>Status: {status}",
+                text=(
+                    f"{edge.id}<br>Cost: {edge.cost}<br>"
+                    f"Status: {status}<br>Owner: {owner}"
+                ),
                 showlegend=False,
             )
         )
@@ -50,13 +55,20 @@ def draw_map(state: GameState) -> go.Figure:
     hover_text = [
         (
             f"{city.name} ({city.id})<br>"
-            f"Demand: {city.demand_color}<br>"
+            f"Demand: {city.demand_color or 'none'}<br>"
+            f"Urbanized: {'yes' if city.is_urbanized else 'no'}<br>"
+            f"Empty marker: {'yes' if city.empty_marker else 'no'}<br>"
             f"Goods: {', '.join(city.goods) if city.goods else 'none'}"
         )
         for city in cities
     ]
     node_text = [
-        f"{city.id}<br>{'/'.join(city.goods) if city.goods else '-'}" for city in cities
+        (
+            f"{city.id}<br>"
+            f"{'/'.join(city.goods) if city.goods else '-'}"
+            f"{' *' if city.empty_marker else ''}"
+        )
+        for city in cities
     ]
 
     fig.add_trace(
@@ -69,10 +81,11 @@ def draw_map(state: GameState) -> go.Figure:
             hovertext=hover_text,
             hoverinfo="text",
             marker=dict(
-                size=34,
+                size=[38 if city.is_gray else 34 for city in cities],
                 color=[
                     DEMAND_COLORS.get(city.demand_color, "#888888") for city in cities
                 ],
+                symbol=["square" if city.is_gray else "circle" for city in cities],
                 line=dict(color="#242424", width=2),
             ),
             showlegend=False,

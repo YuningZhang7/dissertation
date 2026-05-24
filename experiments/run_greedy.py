@@ -8,20 +8,20 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agents.greedy_agent import choose_greedy_action
-from railways.game_state import GameState
-from railways.rules import apply_action, describe_action
+from railways.environment import apply_action, is_terminal, reset_game
+from railways.rules import describe_action
 
 
 def main() -> None:
-    state = GameState.from_files(
-        PROJECT_ROOT / "data" / "toy_map.json",
-        PROJECT_ROOT / "data" / "rules_config.json",
-    )
+    state = reset_game()
 
-    while not state.is_terminal():
+    steps = 0
+    while not is_terminal(state) and steps < 500:
         action = choose_greedy_action(state)
-        print(f"Turn {state.player.turn}: {describe_action(action)}")
-        apply_action(state, action)
+        print(f"Turn {state.turn} ({state.actions_remaining} actions): {describe_action(action)}")
+        _, _, message = apply_action(state, action)
+        print(f"  {message}")
+        steps += 1
 
     print()
     print("Greedy baseline complete")
@@ -29,6 +29,7 @@ def main() -> None:
     print(f"Bonds: {state.player.bonds}")
     print(f"Final score: {state.final_score()}")
     print(f"Delivered goods: {state.player.delivered_goods_count}")
+    print(f"Empty city markers: {sum(1 for city in state.cities.values() if city.empty_marker)}")
 
 
 if __name__ == "__main__":
