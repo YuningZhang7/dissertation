@@ -19,11 +19,16 @@ class Action:
         source: str,
         target: str,
         good_color: str,
+        path: list[str] | None = None,
     ) -> "Action":
-        return cls(
-            "deliver_good",
-            {"source": source, "target": target, "good_color": good_color},
-        )
+        params: dict[str, Any] = {
+            "source": source,
+            "target": target,
+            "good_color": good_color,
+        }
+        if path is not None:
+            params["path"] = path
+        return cls("deliver_good", params)
 
     @classmethod
     def upgrade_engine(cls) -> "Action":

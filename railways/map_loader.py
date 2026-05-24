@@ -36,7 +36,7 @@ def load_map(
             target=edge_data["target"],
             cost=int(edge_data["cost"]),
             built=bool(edge_data.get("built", False)),
-            owner=edge_data.get("owner"),
+            owner=edge_data.get("owner") or ("player" if edge_data.get("built") else None),
         )
         for edge_data in data["edges"]
     }

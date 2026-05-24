@@ -4,7 +4,7 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version focuses on making the single-player rule engine clearer and more faithful before adding advanced AI methods.
+The current version focuses on Phase 2A core rule fidelity: making the single-player rule engine clearer, more testable, and more faithful before adding advanced AI methods.
 
 ## Current Development Stage
 
@@ -20,17 +20,17 @@ See [notes/RULES_COVERAGE.md](notes/RULES_COVERAGE.md).
 
 - Turn structure with action and income phases
 - Configurable actions per turn
-- Build track
-- Deliver goods
+- Connected track-building restriction after the first built edge
+- Explicit route-based goods delivery actions
 - Upgrade engine
 - Bonds
 - Bond interest during income
 - Score-based income phase
 - Basic final scoring
 - Empty city markers
-- Fixed-turn and scaffolded empty-city-marker end conditions
+- Fixed-turn and empty-city-marker end condition modes
 - Simplified urbanize action
-- Major-line placeholder support
+- Major-line loading, claiming, and final-score bonus support
 - AI-ready environment interface
 
 ## Not Yet Implemented
@@ -62,6 +62,8 @@ Run the rule-engine smoke tests:
 ```bash
 python experiments/smoke_test_rules.py
 ```
+
+The smoke tests cover connected track building, explicit delivery paths, empty-city-marker end conditions, major-line bonuses, bonds, income, and final scoring.
 
 Run the simple greedy baseline from the command line:
 
