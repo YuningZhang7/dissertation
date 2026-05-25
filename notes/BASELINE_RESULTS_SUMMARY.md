@@ -2,36 +2,38 @@
 
 ## Experiment Setup
 
-- Map: `data/toy_map.json`
+- Maps: `data/toy_map.json`, `data/toy_medium_map.json`
 - Rules config: `data/rules_config.json`
 - Agents: `random`, `greedy_delivery`, `greedy_expansion`
-- Episodes: 100 per agent
+- Episodes: 100 per map-agent pair
 - Seed: 0
 - Date: 2026-05-25
 
 ## Summary Table
 
-| agent | episodes | mean_final_score | std_final_score | min_final_score | max_final_score | mean_raw_score | mean_bonds | mean_deliveries | mean_built_edges | mean_major_line_bonus | mean_empty_markers | mean_invalid_actions | invalid_action_rate | terminal_rate | mean_actions_taken | mean_runtime_seconds |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| greedy_delivery | 100 | 10.00 | 0.00 | 10.00 | 10.00 | 9.00 | 2.00 | 7.00 | 12.00 | 3.00 | 7.00 | 0.00 | 0.0000 | 1.00 | 33.00 | 0.0054 |
-| greedy_expansion | 100 | 10.00 | 0.00 | 10.00 | 10.00 | 9.00 | 2.00 | 7.00 | 12.00 | 3.00 | 7.00 | 0.00 | 0.0000 | 1.00 | 33.00 | 0.0261 |
-| random | 100 | 4.45 | 4.05 | -3.00 | 15.00 | 6.52 | 4.44 | 4.98 | 8.81 | 2.37 | 4.65 | 0.00 | 0.0000 | 1.00 | 28.56 | 0.0096 |
+| map | agent | episodes | mean_final_score | std_final_score | min_final_score | max_final_score | mean_raw_score | mean_bonds | mean_deliveries | mean_built_edges | mean_major_line_bonus | mean_empty_markers | mean_invalid_actions | invalid_action_rate | terminal_rate | mean_actions_taken | mean_runtime_seconds |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| toy_map | greedy_delivery | 100 | 10.00 | 0.00 | 10.00 | 10.00 | 9.00 | 2.00 | 7.00 | 12.00 | 3.00 | 7.00 | 0.00 | 0.0000 | 1.00 | 33.00 | 0.0052 |
+| toy_map | greedy_expansion | 100 | 10.00 | 0.00 | 10.00 | 10.00 | 9.00 | 2.00 | 7.00 | 12.00 | 3.00 | 7.00 | 0.00 | 0.0000 | 1.00 | 33.00 | 0.0266 |
+| toy_map | random | 100 | 4.13 | 4.31 | -8.00 | 15.00 | 6.24 | 4.63 | 4.79 | 8.70 | 2.52 | 4.51 | 0.00 | 0.0000 | 1.00 | 28.47 | 0.0093 |
+| toy_medium_map | greedy_delivery | 100 | 32.00 | 0.00 | 32.00 | 32.00 | 13.00 | 0.00 | 13.00 | 20.00 | 19.00 | 6.00 | 0.00 | 0.0000 | 1.00 | 33.00 | 0.0767 |
+| toy_medium_map | greedy_expansion | 100 | 30.00 | 0.00 | 30.00 | 30.00 | 11.00 | 0.00 | 11.00 | 22.00 | 19.00 | 7.00 | 0.00 | 0.0000 | 1.00 | 33.00 | 0.5867 |
+| toy_medium_map | random | 100 | 10.78 | 8.17 | -3.00 | 33.00 | 9.90 | 3.22 | 7.69 | 11.92 | 4.10 | 3.88 | 0.00 | 0.0000 | 1.00 | 30.01 | 0.0886 |
 
 ## Initial Observations
 
-- `greedy_delivery` and `greedy_expansion` achieved the highest average final score on the current toy map.
-- The two greedy agents produced identical score-level outcomes in this run, which suggests the current toy map is small enough that their heuristics converge to similar play.
-- `random` had much higher variance, including a negative minimum final score and a maximum score above the greedy baselines.
-- Both greedy agents delivered more goods on average than `random`.
-- `random` used more bonds on average.
-- All agents had zero invalid actions.
+- On `toy_map`, `greedy_delivery` and `greedy_expansion` still produce identical score-level outcomes, confirming that the small map is mainly useful for debugging.
+- On `toy_medium_map`, the greedy agents no longer behave identically: `greedy_delivery` achieves a higher mean final score, while `greedy_expansion` builds a larger network.
+- `toy_medium_map` creates clearer strategy differences through longer routes, bottleneck edges, and larger major-line bonuses.
+- `random` remains much more variable on both maps.
+- All map-agent combinations had zero invalid actions.
 - All episodes terminated normally.
-- `greedy_expansion` was slower than `greedy_delivery`, as expected, because it simulates build candidates before choosing.
+- `greedy_expansion` is substantially slower on the medium map because it simulates build candidates.
 
 ## Generated Outputs
 
-- `results/raw/experiment_results.csv`
-- `results/processed/summary_by_agent.csv`
+- `results/raw/map_comparison_results.csv`
+- `results/processed/summary_by_map_agent.csv`
 - `results/plots/final_score_by_agent.png`
 - `results/plots/final_score_distribution.png`
 - `results/plots/deliveries_by_agent.png`
@@ -40,7 +42,12 @@
 - `results/plots/runtime_by_agent.png`
 - `results/plots/invalid_actions_by_agent.png`
 - `results/plots/terminal_rate_by_agent.png`
+- `results/plots/final_score_by_map_agent.png`
+- `results/plots/deliveries_by_map_agent.png`
+- `results/plots/bonds_by_map_agent.png`
+- `results/plots/built_edges_by_map_agent.png`
+- `results/plots/runtime_by_map_agent.png`
 
 ## Next Step
 
-The baseline platform looks structurally stable. If baseline results remain stable after a larger map or richer rules, the next stage will be to implement a search-based agent, most likely Monte Carlo Tree Search.
+The medium map makes baseline comparison more meaningful. The next sensible step is to keep the advanced AI postponed briefly and either calibrate the medium scenario further or begin a search-based agent, most likely Monte Carlo Tree Search.

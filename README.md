@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 2B.5: validating baseline agents and experiment outputs before adding advanced AI methods.
+The current version is Phase 2B.6: medium-map and scenario-based baseline validation before adding advanced AI methods.
 
 ## Current Development Stage
 
-The project is currently focused on simple explainable baseline agents and repeatable experiment scripts. Advanced AI methods will be added only after these baselines are stable.
+The project is currently focused on simple explainable baseline agents, repeatable experiment scripts, and multi-map scenario comparison. Advanced AI methods will be added only after these baselines are stable.
 
 ## Current Rule Coverage
 
@@ -91,6 +91,19 @@ Run experiments:
 python experiments/run_experiments.py --agent all --episodes 100
 ```
 
+Run experiments on specific maps:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 100 --map data/toy_map.json
+python experiments/run_experiments.py --agent all --episodes 100 --map data/toy_medium_map.json
+```
+
+Run all baseline agents on both maps:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 100 --map all --output results/raw/map_comparison_results.csv
+```
+
 Run one agent:
 
 ```bash
@@ -125,10 +138,22 @@ After running experiments, validate the outputs with:
 python experiments/validate_baselines.py --input results/raw/experiment_results.csv --episodes 100
 ```
 
+For map comparison results:
+
+```bash
+python experiments/validate_baselines.py --input results/raw/map_comparison_results.csv --episodes 100 --maps toy_map,toy_medium_map
+```
+
 To run tests, experiments, analysis, plotting, and validation in one command:
 
 ```bash
 python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0
+```
+
+Run the full pipeline across both maps:
+
+```bash
+python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0 --map all --output results/raw/map_comparison_results.csv
 ```
 
 Experiment planning and baseline result notes are stored in:
@@ -162,6 +187,7 @@ railways-world-ai/
 |-- requirements.txt
 |-- data/
 |   |-- toy_map.json
+|   |-- toy_medium_map.json
 |   `-- rules_config.json
 |-- railways/
 |   |-- __init__.py
@@ -189,6 +215,7 @@ railways-world-ai/
 |   |-- run_experiments.py
 |   |-- simulation_runner.py
 |   |-- smoke_test_agents.py
+|   |-- smoke_test_maps.py
 |   |-- smoke_test_rules.py
 |   `-- validate_baselines.py
 `-- notes/

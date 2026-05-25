@@ -7,6 +7,8 @@ import sys
 
 EXPECTED_AGENTS = {"random", "greedy_delivery", "greedy_expansion"}
 REQUIRED_COLUMNS = {
+    "map",
+    "config",
     "agent",
     "seed",
     "final_score",
@@ -60,6 +62,7 @@ NUMERIC_COLUMNS = {
 def validate_baselines(
     input_path: str | Path,
     expected_episodes: int,
+    expected_maps: set[str] | None = None,
     max_invalid_action_rate: float = 0.01,
 ) -> int:
     path = Path(input_path)
@@ -80,7 +83,8 @@ def validate_baselines(
         errors.append(f"Missing required columns: {sorted(missing_columns)}")
 
     if not missing_columns:
-        _validate_agents(rows, expected_episodes, errors)
+        maps = expected_maps or {row["map"] for row in rows}
+        _validate_map_agents(rows, maps, expected_episodes, errors)
         _validate_numeric_values(rows, errors)
         _validate_rates(rows, max_invalid_action_rate, errors, warnings)
         _compare_agent_means(rows, warnings)
@@ -103,22 +107,35 @@ def _read_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(file))
 
 
-def _validate_agents(
+def _validate_map_agents(
     rows: list[dict[str, str]],
+    expected_maps: set[str],
     expected_episodes: int,
     errors: list[str],
 ) -> None:
     grouped = _group_rows(rows)
-    missing_agents = EXPECTED_AGENTS - set(grouped)
-    if missing_agents:
-        errors.append(f"Missing expected agents: {sorted(missing_agents)}")
+    present_maps = {map_name for map_name, _ in grouped}
+    missing_maps = expected_maps - present_maps
+    if missing_maps:
+        errors.append(f"Missing expected maps: {sorted(missing_maps)}")
 
-    for agent in EXPECTED_AGENTS:
-        count = len(grouped.get(agent, []))
-        if count != expected_episodes:
+    for map_name in expected_maps:
+        present_agents = {
+            agent for current_map, agent in grouped if current_map == map_name
+        }
+        missing_agents = EXPECTED_AGENTS - present_agents
+        if missing_agents:
             errors.append(
-                f"Agent {agent} has {count} episodes, expected {expected_episodes}."
+                f"Map {map_name} is missing expected agents: {sorted(missing_agents)}"
             )
+
+        for agent in EXPECTED_AGENTS:
+            count = len(grouped.get((map_name, agent), []))
+            if count != expected_episodes:
+                errors.append(
+                    f"Map {map_name}, agent {agent} has {count} episodes, "
+                    f"expected {expected_episodes}."
+                )
 
 
 def _validate_numeric_values(rows: list[dict[str, str]], errors: list[str]) -> None:
@@ -145,29 +162,30 @@ def _validate_rates(
     warnings: list[str],
 ) -> None:
     grouped = _group_rows(rows)
-    for agent, agent_rows in grouped.items():
-        total_invalid = sum(float(row["invalid_actions"]) for row in agent_rows)
-        total_actions = sum(float(row["actions_taken"]) for row in agent_rows)
+    for (map_name, agent), group_rows in grouped.items():
+        total_invalid = sum(float(row["invalid_actions"]) for row in group_rows)
+        total_actions = sum(float(row["actions_taken"]) for row in group_rows)
         invalid_rate = total_invalid / total_actions if total_actions else 0.0
         terminal_rate = (
-            sum(1 for row in agent_rows if _as_bool(row["terminal"])) / len(agent_rows)
+            sum(1 for row in group_rows if _as_bool(row["terminal"])) / len(group_rows)
         )
-        max_runtime = max(float(row["runtime_seconds"]) for row in agent_rows)
-        min_runtime = min(float(row["runtime_seconds"]) for row in agent_rows)
+        max_runtime = max(float(row["runtime_seconds"]) for row in group_rows)
+        min_runtime = min(float(row["runtime_seconds"]) for row in group_rows)
 
+        label = f"{map_name}/{agent}"
         if invalid_rate > max_invalid_action_rate:
             errors.append(
-                f"{agent} invalid action rate {invalid_rate:.4f} exceeds "
+                f"{label} invalid action rate {invalid_rate:.4f} exceeds "
                 f"{max_invalid_action_rate:.4f}."
             )
         if terminal_rate < 0.95:
-            errors.append(f"{agent} terminal rate {terminal_rate:.2f} is below 0.95.")
+            errors.append(f"{label} terminal rate {terminal_rate:.2f} is below 0.95.")
         elif terminal_rate < 1.0:
-            warnings.append(f"{agent} terminal rate is {terminal_rate:.2f}, not 1.00.")
+            warnings.append(f"{label} terminal rate is {terminal_rate:.2f}, not 1.00.")
         if min_runtime <= 0:
-            errors.append(f"{agent} has non-positive runtime.")
+            errors.append(f"{label} has non-positive runtime.")
         if max_runtime > 5.0:
-            warnings.append(f"{agent} has a high episode runtime: {max_runtime:.2f}s.")
+            warnings.append(f"{label} has a high episode runtime: {max_runtime:.2f}s.")
 
 
 def _compare_agent_means(
@@ -175,31 +193,38 @@ def _compare_agent_means(
     warnings: list[str],
 ) -> None:
     grouped = _group_rows(rows)
-    means = {
-        agent: sum(float(row["final_score"]) for row in agent_rows) / len(agent_rows)
-        for agent, agent_rows in grouped.items()
-        if agent_rows
-    }
-    random_mean = means.get("random")
-    greedy_delivery_mean = means.get("greedy_delivery")
-    greedy_expansion_mean = means.get("greedy_expansion")
+    maps = sorted({map_name for map_name, _ in grouped})
+    for map_name in maps:
+        means = {
+            agent: _mean_final_score(group_rows)
+            for (current_map, agent), group_rows in grouped.items()
+            if current_map == map_name and group_rows
+        }
+        random_mean = means.get("random")
+        if random_mean is None:
+            continue
+        if means.get("greedy_delivery", random_mean) < random_mean:
+            warnings.append(
+                f"On {map_name}, GreedyDeliveryAgent does not outperform RandomAgent "
+                "on mean final score."
+            )
+        if means.get("greedy_expansion", random_mean) < random_mean:
+            warnings.append(
+                f"On {map_name}, GreedyExpansionAgent does not outperform RandomAgent "
+                "on mean final score."
+            )
 
-    if random_mean is None:
-        return
-    if greedy_delivery_mean is not None and greedy_delivery_mean < random_mean:
-        warnings.append(
-            "GreedyDeliveryAgent does not outperform RandomAgent on mean final score."
-        )
-    if greedy_expansion_mean is not None and greedy_expansion_mean < random_mean:
-        warnings.append(
-            "GreedyExpansionAgent does not outperform RandomAgent on mean final score."
-        )
+
+def _mean_final_score(rows: list[dict[str, str]]) -> float:
+    return sum(float(row["final_score"]) for row in rows) / len(rows)
 
 
-def _group_rows(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
-    grouped: dict[str, list[dict[str, str]]] = {}
+def _group_rows(
+    rows: list[dict[str, str]],
+) -> dict[tuple[str, str], list[dict[str, str]]]:
+    grouped: dict[tuple[str, str], list[dict[str, str]]] = {}
     for row in rows:
-        grouped.setdefault(row["agent"], []).append(row)
+        grouped.setdefault((row["map"], row["agent"]), []).append(row)
     return grouped
 
 
@@ -211,15 +236,22 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate baseline experiment outputs.")
     parser.add_argument("--input", default="results/raw/experiment_results.csv")
     parser.add_argument("--episodes", type=int, default=100)
+    parser.add_argument("--maps", default=None)
     parser.add_argument("--max-invalid-action-rate", type=float, default=0.01)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    expected_maps = (
+        {item.strip() for item in args.maps.split(",") if item.strip()}
+        if args.maps
+        else None
+    )
     exit_code = validate_baselines(
         input_path=args.input,
         expected_episodes=args.episodes,
+        expected_maps=expected_maps,
         max_invalid_action_rate=args.max_invalid_action_rate,
     )
     sys.exit(exit_code)

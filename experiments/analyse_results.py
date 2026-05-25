@@ -7,8 +7,9 @@ import statistics
 from typing import Any
 
 DEFAULT_INPUT = Path("results/raw/experiment_results.csv")
-DEFAULT_OUTPUT = Path("results/processed/summary_by_agent.csv")
+DEFAULT_OUTPUT = Path("results/processed/summary_by_map_agent.csv")
 SUMMARY_COLUMNS = [
+    "map",
     "agent",
     "episodes",
     "mean_final_score",
@@ -34,21 +35,25 @@ def analyse_results(
     output_path: str | Path = DEFAULT_OUTPUT,
 ) -> list[dict[str, Any]]:
     rows = _read_rows(input_path)
-    grouped: dict[str, list[dict[str, str]]] = {}
+    grouped: dict[tuple[str, str], list[dict[str, str]]] = {}
     for row in rows:
-        grouped.setdefault(row["agent"], []).append(row)
+        map_name = row.get("map") or "unknown_map"
+        grouped.setdefault((map_name, row["agent"]), []).append(row)
 
-    summaries = [_summarise_agent(agent, group) for agent, group in grouped.items()]
-    summaries.sort(key=lambda row: row["agent"])
+    summaries = [
+        _summarise_map_agent(map_name, agent, group)
+        for (map_name, agent), group in grouped.items()
+    ]
+    summaries.sort(key=lambda row: (row["map"], row["agent"]))
     _write_summary(summaries, output_path)
     return summaries
 
 
 def print_summary(summaries: list[dict[str, Any]]) -> None:
-    print("Summary by agent")
+    print("Summary by map and agent")
     for row in summaries:
         print(
-            f"- {row['agent']}: episodes={row['episodes']}, "
+            f"- {row['map']}/{row['agent']}: episodes={row['episodes']}, "
             f"mean_final_score={row['mean_final_score']:.2f}, "
             f"std={row['std_final_score']:.2f}, "
             f"deliveries={row['mean_deliveries']:.2f}, "
@@ -63,13 +68,18 @@ def _read_rows(input_path: str | Path) -> list[dict[str, str]]:
         return list(csv.DictReader(file))
 
 
-def _summarise_agent(agent: str, rows: list[dict[str, str]]) -> dict[str, Any]:
+def _summarise_map_agent(
+    map_name: str,
+    agent: str,
+    rows: list[dict[str, str]],
+) -> dict[str, Any]:
     final_scores = _numbers(rows, "final_score")
     total_invalid_actions = sum(_numbers(rows, "invalid_actions"))
     total_actions_taken = sum(_numbers(rows, "actions_taken"))
     terminal_count = sum(1 for row in rows if _as_bool(row["terminal"]))
 
     return {
+        "map": map_name,
         "agent": agent,
         "episodes": len(rows),
         "mean_final_score": statistics.fmean(final_scores),

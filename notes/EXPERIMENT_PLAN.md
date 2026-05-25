@@ -2,7 +2,16 @@
 
 ## Current Goal
 
-Validate baseline agents before implementing advanced AI methods.
+Validate baseline agents across multiple artificial maps before implementing advanced AI methods.
+
+## Maps / Scenarios
+
+- `toy_map`: small development map.
+- `toy_medium_map`: medium artificial map for stronger baseline comparison.
+
+## Purpose of Medium Map
+
+The small toy map is useful for debugging but may be too simple to distinguish greedy strategies. The medium map is intended to create more meaningful strategic trade-offs before implementing MCTS or other advanced AI methods.
 
 ## Agents
 
@@ -30,36 +39,49 @@ Run tests:
 ```bash
 python experiments/smoke_test_rules.py
 python experiments/smoke_test_agents.py
+python experiments/smoke_test_maps.py
 ```
 
-Run experiments:
+Run experiments on the small map:
 
 ```bash
-python experiments/run_experiments.py --agent all --episodes 100 --seed 0
+python experiments/run_experiments.py --agent all --episodes 100 --seed 0 --map data/toy_map.json
+```
+
+Run experiments on the medium map:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 100 --seed 0 --map data/toy_medium_map.json
+```
+
+Run experiments on both maps:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 100 --seed 0 --map all --output results/raw/map_comparison_results.csv
 ```
 
 Analyse results:
 
 ```bash
-python experiments/analyse_results.py --input results/raw/experiment_results.csv
+python experiments/analyse_results.py --input results/raw/map_comparison_results.csv
 ```
 
 Plot results:
 
 ```bash
-python experiments/plot_results.py --input results/raw/experiment_results.csv
+python experiments/plot_results.py --input results/raw/map_comparison_results.csv
 ```
 
 Validate baselines:
 
 ```bash
-python experiments/validate_baselines.py --input results/raw/experiment_results.csv --episodes 100
+python experiments/validate_baselines.py --input results/raw/map_comparison_results.csv --episodes 100 --maps toy_map,toy_medium_map
 ```
 
 Run the complete validation pipeline:
 
 ```bash
-python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0
+python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0 --map all --output results/raw/map_comparison_results.csv
 ```
 
 ## Interpretation Plan
@@ -75,4 +97,4 @@ Compare baseline agents by:
 7. Runtime.
 8. Invalid action rate.
 
-These baselines will be used later as comparison points for MCTS, Genetic Algorithm, and optional Reinforcement Learning.
+The medium map should show whether simple greedy strategies are still indistinguishable. These baselines will be used later as comparison points for MCTS, Genetic Algorithm, and optional Reinforcement Learning.

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import streamlit as st
 
 from agents.registry import create_agent, list_agent_names
@@ -17,14 +19,23 @@ from railways.rules import (
 )
 from railways.visualization import draw_map
 
+BASE_DIR = Path(__file__).parent
+MAP_OPTIONS = {
+    "toy_map": BASE_DIR / "data" / "toy_map.json",
+    "toy_medium_map": BASE_DIR / "data" / "toy_medium_map.json",
+}
 
-def create_game_state() -> GameState:
-    return reset_game()
+
+def create_game_state(map_name: str | None = None) -> GameState:
+    selected_map = map_name or st.session_state.get("selected_map", "toy_map")
+    return reset_game(map_path=MAP_OPTIONS[selected_map])
 
 
 def initialise_session() -> None:
+    if "selected_map" not in st.session_state:
+        st.session_state.selected_map = "toy_map"
     if "game_state" not in st.session_state:
-        st.session_state.game_state = create_game_state()
+        st.session_state.game_state = create_game_state(st.session_state.selected_map)
     if "last_message" not in st.session_state:
         st.session_state.last_message = "Game ready."
 
@@ -66,10 +77,21 @@ def main() -> None:
         st.plotly_chart(draw_map(state), use_container_width=True)
 
     with side_col:
+        render_map_selector()
         render_player_panel(state)
         render_manual_controls(state)
         render_agent_controls(state)
         render_history(state)
+
+
+def render_map_selector() -> None:
+    st.subheader("Scenario")
+    st.selectbox(
+        "Map",
+        options=list(MAP_OPTIONS),
+        key="selected_map",
+        help="Select a map, then use Reset Game to load it.",
+    )
 
 
 def render_player_panel(state: GameState) -> None:
@@ -134,7 +156,7 @@ def render_agent_controls(state: GameState) -> None:
         st.rerun()
 
     if st.button("Reset and Run Full Simulation"):
-        st.session_state.game_state = create_game_state()
+        st.session_state.game_state = create_game_state(st.session_state.selected_map)
         state = st.session_state.game_state
         summary = run_agent_until_terminal(state, agent_name, int(agent_seed), int(max_steps))
         st.session_state.last_message = (
@@ -248,7 +270,7 @@ def render_turn_controls(state: GameState, controls_disabled: bool) -> None:
             submit_action(Action.next_turn())
 
     if st.button("Reset Game"):
-        st.session_state.game_state = create_game_state()
+        st.session_state.game_state = create_game_state(st.session_state.selected_map)
         st.session_state.last_message = "Game reset."
         st.rerun()
 

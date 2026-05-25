@@ -1,0 +1,79 @@
+from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from railways.environment import reset_game
+from railways.map_loader import load_config, load_map
+from railways.rules import get_legal_build_actions
+
+MAP_PATHS = [
+    PROJECT_ROOT / "data" / "toy_map.json",
+    PROJECT_ROOT / "data" / "toy_medium_map.json",
+]
+CONFIG_PATH = PROJECT_ROOT / "data" / "rules_config.json"
+
+
+def test_maps_load_successfully() -> None:
+    for map_path in MAP_PATHS:
+        cities, edges, _ = load_map(map_path)
+        assert cities, f"{map_path.name} has no cities"
+        assert edges, f"{map_path.name} has no edges"
+
+
+def test_maps_have_legal_initial_builds() -> None:
+    for map_path in MAP_PATHS:
+        state = reset_game(map_path=map_path, config_path=CONFIG_PATH)
+        assert get_legal_build_actions(state), f"{map_path.name} has no legal builds"
+
+
+def test_edge_endpoints_reference_valid_cities() -> None:
+    for map_path in MAP_PATHS:
+        cities, edges, _ = load_map(map_path)
+        city_ids = set(cities)
+        for edge in edges.values():
+            assert edge.source in city_ids, f"{edge.id} has invalid source {edge.source}"
+            assert edge.target in city_ids, f"{edge.id} has invalid target {edge.target}"
+
+
+def test_major_lines_reference_valid_cities() -> None:
+    for map_path in MAP_PATHS:
+        cities, _, major_lines = load_map(map_path)
+        city_ids = set(cities)
+        for major_line in major_lines.values():
+            assert major_line.source in city_ids, f"{major_line.id} has invalid source"
+            assert major_line.target in city_ids, f"{major_line.id} has invalid target"
+
+
+def test_goods_colours_are_valid() -> None:
+    config = load_config(CONFIG_PATH)
+    allowed_colours = set(config.allowed_good_colors)
+    for map_path in MAP_PATHS:
+        cities, _, _ = load_map(map_path)
+        for city in cities.values():
+            if city.demand_color is not None:
+                assert city.demand_color in allowed_colours
+            for good in city.goods:
+                assert good in allowed_colours
+
+
+def run_all() -> None:
+    tests = [
+        test_maps_load_successfully,
+        test_maps_have_legal_initial_builds,
+        test_edge_endpoints_reference_valid_cities,
+        test_major_lines_reference_valid_cities,
+        test_goods_colours_are_valid,
+    ]
+    for test in tests:
+        test()
+        print(f"PASS {test.__name__}")
+    print(f"{len(tests)} map smoke tests passed.")
+
+
+if __name__ == "__main__":
+    run_all()

@@ -12,7 +12,14 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from agents.base_agent import BaseAgent
 from railways.actions import Action
-from railways.environment import apply_action, get_legal_actions, is_terminal, reset_game
+from railways.environment import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_MAP_PATH,
+    apply_action,
+    get_legal_actions,
+    is_terminal,
+    reset_game,
+)
 from railways.rules import count_empty_city_markers
 
 
@@ -20,12 +27,18 @@ def run_episode(
     agent: BaseAgent,
     seed: int | None = None,
     max_steps: int = 1000,
+    map_path: str | Path | None = None,
+    config_path: str | Path | None = None,
 ) -> dict[str, Any]:
     if seed is not None:
         agent.seed = seed
         agent.rng = random.Random(seed)
 
-    state = reset_game()
+    selected_map_path = Path(map_path) if map_path is not None else DEFAULT_MAP_PATH
+    selected_config_path = (
+        Path(config_path) if config_path is not None else DEFAULT_CONFIG_PATH
+    )
+    state = reset_game(selected_map_path, selected_config_path)
     fallback_rng = random.Random(seed)
     actions_taken = 0
     invalid_actions = 0
@@ -48,6 +61,8 @@ def run_episode(
 
     runtime_seconds = time.perf_counter() - start_time
     return {
+        "map": selected_map_path.stem,
+        "config": selected_config_path.stem,
         "agent": agent.name,
         "seed": seed,
         "final_score": state.final_score(),

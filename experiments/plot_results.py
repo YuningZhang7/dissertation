@@ -16,30 +16,37 @@ def plot_results(
     output_dir: str | Path = DEFAULT_OUTPUT_DIR,
 ) -> None:
     rows = _read_rows(input_path)
-    grouped = _group_rows(rows)
+    grouped_by_agent = _group_rows(rows, ["agent"])
+    grouped_by_map_agent = _group_rows(rows, ["map", "agent"])
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
 
     _bar_plot(
-        grouped,
+        grouped_by_agent,
         "final_score",
         "Mean Final Score by Agent",
         "Final score",
         output / "final_score_by_agent.png",
     )
     _distribution_plot(
-        grouped,
+        grouped_by_agent,
         "final_score",
         "Final Score Distribution by Agent",
         "Final score",
         output / "final_score_distribution.png",
     )
-    _bar_plot(grouped, "deliveries", "Mean Deliveries by Agent", "Deliveries", output / "deliveries_by_agent.png")
-    _bar_plot(grouped, "bonds", "Mean Bonds by Agent", "Bonds", output / "bonds_by_agent.png")
-    _bar_plot(grouped, "built_edges", "Mean Built Edges by Agent", "Built edges", output / "built_edges_by_agent.png")
-    _bar_plot(grouped, "runtime_seconds", "Mean Runtime by Agent", "Runtime (seconds)", output / "runtime_by_agent.png")
-    _bar_plot(grouped, "invalid_actions", "Mean Invalid Actions by Agent", "Invalid actions", output / "invalid_actions_by_agent.png")
-    _terminal_rate_plot(grouped, output / "terminal_rate_by_agent.png")
+    _bar_plot(grouped_by_agent, "deliveries", "Mean Deliveries by Agent", "Deliveries", output / "deliveries_by_agent.png")
+    _bar_plot(grouped_by_agent, "bonds", "Mean Bonds by Agent", "Bonds", output / "bonds_by_agent.png")
+    _bar_plot(grouped_by_agent, "built_edges", "Mean Built Edges by Agent", "Built edges", output / "built_edges_by_agent.png")
+    _bar_plot(grouped_by_agent, "runtime_seconds", "Mean Runtime by Agent", "Runtime (seconds)", output / "runtime_by_agent.png")
+    _bar_plot(grouped_by_agent, "invalid_actions", "Mean Invalid Actions by Agent", "Invalid actions", output / "invalid_actions_by_agent.png")
+    _terminal_rate_plot(grouped_by_agent, output / "terminal_rate_by_agent.png")
+
+    _map_agent_bar_plot(grouped_by_map_agent, "final_score", "Mean Final Score by Map and Agent", "Final score", output / "final_score_by_map_agent.png")
+    _map_agent_bar_plot(grouped_by_map_agent, "deliveries", "Mean Deliveries by Map and Agent", "Deliveries", output / "deliveries_by_map_agent.png")
+    _map_agent_bar_plot(grouped_by_map_agent, "bonds", "Mean Bonds by Map and Agent", "Bonds", output / "bonds_by_map_agent.png")
+    _map_agent_bar_plot(grouped_by_map_agent, "built_edges", "Mean Built Edges by Map and Agent", "Built edges", output / "built_edges_by_map_agent.png")
+    _map_agent_bar_plot(grouped_by_map_agent, "runtime_seconds", "Mean Runtime by Map and Agent", "Runtime (seconds)", output / "runtime_by_map_agent.png")
 
 
 def _read_rows(input_path: str | Path) -> list[dict[str, str]]:
@@ -47,10 +54,14 @@ def _read_rows(input_path: str | Path) -> list[dict[str, str]]:
         return list(csv.DictReader(file))
 
 
-def _group_rows(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
-    grouped: dict[str, list[dict[str, str]]] = {}
+def _group_rows(
+    rows: list[dict[str, str]],
+    keys: list[str],
+) -> dict[tuple[str, ...], list[dict[str, str]]]:
+    grouped: dict[tuple[str, ...], list[dict[str, str]]] = {}
     for row in rows:
-        grouped.setdefault(row["agent"], []).append(row)
+        group_key = tuple(row.get(key, "unknown") for key in keys)
+        grouped.setdefault(group_key, []).append(row)
     return dict(sorted(grouped.items()))
 
 
@@ -59,7 +70,7 @@ def _values(rows: list[dict[str, str]], column: str) -> list[float]:
 
 
 def _bar_plot(
-    grouped: dict[str, list[dict[str, str]]],
+    grouped: dict[tuple[str, ...], list[dict[str, str]]],
     column: str,
     title: str,
     ylabel: str,
@@ -69,10 +80,10 @@ def _bar_plot(
         print(f"Skipping {output_path.name}: missing column {column}")
         return
 
-    agents = list(grouped)
-    means = [statistics.fmean(_values(grouped[agent], column)) for agent in agents]
+    labels = [_label(group_key) for group_key in grouped]
+    means = [statistics.fmean(_values(rows, column)) for rows in grouped.values()]
     plt.figure(figsize=(8, 5))
-    plt.bar(agents, means, color="#4c78a8")
+    plt.bar(labels, means, color="#4c78a8")
     plt.title(title)
     plt.ylabel(ylabel)
     plt.xlabel("Agent")
@@ -83,7 +94,7 @@ def _bar_plot(
 
 
 def _distribution_plot(
-    grouped: dict[str, list[dict[str, str]]],
+    grouped: dict[tuple[str, ...], list[dict[str, str]]],
     column: str,
     title: str,
     ylabel: str,
@@ -93,36 +104,70 @@ def _distribution_plot(
         print(f"Skipping {output_path.name}: missing column {column}")
         return
 
-    agents = list(grouped)
-    data = [_values(grouped[agent], column) for agent in agents]
+    labels = [_label(group_key) for group_key in grouped]
+    data = [_values(rows, column) for rows in grouped.values()]
     plt.figure(figsize=(8, 5))
     plt.boxplot(data)
     plt.title(title)
     plt.ylabel(ylabel)
     plt.xlabel("Agent")
-    plt.xticks(range(1, len(agents) + 1), agents, rotation=20, ha="right")
+    plt.xticks(range(1, len(labels) + 1), labels, rotation=20, ha="right")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=160)
+    plt.close()
+
+
+def _map_agent_bar_plot(
+    grouped: dict[tuple[str, ...], list[dict[str, str]]],
+    column: str,
+    title: str,
+    ylabel: str,
+    output_path: Path,
+) -> None:
+    if not _has_column(grouped, column):
+        print(f"Skipping {output_path.name}: missing column {column}")
+        return
+
+    maps = sorted({group_key[0] for group_key in grouped})
+    agents = sorted({group_key[1] for group_key in grouped})
+    x_positions = range(len(maps))
+    width = 0.8 / max(1, len(agents))
+
+    plt.figure(figsize=(10, 5))
+    for agent_index, agent in enumerate(agents):
+        offsets = [x + (agent_index - (len(agents) - 1) / 2) * width for x in x_positions]
+        means = []
+        for map_name in maps:
+            rows = grouped.get((map_name, agent), [])
+            means.append(statistics.fmean(_values(rows, column)) if rows else 0.0)
+        plt.bar(offsets, means, width=width, label=agent)
+
+    plt.title(title)
+    plt.ylabel(ylabel)
+    plt.xlabel("Map")
+    plt.xticks(list(x_positions), maps, rotation=15, ha="right")
+    plt.legend()
     plt.tight_layout()
     plt.savefig(output_path, dpi=160)
     plt.close()
 
 
 def _terminal_rate_plot(
-    grouped: dict[str, list[dict[str, str]]],
+    grouped: dict[tuple[str, ...], list[dict[str, str]]],
     output_path: Path,
 ) -> None:
     if not _has_column(grouped, "terminal"):
         print(f"Skipping {output_path.name}: missing column terminal")
         return
 
-    agents = list(grouped)
+    labels = [_label(group_key) for group_key in grouped]
     rates = []
-    for agent in agents:
-        rows = grouped[agent]
+    for rows in grouped.values():
         terminal_count = sum(1 for row in rows if _as_bool(row["terminal"]))
         rates.append(terminal_count / len(rows) if rows else 0.0)
 
     plt.figure(figsize=(8, 5))
-    plt.bar(agents, rates, color="#59a14f")
+    plt.bar(labels, rates, color="#59a14f")
     plt.title("Terminal Rate by Agent")
     plt.ylabel("Terminal rate")
     plt.xlabel("Agent")
@@ -133,8 +178,15 @@ def _terminal_rate_plot(
     plt.close()
 
 
-def _has_column(grouped: dict[str, list[dict[str, str]]], column: str) -> bool:
+def _has_column(
+    grouped: dict[tuple[str, ...], list[dict[str, str]]],
+    column: str,
+) -> bool:
     return all(rows and column in rows[0] for rows in grouped.values())
+
+
+def _label(group_key: tuple[str, ...]) -> str:
+    return " / ".join(group_key)
 
 
 def _as_bool(value: str) -> bool:
