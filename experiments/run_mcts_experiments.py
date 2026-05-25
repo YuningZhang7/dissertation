@@ -24,6 +24,8 @@ MCTS_COLUMNS = [
     "mcts_rollout_depth",
     "mcts_exploration_constant",
     "mcts_rollout_policy",
+    "mcts_action_generation",
+    "mcts_max_candidate_actions",
 ]
 
 
@@ -34,14 +36,18 @@ def run_mcts_batch(
     map_arg: str | Path = DEFAULT_MAP_PATH,
     config_path: str | Path = DEFAULT_CONFIG_PATH,
     iterations_list: list[int] | None = None,
+    rollout_policy_list: list[str] | None = None,
     rollout_depth: int = 80,
     exploration_constant: float = 1.414,
     rollout_policy: str = "random",
+    action_generation: str = "fast",
+    max_candidate_actions: int = 24,
     max_steps: int = 1000,
 ) -> list[dict[str, Any]]:
     selected_map_paths = resolve_map_paths(map_arg)
     selected_config_path = resolve_project_path(config_path)
     budgets = iterations_list or [100]
+    rollout_policies = rollout_policy_list or [rollout_policy]
     results: list[dict[str, Any]] = []
 
     for map_path in selected_map_paths:
@@ -58,33 +64,42 @@ def run_mcts_batch(
                 result.update(_empty_mcts_metadata())
                 results.append(result)
 
-        for iterations in budgets:
-            for episode_index in range(episodes):
-                episode_seed = seed + episode_index
-                agent = MCTSAgent(
-                    seed=episode_seed,
-                    iterations=iterations,
-                    exploration_constant=exploration_constant,
-                    rollout_depth_limit=rollout_depth,
-                    rollout_policy=rollout_policy,
-                )
-                result = run_episode(
-                    agent,
-                    seed=episode_seed,
-                    max_steps=max_steps,
-                    map_path=map_path,
-                    config_path=selected_config_path,
-                )
-                result["agent"] = f"mcts_{iterations}"
-                result.update(
-                    {
-                        "mcts_iterations": iterations,
-                        "mcts_rollout_depth": rollout_depth,
-                        "mcts_exploration_constant": exploration_constant,
-                        "mcts_rollout_policy": rollout_policy,
-                    }
-                )
-                results.append(result)
+        for policy in rollout_policies:
+            for iterations in budgets:
+                for episode_index in range(episodes):
+                    episode_seed = seed + episode_index
+                    agent = MCTSAgent(
+                        seed=episode_seed,
+                        iterations=iterations,
+                        exploration_constant=exploration_constant,
+                        rollout_depth_limit=rollout_depth,
+                        rollout_policy=policy,
+                        action_generation=action_generation,
+                        max_candidate_actions=max_candidate_actions,
+                    )
+                    result = run_episode(
+                        agent,
+                        seed=episode_seed,
+                        max_steps=max_steps,
+                        map_path=map_path,
+                        config_path=selected_config_path,
+                    )
+                    result["agent"] = _mcts_agent_label(
+                        iterations,
+                        policy,
+                        include_policy=len(rollout_policies) > 1,
+                    )
+                    result.update(
+                        {
+                            "mcts_iterations": iterations,
+                            "mcts_rollout_depth": rollout_depth,
+                            "mcts_exploration_constant": exploration_constant,
+                            "mcts_rollout_policy": policy,
+                            "mcts_action_generation": action_generation,
+                            "mcts_max_candidate_actions": max_candidate_actions,
+                        }
+                    )
+                    results.append(result)
 
     write_results_csv(results, output)
     return results
@@ -128,12 +143,37 @@ def parse_iterations_list(value: str | None, fallback: int) -> list[int]:
     return budgets
 
 
+def parse_rollout_policy_list(value: str | None, fallback: str) -> list[str]:
+    if not value:
+        return [fallback]
+
+    policies = [item.strip() for item in value.split(",") if item.strip()]
+    valid_policies = {"random", "greedy_delivery"}
+    invalid_policies = sorted(set(policies) - valid_policies)
+    if invalid_policies:
+        raise ValueError(f"Unknown rollout policies: {invalid_policies}")
+    return policies
+
+
+def _mcts_agent_label(
+    iterations: int,
+    policy: str,
+    include_policy: bool,
+) -> str:
+    if not include_policy:
+        return f"mcts_{iterations}"
+    policy_label = "greedy" if policy == "greedy_delivery" else policy
+    return f"mcts_{iterations}_{policy_label}"
+
+
 def _empty_mcts_metadata() -> dict[str, str]:
     return {
         "mcts_iterations": "",
         "mcts_rollout_depth": "",
         "mcts_exploration_constant": "",
         "mcts_rollout_policy": "",
+        "mcts_action_generation": "",
+        "mcts_max_candidate_actions": "",
     }
 
 
@@ -148,12 +188,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--iterations", type=int, default=100)
     parser.add_argument("--iterations-list", default=None)
     parser.add_argument("--rollout-depth", type=int, default=80)
+    parser.add_argument("--rollout-policy-list", default=None)
     parser.add_argument("--exploration-constant", type=float, default=1.414)
     parser.add_argument(
         "--rollout-policy",
         choices=["random", "greedy_delivery"],
         default="random",
     )
+    parser.add_argument(
+        "--action-generation",
+        choices=["fast", "full"],
+        default="fast",
+    )
+    parser.add_argument("--max-candidate-actions", type=int, default=24)
     parser.add_argument("--max-steps", type=int, default=1000)
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     return parser.parse_args()
@@ -162,6 +209,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     budgets = parse_iterations_list(args.iterations_list, args.iterations)
+    rollout_policies = parse_rollout_policy_list(
+        args.rollout_policy_list,
+        args.rollout_policy,
+    )
     results = run_mcts_batch(
         episodes=args.episodes,
         seed=args.seed,
@@ -169,9 +220,12 @@ def main() -> None:
         map_arg=args.map,
         config_path=args.config,
         iterations_list=budgets,
+        rollout_policy_list=rollout_policies,
         rollout_depth=args.rollout_depth,
         exploration_constant=args.exploration_constant,
         rollout_policy=args.rollout_policy,
+        action_generation=args.action_generation,
+        max_candidate_actions=args.max_candidate_actions,
         max_steps=args.max_steps,
     )
     print(f"Wrote {len(results)} rows to {args.output}")

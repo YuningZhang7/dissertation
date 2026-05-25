@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 2C: Monte Carlo Tree Search agent and search-based experiments.
+The current version is Phase 2C.5: MCTS validation, tuning, and reporting.
 
 ## Current Development Stage
 
-The project is currently focused on comparing simple explainable baselines with the first search-based method: Monte Carlo Tree Search. Genetic Algorithms and Reinforcement Learning remain future work.
+The project is currently focused on validating Monte Carlo Tree Search against simple explainable baselines. Genetic Algorithms and Reinforcement Learning remain future work.
 
 ## Current Rule Coverage
 
@@ -153,6 +153,38 @@ python experiments/analyse_results.py --input results/raw/mcts_experiment_result
 python experiments/plot_results.py --input results/raw/mcts_experiment_results.csv
 ```
 
+## MCTS Validation
+
+Run the MCTS smoke tests:
+
+```bash
+python experiments/smoke_test_mcts.py
+```
+
+Run the MCTS validation pipeline:
+
+```bash
+python experiments/run_mcts_pipeline.py --map data/toy_medium_map.json --episodes 30 --iterations-list 50,100,250 --seed 0
+```
+
+Validate MCTS results:
+
+```bash
+python experiments/validate_mcts_results.py --input results/raw/mcts_experiment_results.csv --episodes 30
+```
+
+Compare rollout policies:
+
+```bash
+python experiments/run_mcts_experiments.py --map data/toy_medium_map.json --episodes 5 --iterations-list 50,100 --rollout-policy-list random,greedy_delivery --output results/raw/mcts_rollout_comparison_results.csv
+```
+
+MCTS result notes are stored in:
+
+```text
+notes/MCTS_RESULTS_SUMMARY.md
+```
+
 ## Baseline Experiment Validation
 
 After running experiments, validate the outputs with:
@@ -236,6 +268,7 @@ railways-world-ai/
 |   |-- plot_results.py
 |   |-- run_full_baseline_pipeline.py
 |   |-- run_mcts_experiments.py
+|   |-- run_mcts_pipeline.py
 |   |-- run_greedy.py
 |   |-- run_experiments.py
 |   |-- simulation_runner.py
@@ -243,6 +276,7 @@ railways-world-ai/
 |   |-- smoke_test_maps.py
 |   |-- smoke_test_mcts.py
 |   |-- smoke_test_rules.py
+|   |-- validate_mcts_results.py
 |   `-- validate_baselines.py
 `-- notes/
     |-- BASELINE_RESULTS_SUMMARY.md

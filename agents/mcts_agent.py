@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import math
 
+import networkx as nx
+
 from agents.base_agent import BaseAgent
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from railways.actions import Action
@@ -14,7 +16,16 @@ from railways.environment import (
     is_terminal,
 )
 from railways.game_state import GameState
-from railways.rules import describe_action
+from railways.rules import (
+    describe_action,
+    get_built_graph,
+    get_legal_build_actions,
+    get_legal_upgrade_action,
+    get_legal_urbanize_actions,
+    path_length,
+    validate_delivery_path,
+)
+from railways.scoring import compute_delivery_score
 
 
 @dataclass
@@ -47,7 +58,7 @@ class MCTSNode:
 
         return max(self.children, key=score)
 
-    def expand(self, rng) -> MCTSNode:
+    def expand(self, rng, action_provider) -> MCTSNode:
         if not self.untried_actions:
             raise ValueError("Cannot expand a fully expanded node.")
 
@@ -66,7 +77,7 @@ class MCTSNode:
             state=child_state,
             parent=self,
             action=action,
-            untried_actions=get_legal_actions(child_state),
+            untried_actions=action_provider(child_state),
         )
         self.children.append(child)
         return child
@@ -86,30 +97,37 @@ class MCTSAgent(BaseAgent):
         exploration_constant: float = 1.414,
         rollout_depth_limit: int = 80,
         rollout_policy: str = "random",
+        action_generation: str = "fast",
+        max_candidate_actions: int = 24,
     ) -> None:
         super().__init__(seed=seed)
         self.iterations = iterations
         self.exploration_constant = exploration_constant
         self.rollout_depth_limit = rollout_depth_limit
         self.rollout_policy = rollout_policy
+        self.action_generation = action_generation
+        self.max_candidate_actions = max_candidate_actions
 
     def choose_action(self, state: GameState) -> Action:
-        legal_actions = get_legal_actions(state)
-        if not legal_actions:
+        full_legal_actions = get_legal_actions(state)
+        if not full_legal_actions:
             return Action.pass_action()
-        if len(legal_actions) == 1:
-            return legal_actions[0]
+        if len(full_legal_actions) == 1:
+            return full_legal_actions[0]
+
+        legal_actions = self._get_candidate_actions(state) or full_legal_actions
 
         root_state = copy_state(state)
+        root_actions = self._get_candidate_actions(root_state) or get_legal_actions(root_state)
         root = MCTSNode(
             state=root_state,
-            untried_actions=get_legal_actions(root_state),
+            untried_actions=root_actions,
         )
 
         for _ in range(max(1, self.iterations)):
             node = self._select(root)
             if not is_terminal(node.state) and node.untried_actions:
-                node = node.expand(self.rng)
+                node = node.expand(self.rng, self._get_candidate_actions)
             reward = self._rollout(copy_state(node.state))
             self._backpropagate(node, reward)
 
@@ -124,7 +142,13 @@ class MCTSAgent(BaseAgent):
                 _action_key(child.action),
             ),
         )
-        return best_node.action or Action.pass_action()
+        selected = best_node.action or Action.pass_action()
+        if selected not in full_legal_actions:
+            fallback_actions = [
+                action for action in legal_actions if action in full_legal_actions
+            ]
+            return self.rng.choice(fallback_actions or full_legal_actions)
+        return selected
 
     def _select(self, node: MCTSNode) -> MCTSNode:
         while (
@@ -144,7 +168,7 @@ class MCTSAgent(BaseAgent):
             if is_terminal(state):
                 break
 
-            legal_actions = get_legal_actions(state)
+            legal_actions = self._get_candidate_actions(state)
             if not legal_actions:
                 break
 
@@ -159,7 +183,7 @@ class MCTSAgent(BaseAgent):
             if success:
                 continue
 
-            fallback_actions = get_legal_actions(state)
+            fallback_actions = self._get_candidate_actions(state)
             if not fallback_actions:
                 break
             _, fallback_success, _ = apply_action(
@@ -171,6 +195,44 @@ class MCTSAgent(BaseAgent):
 
         return float(final_score(state))
 
+    def _get_candidate_actions(self, state: GameState) -> list[Action]:
+        if self.action_generation == "full":
+            return get_legal_actions(state)
+
+        if is_terminal(state):
+            return []
+
+        delivery_actions = _fast_delivery_actions(state)
+        build_actions = sorted(
+            get_legal_build_actions(state),
+            key=lambda action: (
+                state.edges[action.params["edge_id"]].cost,
+                str(action.params["edge_id"]),
+            ),
+        )
+
+        actions: list[Action] = []
+        actions.extend(delivery_actions[:8])
+        actions.extend(build_actions[:8])
+
+        upgrade_action = get_legal_upgrade_action(state)
+        if upgrade_action is not None:
+            actions.append(upgrade_action)
+
+        actions.extend(
+            sorted(
+                get_legal_urbanize_actions(state),
+                key=lambda action: str(action.params.get("city_id", "")),
+            )[:4]
+        )
+
+        if state.config.allow_voluntary_bonds:
+            actions.append(Action.issue_bond())
+
+        actions.append(Action.pass_action())
+        actions.append(Action.next_turn())
+        return actions[: self.max_candidate_actions]
+
     @staticmethod
     def _backpropagate(node: MCTSNode | None, reward: float) -> None:
         while node is not None:
@@ -180,3 +242,62 @@ class MCTSAgent(BaseAgent):
 
 def _action_key(action: Action | None) -> str:
     return describe_action(action)
+
+
+def _fast_delivery_actions(state: GameState) -> list[Action]:
+    deliveries: list[Action] = []
+    graph = get_built_graph(state)
+
+    for source_city in sorted(state.cities.values(), key=lambda city: city.id):
+        for good_color in sorted(set(source_city.goods)):
+            for target_city in sorted(state.cities.values(), key=lambda city: city.id):
+                if source_city.id == target_city.id:
+                    continue
+                if target_city.demand_color != good_color:
+                    continue
+                if source_city.id not in graph or target_city.id not in graph:
+                    continue
+
+                try:
+                    route = nx.shortest_path(graph, source_city.id, target_city.id)
+                except (nx.NetworkXNoPath, nx.NodeNotFound):
+                    continue
+
+                if path_length(route) > state.player.locomotive_level:
+                    continue
+
+                valid, _ = validate_delivery_path(
+                    state,
+                    route,
+                    source_city.id,
+                    target_city.id,
+                    good_color,
+                )
+                if not valid:
+                    continue
+
+                length = path_length(route)
+                deliveries.append(
+                    Action(
+                        "deliver_good",
+                        {
+                            "source": source_city.id,
+                            "target": target_city.id,
+                            "good_color": good_color,
+                            "path": route,
+                            "path_length": length,
+                            "score": compute_delivery_score(length, state.config),
+                        },
+                    )
+                )
+
+    return sorted(
+        deliveries,
+        key=lambda action: (
+            -int(action.params.get("score", 0)),
+            int(action.params.get("path_length", 0)),
+            str(action.params.get("source", "")),
+            str(action.params.get("target", "")),
+            "-".join(action.params.get("path", [])),
+        ),
+    )

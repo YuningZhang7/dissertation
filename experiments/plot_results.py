@@ -47,6 +47,10 @@ def plot_results(
     _map_agent_bar_plot(grouped_by_map_agent, "bonds", "Mean Bonds by Map and Agent", "Bonds", output / "bonds_by_map_agent.png")
     _map_agent_bar_plot(grouped_by_map_agent, "built_edges", "Mean Built Edges by Map and Agent", "Built edges", output / "built_edges_by_map_agent.png")
     _map_agent_bar_plot(grouped_by_map_agent, "runtime_seconds", "Mean Runtime by Map and Agent", "Runtime (seconds)", output / "runtime_by_map_agent.png")
+    _score_runtime_tradeoff_plot(
+        grouped_by_map_agent,
+        output / "mcts_score_runtime_tradeoff.png",
+    )
 
 
 def _read_rows(input_path: str | Path) -> list[dict[str, str]]:
@@ -82,7 +86,7 @@ def _bar_plot(
 
     labels = [_label(group_key) for group_key in grouped]
     means = [statistics.fmean(_values(rows, column)) for rows in grouped.values()]
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=_figure_size_for_labels(labels))
     plt.bar(labels, means, color="#4c78a8")
     plt.title(title)
     plt.ylabel(ylabel)
@@ -106,7 +110,7 @@ def _distribution_plot(
 
     labels = [_label(group_key) for group_key in grouped]
     data = [_values(rows, column) for rows in grouped.values()]
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=_figure_size_for_labels(labels))
     plt.boxplot(data)
     plt.title(title)
     plt.ylabel(ylabel)
@@ -133,7 +137,7 @@ def _map_agent_bar_plot(
     x_positions = range(len(maps))
     width = 0.8 / max(1, len(agents))
 
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(max(10, len(agents) * 1.5 + len(maps) * 1.2), 5.5))
     for agent_index, agent in enumerate(agents):
         offsets = [x + (agent_index - (len(agents) - 1) / 2) * width for x in x_positions]
         means = []
@@ -166,7 +170,7 @@ def _terminal_rate_plot(
         terminal_count = sum(1 for row in rows if _as_bool(row["terminal"]))
         rates.append(terminal_count / len(rows) if rows else 0.0)
 
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=_figure_size_for_labels(labels))
     plt.bar(labels, rates, color="#59a14f")
     plt.title("Terminal Rate by Agent")
     plt.ylabel("Terminal rate")
@@ -183,6 +187,50 @@ def _has_column(
     column: str,
 ) -> bool:
     return all(rows and column in rows[0] for rows in grouped.values())
+
+
+def _score_runtime_tradeoff_plot(
+    grouped: dict[tuple[str, ...], list[dict[str, str]]],
+    output_path: Path,
+) -> None:
+    if not _has_column(grouped, "final_score") or not _has_column(
+        grouped,
+        "runtime_seconds",
+    ):
+        print(f"Skipping {output_path.name}: missing score or runtime columns")
+        return
+
+    points = []
+    for group_key, rows in grouped.items():
+        label = _label(group_key)
+        mean_score = statistics.fmean(_values(rows, "final_score"))
+        mean_runtime = statistics.fmean(_values(rows, "runtime_seconds"))
+        points.append((mean_runtime, mean_score, label))
+
+    if not points:
+        return
+
+    plt.figure(figsize=(max(9, len(points) * 0.7), 5.5))
+    for mean_runtime, mean_score, label in points:
+        plt.scatter(mean_runtime, mean_score, color="#4c78a8")
+        plt.annotate(
+            label,
+            (mean_runtime, mean_score),
+            textcoords="offset points",
+            xytext=(5, 5),
+            fontsize=8,
+        )
+
+    plt.title("Final Score vs Runtime Trade-off")
+    plt.xlabel("Mean runtime (seconds)")
+    plt.ylabel("Mean final score")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=160)
+    plt.close()
+
+
+def _figure_size_for_labels(labels: list[str]) -> tuple[float, float]:
+    return (max(8.0, len(labels) * 1.05), 5.0)
 
 
 def _label(group_key: tuple[str, ...]) -> str:

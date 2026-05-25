@@ -91,6 +91,18 @@ Run MCTS experiments:
 python experiments/run_mcts_experiments.py --map data/toy_medium_map.json --episodes 30 --iterations-list 50,100,250 --seed 0
 ```
 
+Run the MCTS validation pipeline:
+
+```bash
+python experiments/run_mcts_pipeline.py --map data/toy_medium_map.json --episodes 30 --iterations-list 50,100,250 --seed 0
+```
+
+Compare random and greedy rollout policies:
+
+```bash
+python experiments/run_mcts_experiments.py --map data/toy_medium_map.json --episodes 5 --iterations-list 50,100 --rollout-policy-list random,greedy_delivery --output results/raw/mcts_rollout_comparison_results.csv
+```
+
 ## Interpretation Plan
 
 Compare baseline agents by:
@@ -122,6 +134,11 @@ The MCTS agent will be compared against RandomAgent, GreedyDeliveryAgent, and Gr
 - MCTS-50
 - MCTS-100
 - MCTS-250
+
+### Rollout Policies
+
+- random
+- greedy_delivery
 
 ### Metrics
 

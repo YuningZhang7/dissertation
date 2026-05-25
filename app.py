@@ -135,6 +135,7 @@ def render_agent_controls(state: GameState) -> None:
     max_steps = st.number_input("Max steps", min_value=1, max_value=2000, value=500, step=50)
     mcts_iterations = 100
     mcts_rollout_depth = 80
+    mcts_rollout_policy = "random"
     if agent_name == "mcts":
         mcts_iterations = st.number_input(
             "MCTS iterations",
@@ -150,6 +151,10 @@ def render_agent_controls(state: GameState) -> None:
             value=80,
             step=10,
         )
+        mcts_rollout_policy = st.selectbox(
+            "MCTS rollout policy",
+            options=["random", "greedy_delivery"],
+        )
 
     disabled = state.is_terminal()
     if st.button("Run One Agent Action", disabled=disabled):
@@ -158,6 +163,7 @@ def render_agent_controls(state: GameState) -> None:
             int(agent_seed),
             int(mcts_iterations),
             int(mcts_rollout_depth),
+            mcts_rollout_policy,
         )
         action = agent.choose_action(state)
         _, success, message = apply_action(state, action)
@@ -176,6 +182,7 @@ def render_agent_controls(state: GameState) -> None:
             int(max_steps),
             int(mcts_iterations),
             int(mcts_rollout_depth),
+            mcts_rollout_policy,
         )
         st.session_state.last_message = (
             f"{agent_name} ran {summary['steps']} steps. "
@@ -195,6 +202,7 @@ def render_agent_controls(state: GameState) -> None:
             int(max_steps),
             int(mcts_iterations),
             int(mcts_rollout_depth),
+            mcts_rollout_policy,
         )
         st.session_state.last_message = (
             f"Reset and ran {agent_name} for {summary['steps']} steps. "
@@ -335,8 +343,15 @@ def run_agent_until_terminal(
     max_steps: int,
     mcts_iterations: int = 100,
     mcts_rollout_depth: int = 80,
+    mcts_rollout_policy: str = "random",
 ) -> dict[str, int]:
-    agent = create_selected_agent(agent_name, seed, mcts_iterations, mcts_rollout_depth)
+    agent = create_selected_agent(
+        agent_name,
+        seed,
+        mcts_iterations,
+        mcts_rollout_depth,
+        mcts_rollout_policy,
+    )
     steps = 0
     invalid_actions = 0
 
@@ -361,12 +376,14 @@ def create_selected_agent(
     seed: int,
     mcts_iterations: int = 100,
     mcts_rollout_depth: int = 80,
+    mcts_rollout_policy: str = "random",
 ):
     if agent_name == "mcts":
         return MCTSAgent(
             seed=seed,
             iterations=mcts_iterations,
             rollout_depth_limit=mcts_rollout_depth,
+            rollout_policy=mcts_rollout_policy,
         )
     return create_agent(agent_name, seed=seed)
 
