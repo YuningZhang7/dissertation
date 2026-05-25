@@ -66,6 +66,10 @@
 - Opponent-owned track scoring.
 - Leader-follower model.
 
+## Current Experimental Use
+
+The rule engine is now used by baseline automated agents. These agents are intended as simple benchmarks before implementing MCTS, Genetic Algorithms, Reinforcement Learning, or other advanced optimisation methods.
+
 ## Next Rule-Fidelity Checklist
 
 1. Decide whether each turn should always have exactly three actions or allow a formal end-turn/pass phase.

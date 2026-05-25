@@ -7,17 +7,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from agents.greedy_agent import choose_greedy_action
+from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from railways.environment import apply_action, is_terminal, reset_game
 from railways.rules import describe_action
 
 
 def main() -> None:
     state = reset_game()
+    agent = GreedyDeliveryAgent(seed=0)
 
     steps = 0
     while not is_terminal(state) and steps < 500:
-        action = choose_greedy_action(state)
+        action = agent.choose_action(state)
         print(f"Turn {state.turn} ({state.actions_remaining} actions): {describe_action(action)}")
         _, _, message = apply_action(state, action)
         print(f"  {message}")

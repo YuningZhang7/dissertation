@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import streamlit as st
 
+from agents.registry import create_agent, list_agent_names
 from railways.actions import Action
-from railways.environment import apply_action, reset_game
+from railways.environment import apply_action, get_legal_actions, reset_game
 from railways.game_state import GameState
 from railways.rules import (
     count_empty_city_markers,
@@ -67,6 +68,7 @@ def main() -> None:
     with side_col:
         render_player_panel(state)
         render_manual_controls(state)
+        render_agent_controls(state)
         render_history(state)
 
 
@@ -101,6 +103,47 @@ def render_manual_controls(state: GameState) -> None:
     render_upgrade_and_urbanize_controls(state, controls_disabled)
     st.divider()
     render_turn_controls(state, controls_disabled)
+
+
+def render_agent_controls(state: GameState) -> None:
+    st.subheader("Automated Agents")
+    agent_name = st.selectbox("Agent", options=list_agent_names())
+    agent_seed = st.number_input("Agent seed", value=0, step=1)
+    max_steps = st.number_input("Max steps", min_value=1, max_value=2000, value=500, step=50)
+
+    disabled = state.is_terminal()
+    if st.button("Run One Agent Action", disabled=disabled):
+        agent = create_agent(agent_name, seed=int(agent_seed))
+        action = agent.choose_action(state)
+        _, success, message = apply_action(state, action)
+        st.session_state.last_message = (
+            f"{agent.name} chose {describe_action(action)}: "
+            f"{'OK' if success else 'failed'} ({message}). "
+            f"Score: {state.final_score()}."
+        )
+        st.rerun()
+
+    if st.button("Run Agent Until Game Over", disabled=disabled):
+        summary = run_agent_until_terminal(state, agent_name, int(agent_seed), int(max_steps))
+        st.session_state.last_message = (
+            f"{agent_name} ran {summary['steps']} steps. "
+            f"Final score: {state.final_score()}, "
+            f"deliveries: {state.player.delivered_goods_count}, "
+            f"invalid actions: {summary['invalid_actions']}."
+        )
+        st.rerun()
+
+    if st.button("Reset and Run Full Simulation"):
+        st.session_state.game_state = create_game_state()
+        state = st.session_state.game_state
+        summary = run_agent_until_terminal(state, agent_name, int(agent_seed), int(max_steps))
+        st.session_state.last_message = (
+            f"Reset and ran {agent_name} for {summary['steps']} steps. "
+            f"Final score: {state.final_score()}, "
+            f"deliveries: {state.player.delivered_goods_count}, "
+            f"invalid actions: {summary['invalid_actions']}."
+        )
+        st.rerun()
 
 
 def render_build_controls(state: GameState, controls_disabled: bool) -> None:
@@ -224,6 +267,32 @@ def render_history(state: GameState) -> None:
 
     for item in reversed(state.action_history[-14:]):
         st.write(item)
+
+
+def run_agent_until_terminal(
+    state: GameState,
+    agent_name: str,
+    seed: int,
+    max_steps: int,
+) -> dict[str, int]:
+    agent = create_agent(agent_name, seed=seed)
+    steps = 0
+    invalid_actions = 0
+
+    while not state.is_terminal() and steps < max_steps:
+        action = agent.choose_action(state)
+        legal_actions = get_legal_actions(state)
+        if action not in legal_actions:
+            invalid_actions += 1
+            action = legal_actions[0] if legal_actions else Action.pass_action()
+
+        _, success, _ = apply_action(state, action)
+        if not success:
+            invalid_actions += 1
+            _, _, _ = apply_action(state, Action.pass_action())
+        steps += 1
+
+    return {"steps": steps, "invalid_actions": invalid_actions}
 
 
 def get_preview_actions(state: GameState) -> list[Action]:

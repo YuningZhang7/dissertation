@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version focuses on Phase 2A core rule fidelity: making the single-player rule engine clearer, more testable, and more faithful before adding advanced AI methods.
+The current version is entering Phase 2B: baseline agents and experiment framework.
 
 ## Current Development Stage
 
-The project is currently focused on building a rule-complete single-player simulator. AI agents will be added after the rule engine is stable.
+The project is currently focused on simple explainable baseline agents and repeatable experiment scripts. Advanced AI methods will be added only after these baselines are stable.
 
 ## Current Rule Coverage
 
@@ -63,12 +63,58 @@ Run the rule-engine smoke tests:
 python experiments/smoke_test_rules.py
 ```
 
+Run the agent and experiment smoke tests:
+
+```bash
+python experiments/smoke_test_agents.py
+```
+
 The smoke tests cover connected track building, explicit delivery paths, empty-city-marker end conditions, major-line bonuses, bonds, income, and final scoring.
 
 Run the simple greedy baseline from the command line:
 
 ```bash
 python experiments/run_greedy.py
+```
+
+## Baseline Agents and Experiments
+
+Implemented baseline agents:
+
+- `RandomAgent`
+- `GreedyDeliveryAgent`
+- `GreedyExpansionAgent`
+
+Run experiments:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 100
+```
+
+Run one agent:
+
+```bash
+python experiments/run_experiments.py --agent greedy_delivery --episodes 100
+```
+
+Analyse results:
+
+```bash
+python experiments/analyse_results.py --input results/raw/experiment_results.csv
+```
+
+Generate plots:
+
+```bash
+python experiments/plot_results.py --input results/raw/experiment_results.csv
+```
+
+Results are saved under:
+
+```text
+results/raw/
+results/processed/
+results/plots/
 ```
 
 ## Project Direction
@@ -82,7 +128,7 @@ data JSON
     -> GameState
     -> rules.py / scoring.py
     -> environment.py
-    -> agents later
+    -> baseline agents
     -> visualization / Streamlit UI
 ```
 
@@ -108,10 +154,19 @@ railways-world-ai/
 |   `-- visualization.py
 |-- agents/
 |   |-- __init__.py
+|   |-- base_agent.py
+|   |-- greedy_delivery_agent.py
+|   |-- greedy_expansion_agent.py
 |   |-- random_agent.py
+|   |-- registry.py
 |   `-- greedy_agent.py
 |-- experiments/
+|   |-- analyse_results.py
+|   |-- plot_results.py
 |   |-- run_greedy.py
+|   |-- run_experiments.py
+|   |-- simulation_runner.py
+|   |-- smoke_test_agents.py
 |   `-- smoke_test_rules.py
 `-- notes/
     |-- RULES_COVERAGE.md
