@@ -4,6 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from agents.mcts_agent import MCTSAgent
 from agents.registry import create_agent, list_agent_names
 from railways.actions import Action
 from railways.environment import apply_action, get_legal_actions, reset_game
@@ -59,8 +60,8 @@ def main() -> None:
 
     st.title("Railways of the World AI Simulator")
     st.caption(
-        "Single-player rule-development prototype. Advanced AI agents will be "
-        "added after the rule engine is stabilised."
+        "Single-player rule-development prototype with baseline and MCTS "
+        "automated agents."
     )
 
     if state.is_terminal():
@@ -132,10 +133,32 @@ def render_agent_controls(state: GameState) -> None:
     agent_name = st.selectbox("Agent", options=list_agent_names())
     agent_seed = st.number_input("Agent seed", value=0, step=1)
     max_steps = st.number_input("Max steps", min_value=1, max_value=2000, value=500, step=50)
+    mcts_iterations = 100
+    mcts_rollout_depth = 80
+    if agent_name == "mcts":
+        mcts_iterations = st.number_input(
+            "MCTS iterations",
+            min_value=1,
+            max_value=1000,
+            value=100,
+            step=25,
+        )
+        mcts_rollout_depth = st.number_input(
+            "MCTS rollout depth",
+            min_value=1,
+            max_value=300,
+            value=80,
+            step=10,
+        )
 
     disabled = state.is_terminal()
     if st.button("Run One Agent Action", disabled=disabled):
-        agent = create_agent(agent_name, seed=int(agent_seed))
+        agent = create_selected_agent(
+            agent_name,
+            int(agent_seed),
+            int(mcts_iterations),
+            int(mcts_rollout_depth),
+        )
         action = agent.choose_action(state)
         _, success, message = apply_action(state, action)
         st.session_state.last_message = (
@@ -146,7 +169,14 @@ def render_agent_controls(state: GameState) -> None:
         st.rerun()
 
     if st.button("Run Agent Until Game Over", disabled=disabled):
-        summary = run_agent_until_terminal(state, agent_name, int(agent_seed), int(max_steps))
+        summary = run_agent_until_terminal(
+            state,
+            agent_name,
+            int(agent_seed),
+            int(max_steps),
+            int(mcts_iterations),
+            int(mcts_rollout_depth),
+        )
         st.session_state.last_message = (
             f"{agent_name} ran {summary['steps']} steps. "
             f"Final score: {state.final_score()}, "
@@ -158,7 +188,14 @@ def render_agent_controls(state: GameState) -> None:
     if st.button("Reset and Run Full Simulation"):
         st.session_state.game_state = create_game_state(st.session_state.selected_map)
         state = st.session_state.game_state
-        summary = run_agent_until_terminal(state, agent_name, int(agent_seed), int(max_steps))
+        summary = run_agent_until_terminal(
+            state,
+            agent_name,
+            int(agent_seed),
+            int(max_steps),
+            int(mcts_iterations),
+            int(mcts_rollout_depth),
+        )
         st.session_state.last_message = (
             f"Reset and ran {agent_name} for {summary['steps']} steps. "
             f"Final score: {state.final_score()}, "
@@ -296,8 +333,10 @@ def run_agent_until_terminal(
     agent_name: str,
     seed: int,
     max_steps: int,
+    mcts_iterations: int = 100,
+    mcts_rollout_depth: int = 80,
 ) -> dict[str, int]:
-    agent = create_agent(agent_name, seed=seed)
+    agent = create_selected_agent(agent_name, seed, mcts_iterations, mcts_rollout_depth)
     steps = 0
     invalid_actions = 0
 
@@ -315,6 +354,21 @@ def run_agent_until_terminal(
         steps += 1
 
     return {"steps": steps, "invalid_actions": invalid_actions}
+
+
+def create_selected_agent(
+    agent_name: str,
+    seed: int,
+    mcts_iterations: int = 100,
+    mcts_rollout_depth: int = 80,
+):
+    if agent_name == "mcts":
+        return MCTSAgent(
+            seed=seed,
+            iterations=mcts_iterations,
+            rollout_depth_limit=mcts_rollout_depth,
+        )
+    return create_agent(agent_name, seed=seed)
 
 
 def get_preview_actions(state: GameState) -> list[Action]:

@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 2B.6: medium-map and scenario-based baseline validation before adding advanced AI methods.
+The current version is Phase 2C: Monte Carlo Tree Search agent and search-based experiments.
 
 ## Current Development Stage
 
-The project is currently focused on simple explainable baseline agents, repeatable experiment scripts, and multi-map scenario comparison. Advanced AI methods will be added only after these baselines are stable.
+The project is currently focused on comparing simple explainable baselines with the first search-based method: Monte Carlo Tree Search. Genetic Algorithms and Reinforcement Learning remain future work.
 
 ## Current Rule Coverage
 
@@ -40,7 +40,7 @@ See [notes/RULES_COVERAGE.md](notes/RULES_COVERAGE.md).
 - Full operation cards
 - Multiplayer auction and interaction
 - Opponent-owned track scoring
-- Advanced AI methods
+- Genetic Algorithm and Reinforcement Learning agents
 
 ## How to Run
 
@@ -67,6 +67,12 @@ Run the agent and experiment smoke tests:
 
 ```bash
 python experiments/smoke_test_agents.py
+```
+
+Run the MCTS smoke tests:
+
+```bash
+python experiments/smoke_test_mcts.py
 ```
 
 The smoke tests cover connected track building, explicit delivery paths, empty-city-marker end conditions, major-line bonuses, bonds, income, and final scoring.
@@ -130,6 +136,23 @@ results/processed/
 results/plots/
 ```
 
+## MCTS Agent
+
+The first search-based agent is a Monte Carlo Tree Search agent. It uses the same legal-action environment interface as the baseline agents and plans on copied game states.
+
+Run MCTS experiments:
+
+```bash
+python experiments/run_mcts_experiments.py --map data/toy_medium_map.json --episodes 30 --iterations-list 50,100,250 --seed 0
+```
+
+Analyse and plot MCTS results:
+
+```bash
+python experiments/analyse_results.py --input results/raw/mcts_experiment_results.csv
+python experiments/plot_results.py --input results/raw/mcts_experiment_results.csv
+```
+
 ## Baseline Experiment Validation
 
 After running experiments, validate the outputs with:
@@ -165,7 +188,7 @@ notes/BASELINE_RESULTS_SUMMARY.md
 
 ## Project Direction
 
-The simulator will later be extended with automated strategy methods such as greedy heuristics, Genetic Algorithms, Monte Carlo Tree Search, reinforcement learning, or other optimisation approaches.
+The simulator will later be extended with additional automated strategy methods such as Genetic Algorithms, reinforcement learning, or other optimisation approaches.
 
 The current code separates map data, game state, rules, environment interface, agents, and visualisation:
 
@@ -174,7 +197,7 @@ data JSON
     -> GameState
     -> rules.py / scoring.py
     -> environment.py
-    -> baseline agents
+    -> baseline and MCTS agents
     -> visualization / Streamlit UI
 ```
 
@@ -204,6 +227,7 @@ railways-world-ai/
 |   |-- base_agent.py
 |   |-- greedy_delivery_agent.py
 |   |-- greedy_expansion_agent.py
+|   |-- mcts_agent.py
 |   |-- random_agent.py
 |   |-- registry.py
 |   `-- greedy_agent.py
@@ -211,16 +235,19 @@ railways-world-ai/
 |   |-- analyse_results.py
 |   |-- plot_results.py
 |   |-- run_full_baseline_pipeline.py
+|   |-- run_mcts_experiments.py
 |   |-- run_greedy.py
 |   |-- run_experiments.py
 |   |-- simulation_runner.py
 |   |-- smoke_test_agents.py
 |   |-- smoke_test_maps.py
+|   |-- smoke_test_mcts.py
 |   |-- smoke_test_rules.py
 |   `-- validate_baselines.py
 `-- notes/
     |-- BASELINE_RESULTS_SUMMARY.md
     |-- EXPERIMENT_PLAN.md
+    |-- MCTS_RESULTS_SUMMARY.md
     |-- RULES_COVERAGE.md
     `-- meeting_1_summary.md
 ```

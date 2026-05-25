@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Validate baseline agents across multiple artificial maps before implementing advanced AI methods.
+Validate baseline agents across multiple artificial maps and compare them with the first search-based agent before implementing Genetic Algorithms or Reinforcement Learning.
 
 ## Maps / Scenarios
 
@@ -18,6 +18,7 @@ The small toy map is useful for debugging but may be too simple to distinguish g
 - RandomAgent
 - GreedyDeliveryAgent
 - GreedyExpansionAgent
+- MCTSAgent
 
 ## Metrics
 
@@ -84,6 +85,12 @@ Run the complete validation pipeline:
 python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0 --map all --output results/raw/map_comparison_results.csv
 ```
 
+Run MCTS experiments:
+
+```bash
+python experiments/run_mcts_experiments.py --map data/toy_medium_map.json --episodes 30 --iterations-list 50,100,250 --seed 0
+```
+
 ## Interpretation Plan
 
 Compare baseline agents by:
@@ -98,3 +105,30 @@ Compare baseline agents by:
 8. Invalid action rate.
 
 The medium map should show whether simple greedy strategies are still indistinguishable. These baselines will be used later as comparison points for MCTS, Genetic Algorithm, and optional Reinforcement Learning.
+
+## Phase 2C: MCTS Experiments
+
+The MCTS agent will be compared against RandomAgent, GreedyDeliveryAgent, and GreedyExpansionAgent.
+
+### Research Questions
+
+1. Does MCTS outperform simple greedy baselines?
+2. How does MCTS performance change with the number of iterations?
+3. What is the trade-off between final score and runtime?
+4. Does MCTS benefit more on the medium map than on the small map?
+
+### Planned Budgets
+
+- MCTS-50
+- MCTS-100
+- MCTS-250
+
+### Metrics
+
+- final_score
+- raw_score
+- deliveries
+- built_edges
+- bonds
+- major_line_bonus
+- runtime_seconds

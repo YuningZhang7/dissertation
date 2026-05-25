@@ -16,6 +16,7 @@ from experiments.simulation_runner import run_episode
 from railways.environment import DEFAULT_CONFIG_PATH, DEFAULT_MAP_PATH
 
 DEFAULT_OUTPUT = PROJECT_ROOT / "results" / "raw" / "experiment_results.csv"
+BASELINE_AGENT_NAMES = ["random", "greedy_delivery", "greedy_expansion"]
 DEFAULT_MAPS = [
     DEFAULT_MAP_PATH,
     PROJECT_ROOT / "data" / "toy_medium_map.json",
@@ -52,7 +53,7 @@ def run_batch(
     map_arg: str | Path = DEFAULT_MAP_PATH,
     config_path: str | Path = DEFAULT_CONFIG_PATH,
 ) -> list[dict[str, Any]]:
-    agent_names = list(AGENT_CLASSES) if agent_name == "all" else [agent_name]
+    agent_names = BASELINE_AGENT_NAMES if agent_name == "all" else [agent_name]
     map_paths = resolve_map_paths(map_arg)
     selected_config_path = resolve_project_path(config_path)
     results: list[dict[str, Any]] = []
