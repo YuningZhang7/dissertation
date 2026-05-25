@@ -20,11 +20,19 @@ SUMMARY_COLUMNS = [
     "mean_deliveries",
     "mean_built_edges",
     "mean_major_line_bonus",
+    "mean_empty_markers",
+    "mean_invalid_actions",
+    "invalid_action_rate",
+    "terminal_rate",
+    "mean_actions_taken",
     "mean_runtime_seconds",
 ]
 
 
-def analyse_results(input_path: str | Path, output_path: str | Path = DEFAULT_OUTPUT) -> list[dict[str, Any]]:
+def analyse_results(
+    input_path: str | Path,
+    output_path: str | Path = DEFAULT_OUTPUT,
+) -> list[dict[str, Any]]:
     rows = _read_rows(input_path)
     grouped: dict[str, list[dict[str, str]]] = {}
     for row in rows:
@@ -44,6 +52,8 @@ def print_summary(summaries: list[dict[str, Any]]) -> None:
             f"mean_final_score={row['mean_final_score']:.2f}, "
             f"std={row['std_final_score']:.2f}, "
             f"deliveries={row['mean_deliveries']:.2f}, "
+            f"invalid_rate={row['invalid_action_rate']:.4f}, "
+            f"terminal_rate={row['terminal_rate']:.2f}, "
             f"runtime={row['mean_runtime_seconds']:.4f}s"
         )
 
@@ -55,6 +65,10 @@ def _read_rows(input_path: str | Path) -> list[dict[str, str]]:
 
 def _summarise_agent(agent: str, rows: list[dict[str, str]]) -> dict[str, Any]:
     final_scores = _numbers(rows, "final_score")
+    total_invalid_actions = sum(_numbers(rows, "invalid_actions"))
+    total_actions_taken = sum(_numbers(rows, "actions_taken"))
+    terminal_count = sum(1 for row in rows if _as_bool(row["terminal"]))
+
     return {
         "agent": agent,
         "episodes": len(rows),
@@ -67,12 +81,23 @@ def _summarise_agent(agent: str, rows: list[dict[str, str]]) -> dict[str, Any]:
         "mean_deliveries": statistics.fmean(_numbers(rows, "deliveries")),
         "mean_built_edges": statistics.fmean(_numbers(rows, "built_edges")),
         "mean_major_line_bonus": statistics.fmean(_numbers(rows, "major_line_bonus")),
+        "mean_empty_markers": statistics.fmean(_numbers(rows, "empty_markers")),
+        "mean_invalid_actions": statistics.fmean(_numbers(rows, "invalid_actions")),
+        "invalid_action_rate": (
+            total_invalid_actions / total_actions_taken if total_actions_taken else 0.0
+        ),
+        "terminal_rate": terminal_count / len(rows) if rows else 0.0,
+        "mean_actions_taken": statistics.fmean(_numbers(rows, "actions_taken")),
         "mean_runtime_seconds": statistics.fmean(_numbers(rows, "runtime_seconds")),
     }
 
 
 def _numbers(rows: list[dict[str, str]], column: str) -> list[float]:
     return [float(row[column]) for row in rows]
+
+
+def _as_bool(value: str) -> bool:
+    return value.strip().lower() in {"true", "1", "yes"}
 
 
 def _write_summary(summaries: list[dict[str, Any]], output_path: str | Path) -> None:

@@ -4,7 +4,7 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is entering Phase 2B: baseline agents and experiment framework.
+The current version is Phase 2B.5: validating baseline agents and experiment outputs before adding advanced AI methods.
 
 ## Current Development Stage
 
@@ -117,6 +117,27 @@ results/processed/
 results/plots/
 ```
 
+## Baseline Experiment Validation
+
+After running experiments, validate the outputs with:
+
+```bash
+python experiments/validate_baselines.py --input results/raw/experiment_results.csv --episodes 100
+```
+
+To run tests, experiments, analysis, plotting, and validation in one command:
+
+```bash
+python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0
+```
+
+Experiment planning and baseline result notes are stored in:
+
+```text
+notes/EXPERIMENT_PLAN.md
+notes/BASELINE_RESULTS_SUMMARY.md
+```
+
 ## Project Direction
 
 The simulator will later be extended with automated strategy methods such as greedy heuristics, Genetic Algorithms, Monte Carlo Tree Search, reinforcement learning, or other optimisation approaches.
@@ -163,12 +184,16 @@ railways-world-ai/
 |-- experiments/
 |   |-- analyse_results.py
 |   |-- plot_results.py
+|   |-- run_full_baseline_pipeline.py
 |   |-- run_greedy.py
 |   |-- run_experiments.py
 |   |-- simulation_runner.py
 |   |-- smoke_test_agents.py
-|   `-- smoke_test_rules.py
+|   |-- smoke_test_rules.py
+|   `-- validate_baselines.py
 `-- notes/
+    |-- BASELINE_RESULTS_SUMMARY.md
+    |-- EXPERIMENT_PLAN.md
     |-- RULES_COVERAGE.md
     `-- meeting_1_summary.md
 ```

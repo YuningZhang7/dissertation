@@ -1,38 +1,41 @@
 # Experiment Plan
 
-## Phase 2B Goal
+## Current Goal
 
-Use the current single-player rule engine as a repeatable benchmark environment for simple baseline strategy agents.
+Validate baseline agents before implementing advanced AI methods.
 
-Advanced AI methods are intentionally postponed. The immediate goal is to establish clear baselines and reliable result collection.
+## Agents
 
-## Agents To Compare
-
-- `random`: samples uniformly from legal actions.
-- `greedy_delivery`: prioritises immediate delivery score, then simple build/upgrade/urbanize choices.
-- `greedy_expansion`: prioritises builds that improve future delivery opportunities, major-line bonuses, and network expansion.
+- RandomAgent
+- GreedyDeliveryAgent
+- GreedyExpansionAgent
 
 ## Metrics
 
-- Final score.
-- Raw delivery score.
-- Bonds.
-- Money.
-- Deliveries.
-- Built edges.
-- Major line bonus.
-- Empty city markers.
-- Turns.
-- Actions taken.
-- Invalid actions.
-- Runtime seconds.
+- final_score
+- raw_score
+- bonds
+- deliveries
+- built_edges
+- major_line_bonus
+- empty_markers
+- invalid_actions
+- terminal_rate
+- runtime_seconds
 
 ## Commands
 
-Run all baseline agents:
+Run tests:
 
 ```bash
-python experiments/run_experiments.py --agent all --episodes 100
+python experiments/smoke_test_rules.py
+python experiments/smoke_test_agents.py
+```
+
+Run experiments:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 100 --seed 0
 ```
 
 Analyse results:
@@ -41,12 +44,35 @@ Analyse results:
 python experiments/analyse_results.py --input results/raw/experiment_results.csv
 ```
 
-Generate plots:
+Plot results:
 
 ```bash
 python experiments/plot_results.py --input results/raw/experiment_results.csv
 ```
 
+Validate baselines:
+
+```bash
+python experiments/validate_baselines.py --input results/raw/experiment_results.csv --episodes 100
+```
+
+Run the complete validation pipeline:
+
+```bash
+python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0
+```
+
 ## Interpretation Plan
 
-Compare each baseline by mean final score and stability across seeds. Use deliveries, bonds, built edges, and major-line bonus to explain why one agent performs better or worse. These results will become the reference point for later MCTS, Genetic Algorithm, or Reinforcement Learning experiments.
+Compare baseline agents by:
+
+1. Mean final score.
+2. Score variance.
+3. Number of deliveries.
+4. Network size.
+5. Bonds used.
+6. Major line bonus.
+7. Runtime.
+8. Invalid action rate.
+
+These baselines will be used later as comparison points for MCTS, Genetic Algorithm, and optional Reinforcement Learning.
