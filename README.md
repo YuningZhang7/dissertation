@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 3B: semi-realistic experiment reporting.
+The current version is Phase 3C: semi-realistic result diagnosis and major-line-aware MCTS.
 
 ## Current Development Stage
 
-The project is currently focused on running and reporting semi-realistic baseline and MCTS experiments before moving to Genetic Algorithms or Reinforcement Learning.
+The project is currently focused on diagnosing semi-realistic results and improving MCTS awareness of major-line structure before moving to Genetic Algorithms or Reinforcement Learning.
 
 ## Current Rule Coverage
 
@@ -273,6 +273,39 @@ Results are summarised in:
 notes/SEMI_REALISTIC_RESULTS_SUMMARY.md
 ```
 
+## Semi-realistic Diagnosis and Major-line-aware MCTS
+
+Run major-line sensitivity experiments:
+
+```bash
+python experiments/run_major_line_sensitivity.py --map data/semi_realistic_map.json --episodes 20 --mcts-episodes 5 --mcts-iterations-list 50,100 --multipliers 0,0.5,0.75,1.0 --seed 0
+```
+
+Analyse and plot sensitivity results:
+
+```bash
+python experiments/analyse_major_line_sensitivity.py --input results/raw/major_line_sensitivity_results.csv
+python experiments/plot_major_line_sensitivity.py --input results/raw/major_line_sensitivity_results.csv
+```
+
+Run major-line-aware MCTS experiments:
+
+```bash
+python experiments/run_mcts_major_line_experiments.py --map data/semi_realistic_map.json --episodes 10 --iterations-list 50,100 --rollout-depth 60 --seed 0
+```
+
+Validate major-line-aware MCTS results:
+
+```bash
+python experiments/validate_major_line_experiments.py --input results/raw/mcts_major_line_results.csv --episodes 10
+```
+
+Diagnosis notes are stored in:
+
+```text
+notes/SEMI_REALISTIC_DIAGNOSIS.md
+```
+
 ## Baseline Experiment Validation
 
 After running experiments, validate the outputs with:
@@ -354,11 +387,15 @@ railways-world-ai/
 |   `-- greedy_agent.py
 |-- experiments/
 |   |-- analyse_results.py
+|   |-- analyse_major_line_sensitivity.py
 |   |-- analyse_mcts_tuning.py
 |   |-- check_project_readiness.py
 |   |-- plot_results.py
+|   |-- plot_major_line_sensitivity.py
 |   |-- plot_mcts_tuning.py
+|   |-- run_major_line_sensitivity.py
 |   |-- run_full_baseline_pipeline.py
+|   |-- run_mcts_major_line_experiments.py
 |   |-- run_mcts_experiments.py
 |   |-- run_mcts_pipeline.py
 |   |-- run_mcts_tuning.py
@@ -373,6 +410,7 @@ railways-world-ai/
 |   |-- smoke_test_rules.py
 |   |-- validate_mcts_tuning.py
 |   |-- validate_mcts_results.py
+|   |-- validate_major_line_experiments.py
 |   `-- validate_baselines.py
 `-- notes/
     |-- BASELINE_RESULTS_SUMMARY.md
@@ -382,6 +420,7 @@ railways-world-ai/
     |-- RULE_FIDELITY_ROADMAP.md
     |-- RULES_COVERAGE.md
     |-- SCENARIO_DESIGN.md
+    |-- SEMI_REALISTIC_DIAGNOSIS.md
     |-- SEMI_REALISTIC_RESULTS_SUMMARY.md
     `-- meeting_1_summary.md
 ```

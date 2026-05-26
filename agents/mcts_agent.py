@@ -99,6 +99,10 @@ class MCTSAgent(BaseAgent):
         rollout_policy: str = "random",
         action_generation: str = "fast",
         max_candidate_actions: int = 24,
+        evaluation_mode: str = "final_score",
+        major_line_weight: float = 1.0,
+        delivery_weight: float = 0.2,
+        network_weight: float = 0.1,
     ) -> None:
         super().__init__(seed=seed)
         self.iterations = iterations
@@ -107,6 +111,10 @@ class MCTSAgent(BaseAgent):
         self.rollout_policy = rollout_policy
         self.action_generation = action_generation
         self.max_candidate_actions = max_candidate_actions
+        self.evaluation_mode = evaluation_mode
+        self.major_line_weight = major_line_weight
+        self.delivery_weight = delivery_weight
+        self.network_weight = network_weight
 
     def choose_action(self, state: GameState) -> Action:
         full_legal_actions = get_legal_actions(state)
@@ -193,7 +201,7 @@ class MCTSAgent(BaseAgent):
             if not fallback_success:
                 break
 
-        return float(final_score(state))
+        return self._evaluate_state(state)
 
     def _get_candidate_actions(self, state: GameState) -> list[Action]:
         if self.action_generation == "full":
@@ -238,6 +246,19 @@ class MCTSAgent(BaseAgent):
         while node is not None:
             node.update(reward)
             node = node.parent
+
+    def _evaluate_state(self, state: GameState) -> float:
+        if self.evaluation_mode == "final_score":
+            return float(final_score(state))
+        if self.evaluation_mode != "major_line_aware":
+            raise ValueError(f"Unknown MCTS evaluation mode: {self.evaluation_mode}")
+
+        return (
+            float(final_score(state))
+            + self.major_line_weight * estimate_major_line_progress(state)
+            + self.delivery_weight * len(_fast_delivery_actions(state))
+            + self.network_weight * len(state.player.built_edges)
+        )
 
 
 def _action_key(action: Action | None) -> str:
@@ -301,3 +322,57 @@ def _fast_delivery_actions(state: GameState) -> list[Action]:
             "-".join(action.params.get("path", [])),
         ),
     )
+
+
+def estimate_major_line_progress(state: GameState) -> float:
+    """Estimate unclaimed major-line progress without mutating game state."""
+    if not state.major_lines:
+        return 0.0
+
+    built_segments = {
+        frozenset((edge.source, edge.target))
+        for edge in state.edges.values()
+        if edge.built
+    }
+
+    all_graph = nx.Graph()
+    for city_id in state.cities:
+        all_graph.add_node(city_id)
+    for edge in state.edges.values():
+        all_graph.add_edge(edge.source, edge.target, edge_id=edge.id)
+
+    built_graph = get_built_graph(state)
+    progress = 0.0
+
+    for major_line in state.major_lines.values():
+        if major_line.claimed:
+            continue
+
+        try:
+            if nx.has_path(built_graph, major_line.source, major_line.target):
+                progress += major_line.bonus_points
+                continue
+        except (nx.NetworkXError, nx.NodeNotFound):
+            pass
+
+        try:
+            path = nx.shortest_path(
+                all_graph,
+                source=major_line.source,
+                target=major_line.target,
+            )
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            continue
+
+        length = path_length(path)
+        if length <= 0:
+            continue
+
+        built_on_path = sum(
+            1
+            for first, second in zip(path, path[1:])
+            if frozenset((first, second)) in built_segments
+        )
+        progress += major_line.bonus_points * (built_on_path / length)
+
+    return progress

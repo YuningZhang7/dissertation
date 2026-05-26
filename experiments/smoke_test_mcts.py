@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from agents.mcts_agent import MCTSAgent
+from agents.mcts_agent import MCTSAgent, estimate_major_line_progress
 from experiments.simulation_runner import run_episode
 from railways.environment import get_legal_actions, reset_game
 from railways.models import PHASE_GAME_OVER
@@ -29,6 +29,26 @@ def test_mcts_choose_action_does_not_mutate_state() -> None:
     agent.choose_action(state)
     after = _state_signature(state)
     assert before == after
+
+
+def test_major_line_aware_mcts_returns_legal_action() -> None:
+    state = reset_game(PROJECT_ROOT / "data" / "semi_realistic_map.json")
+    agent = MCTSAgent(
+        iterations=5,
+        rollout_depth_limit=20,
+        evaluation_mode="major_line_aware",
+        seed=6,
+    )
+    before = _state_signature(state)
+    action = agent.choose_action(state)
+    after = _state_signature(state)
+    assert action in get_legal_actions(state)
+    assert before == after
+
+
+def test_major_line_progress_estimate_is_non_negative() -> None:
+    state = reset_game(PROJECT_ROOT / "data" / "semi_realistic_map.json")
+    assert estimate_major_line_progress(state) >= 0.0
 
 
 def test_mcts_completes_episode_on_toy_map() -> None:
@@ -127,6 +147,8 @@ def run_all() -> None:
     tests = [
         test_mcts_returns_legal_action,
         test_mcts_choose_action_does_not_mutate_state,
+        test_major_line_aware_mcts_returns_legal_action,
+        test_major_line_progress_estimate_is_non_negative,
         test_mcts_completes_episode_on_toy_map,
         test_mcts_completes_episode_on_medium_map,
         test_mcts_returns_pass_when_no_legal_actions_exist,

@@ -287,3 +287,46 @@ python experiments/validate_mcts_results.py --input results/raw/semi_realistic_m
 - MCTS beats `random` and `greedy_delivery`, but the current random-rollout setting does not beat `greedy_expansion`.
 - Runtime grows substantially on the semi-realistic map, especially for `mcts_100`.
 - Invalid actions remain zero and all episodes terminate normally.
+
+## Phase 3C: Semi-realistic Diagnosis
+
+### Research Questions
+
+1. Does major-line bonus size determine agent ranking?
+2. Does `greedy_expansion` remain strongest when major-line bonuses are reduced?
+3. Can major-line-aware MCTS close the gap?
+4. What does this imply about search-based agents in structured railway network problems?
+
+### Commands
+
+Run major-line sensitivity:
+
+```bash
+python experiments/run_major_line_sensitivity.py --map data/semi_realistic_map.json --episodes 20 --mcts-episodes 5 --mcts-iterations-list 50,100 --multipliers 0,0.5,0.75,1.0 --seed 0
+```
+
+Analyse and plot:
+
+```bash
+python experiments/analyse_major_line_sensitivity.py --input results/raw/major_line_sensitivity_results.csv
+python experiments/plot_major_line_sensitivity.py --input results/raw/major_line_sensitivity_results.csv
+```
+
+Run major-line-aware MCTS:
+
+```bash
+python experiments/run_mcts_major_line_experiments.py --map data/semi_realistic_map.json --episodes 10 --iterations-list 50,100 --rollout-depth 60 --seed 0
+```
+
+Validate:
+
+```bash
+python experiments/validate_major_line_experiments.py --input results/raw/mcts_major_line_results.csv --episodes 10
+```
+
+### Preliminary Findings
+
+- Major-line bonus size strongly changes agent ranking.
+- With major-line bonuses removed, MCTS beats both greedy baselines.
+- At full major-line bonus, `greedy_expansion` becomes strong because it directly targets major-line completion.
+- `mcts_50_majorline` outperformed `greedy_expansion` in the diagnostic run, suggesting domain-aware MCTS is promising.

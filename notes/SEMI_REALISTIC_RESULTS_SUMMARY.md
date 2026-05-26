@@ -74,3 +74,13 @@ Recommended next steps:
 2. Add an exact or branch-and-bound benchmark for very small instances.
 3. Implement a Genetic Algorithm for comparison with MCTS and greedy expansion.
 4. Improve rule fidelity around income, bonds, urbanize, and objective cards.
+
+## Diagnosis Follow-up
+
+Phase 3C investigates whether major-line bonuses dominate the semi-realistic results and whether major-line-aware MCTS improves performance.
+
+The sensitivity experiment confirms that major-line rewards strongly affect agent ranking. With major-line multiplier `0.0`, MCTS beats both greedy baselines. As the multiplier increases, `greedy_expansion` rises quickly because it directly targets long-distance network structure.
+
+Major-line-aware MCTS adds a simple heuristic evaluation term for partial progress toward unclaimed major lines. In the diagnostic run, `mcts_50_majorline` achieved mean final score 92.10, compared with 87.00 for `greedy_expansion` and 48.90 for `mcts_50_random`.
+
+Full diagnosis is documented in [SEMI_REALISTIC_DIAGNOSIS.md](SEMI_REALISTIC_DIAGNOSIS.md).

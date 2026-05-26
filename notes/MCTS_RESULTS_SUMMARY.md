@@ -178,3 +178,26 @@ The semi-realistic map is a useful stress test. It shows that MCTS is not automa
 Next implication:
 
 The current MCTS should be treated as a strong but not final search baseline on the semi-realistic map. The most useful follow-up is either a semi-realistic MCTS tuning run with major-line-aware rollout/evaluation, or a Genetic Algorithm that can search over longer-term network construction plans.
+
+## Major-line-aware MCTS
+
+Phase 3C adds an optional MCTS evaluation mode called `major_line_aware`. It keeps the same rule engine and legal-action interface, but changes the rollout evaluation from pure final score to:
+
+```text
+final_score
++ major_line_weight * potential_major_line_progress
++ delivery_weight * legal_delivery_count
++ network_weight * built_edge_count
+```
+
+The diagnostic experiment on `semi_realistic_map` compared random-rollout MCTS with major-line-aware MCTS:
+
+| Agent | Episodes | Mean Final Score | Std | Mean Major Line Bonus | Mean Runtime (s) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| greedy_expansion | 10 | 87.00 | 0.00 | 74.00 | 2.27 |
+| mcts_50_random | 10 | 48.90 | 23.53 | 16.90 | 23.18 |
+| mcts_100_random | 10 | 79.60 | 29.68 | 47.10 | 44.34 |
+| mcts_50_majorline | 10 | 92.10 | 12.36 | 70.10 | 23.27 |
+| mcts_100_majorline | 10 | 79.80 | 26.19 | 49.60 | 44.87 |
+
+`mcts_50_majorline` closed the gap with `greedy_expansion` and achieved the highest mean final score in this diagnostic run. The result supports the interpretation that MCTS needs domain-aware evaluation for delayed route-completion rewards.
