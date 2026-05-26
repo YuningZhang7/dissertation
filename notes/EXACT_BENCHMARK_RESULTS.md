@@ -101,6 +101,8 @@ On this micro instance, both greedy agents find an optimal solution. This is exp
 
 MCTS performs close to optimal but does not always find the optimum under the tested budgets. The small gap is useful evidence: stochastic search quality can be quantified against a true optimum on small instances.
 
+Major-line-aware MCTS does not outperform original MCTS on `micro_map`. This is acceptable and not a contradiction of the semi-realistic findings. The micro instance is an exact optimality benchmark with only one small major-line objective, so it is not the main scenario for demonstrating the value of major-line-aware search. The semi-realistic map remains the relevant setting for that claim, because it contains a larger delayed major-line reward structure.
+
 RandomAgent performs poorly and has high variance, as expected.
 
 ## Dissertation Contribution

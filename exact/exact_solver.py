@@ -13,6 +13,7 @@ from railways.rules import describe_action
 
 @dataclass(frozen=True)
 class ExactSolverSettings:
+    # Reserved for future safe/admissible pruning. It is not used in Phase 3D.
     branch_and_bound: bool = False
     max_expanded_states: int | None = None
 
@@ -39,6 +40,11 @@ class ExactSolver:
         self.pruned_states = 0
 
     def solve(self, state: GameState) -> ExactSolverResult:
+        self.memo.clear()
+        self.expanded_states = 0
+        self.memo_hits = 0
+        self.pruned_states = 0
+
         start_time = time.perf_counter()
         score, actions = self._solve_state(copy_state(state))
         runtime_seconds = time.perf_counter() - start_time

@@ -9,6 +9,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
+from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.mcts_agent import MCTSAgent
 from agents.random_agent import RandomAgent
 from exact.exact_solver import ExactSolver, replay_actions
@@ -58,6 +59,7 @@ def test_existing_agents_run_on_micro_map() -> None:
     agents = [
         RandomAgent(seed=0),
         GreedyDeliveryAgent(seed=0),
+        GreedyExpansionAgent(seed=0),
         MCTSAgent(iterations=5, rollout_depth_limit=20, seed=0),
         MCTSAgent(
             iterations=5,
