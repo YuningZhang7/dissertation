@@ -32,6 +32,7 @@ The small toy map is useful for debugging but may be too simple to distinguish g
 - invalid_actions
 - terminal_rate
 - runtime_seconds
+- score_per_second
 
 ## Commands
 
@@ -149,3 +150,56 @@ The MCTS agent will be compared against RandomAgent, GreedyDeliveryAgent, and Gr
 - bonds
 - major_line_bonus
 - runtime_seconds
+
+## Phase 2C.6: MCTS Tuning
+
+### Research Questions
+
+1. How does MCTS score change with iteration budget?
+2. How does rollout depth affect performance?
+3. Does greedy rollout improve score enough to justify runtime?
+4. How much speed is gained by fast candidate action generation?
+5. Which MCTS configuration gives the best score-runtime trade-off?
+
+### Primary Metrics
+
+- mean_final_score
+- mean_runtime_seconds
+- score_per_second
+- deliveries
+- major_line_bonus
+- invalid_action_rate
+- terminal_rate
+
+### Commands
+
+Run the main tuning experiment:
+
+```bash
+python experiments/run_mcts_tuning.py --map data/toy_medium_map.json --episodes 10 --iterations-list 50,100 --rollout-depth-list 40,80 --rollout-policy-list random --action-generation-list fast --max-candidate-actions-list 24 --seed 0
+```
+
+Analyse and plot tuning results:
+
+```bash
+python experiments/analyse_mcts_tuning.py --input results/raw/mcts_tuning_results.csv
+python experiments/plot_mcts_tuning.py --input results/raw/mcts_tuning_results.csv
+```
+
+Validate tuning results:
+
+```bash
+python experiments/validate_mcts_tuning.py --input results/raw/mcts_tuning_results.csv --episodes 10 --maps toy_medium_map --iterations-list 50,100 --rollout-depth-list 40,80 --rollout-policy-list random --action-generation-list fast --max-candidate-actions-list 24
+```
+
+Run fast-vs-full action generation check:
+
+```bash
+python experiments/run_mcts_tuning.py --map data/toy_map.json --episodes 5 --iterations-list 20 --rollout-depth-list 30 --rollout-policy-list random --action-generation-list fast,full --seed 0 --output results/raw/mcts_fast_vs_full_results.csv
+```
+
+Run map robustness check:
+
+```bash
+python experiments/run_mcts_tuning.py --map all --episodes 10 --iterations-list 50,100 --rollout-depth-list 40 --rollout-policy-list random --action-generation-list fast --max-candidate-actions-list 24 --seed 0 --output results/raw/mcts_map_robustness_results.csv
+```

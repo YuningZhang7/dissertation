@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 2C.5: MCTS validation, tuning, and reporting.
+The current version is Phase 2C.6: MCTS tuning and robustness analysis.
 
 ## Current Development Stage
 
-The project is currently focused on validating Monte Carlo Tree Search against simple explainable baselines. Genetic Algorithms and Reinforcement Learning remain future work.
+The project is currently focused on tuning Monte Carlo Tree Search and studying its score-runtime trade-off across maps. Genetic Algorithms and Reinforcement Learning remain future work.
 
 ## Current Rule Coverage
 
@@ -185,6 +185,33 @@ MCTS result notes are stored in:
 notes/MCTS_RESULTS_SUMMARY.md
 ```
 
+## MCTS Tuning
+
+Run MCTS tuning:
+
+```bash
+python experiments/run_mcts_tuning.py --map data/toy_medium_map.json --episodes 10 --iterations-list 50,100 --rollout-depth-list 40,80 --rollout-policy-list random --seed 0
+```
+
+Analyse and plot:
+
+```bash
+python experiments/analyse_mcts_tuning.py --input results/raw/mcts_tuning_results.csv
+python experiments/plot_mcts_tuning.py --input results/raw/mcts_tuning_results.csv
+```
+
+Run the full tuning pipeline:
+
+```bash
+python experiments/run_mcts_tuning_pipeline.py --map data/toy_medium_map.json --episodes 10 --iterations-list 50,100 --rollout-depth-list 40,80 --rollout-policy-list random --seed 0
+```
+
+Fast-vs-full candidate action check:
+
+```bash
+python experiments/run_mcts_tuning.py --map data/toy_map.json --episodes 5 --iterations-list 20 --rollout-depth-list 30 --rollout-policy-list random --action-generation-list fast,full --seed 0 --output results/raw/mcts_fast_vs_full_results.csv
+```
+
 ## Baseline Experiment Validation
 
 After running experiments, validate the outputs with:
@@ -265,10 +292,14 @@ railways-world-ai/
 |   `-- greedy_agent.py
 |-- experiments/
 |   |-- analyse_results.py
+|   |-- analyse_mcts_tuning.py
 |   |-- plot_results.py
+|   |-- plot_mcts_tuning.py
 |   |-- run_full_baseline_pipeline.py
 |   |-- run_mcts_experiments.py
 |   |-- run_mcts_pipeline.py
+|   |-- run_mcts_tuning.py
+|   |-- run_mcts_tuning_pipeline.py
 |   |-- run_greedy.py
 |   |-- run_experiments.py
 |   |-- simulation_runner.py
@@ -276,6 +307,7 @@ railways-world-ai/
 |   |-- smoke_test_maps.py
 |   |-- smoke_test_mcts.py
 |   |-- smoke_test_rules.py
+|   |-- validate_mcts_tuning.py
 |   |-- validate_mcts_results.py
 |   `-- validate_baselines.py
 `-- notes/
