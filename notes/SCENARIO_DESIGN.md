@@ -10,6 +10,14 @@ Purpose:
 - smoke tests
 - small example
 
+### micro_map
+
+Purpose:
+
+- exact-search benchmark
+- optimality-gap comparison
+- very small deterministic instance
+
 ### toy_medium_map
 
 Purpose:
@@ -31,6 +39,7 @@ Purpose:
 
 Compare algorithms across:
 
+- `micro_map`
 - `toy_map`
 - `toy_medium_map`
 - `semi_realistic_map`
@@ -46,8 +55,11 @@ Metrics:
 - runtime_seconds
 - invalid_action_rate
 - terminal_rate
+- optimality_gap, for `micro_map`
 
 ## Expected Difficulty
+
+The `micro_map` should be easy enough for exhaustive search, but still contain a small trade-off between short deliveries and a delayed major-line bonus.
 
 The semi-realistic map should be harder because:
 

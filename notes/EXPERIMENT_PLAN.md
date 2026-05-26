@@ -2,9 +2,9 @@
 
 ## Current Goal
 
-Validate agents on the semi-realistic scenario and report whether findings from the medium map still hold before implementing Genetic Algorithms or Reinforcement Learning.
+Add exact optimality benchmarking on a micro instance while keeping larger-map evaluation heuristic/search-based.
 
-Current active phase: Phase 3B, semi-realistic experiment reporting.
+Current active phase: Phase 3D, small-instance exact benchmark.
 
 ## Maps / Scenarios
 
@@ -336,3 +336,40 @@ python experiments/run_semi_realistic_diagnosis_pipeline.py --episodes 20 --mcts
 - With major-line bonuses removed, MCTS beats both greedy baselines.
 - At full major-line bonus, `greedy_expansion` becomes strong because it directly targets major-line completion.
 - `mcts_50_majorline` outperformed `greedy_expansion` in the diagnostic run, suggesting domain-aware MCTS is promising.
+
+## Phase 3D: Small-instance Exact Benchmark
+
+### Research Questions
+
+1. Can exact exhaustive search compute a true optimum on a very small instance?
+2. How close are greedy agents and MCTS to the exact optimum?
+3. Does the exact benchmark strengthen the interpretation of heuristic results on larger maps?
+4. How quickly does exact search become impractical as scenario size grows?
+
+### Commands
+
+Run the exact solver:
+
+```bash
+python exact/run_exact_benchmark.py
+```
+
+Compare agents to exact optimum:
+
+```bash
+python exact/compare_agents_to_exact.py
+```
+
+Run exact smoke tests:
+
+```bash
+python experiments/smoke_test_exact.py
+```
+
+### Preliminary Findings
+
+- `micro_map` exact optimum is 10.
+- Exact search expanded 2365 states and used 3886 memo hits.
+- `greedy_delivery` and `greedy_expansion` both found the optimum on the micro instance.
+- MCTS variants were close to optimal but had small stochastic gaps under the tested budgets.
+- RandomAgent remained far from optimal.

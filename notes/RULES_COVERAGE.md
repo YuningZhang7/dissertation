@@ -70,7 +70,7 @@
 
 The rule engine is now used by baseline automated agents. These agents are intended as simple benchmarks before implementing MCTS, Genetic Algorithms, Reinforcement Learning, or other advanced optimisation methods.
 
-Baseline and MCTS experiments currently support `toy_map`, `toy_medium_map`, and `semi_realistic_map`. The maps are artificial and self-created; they are intended to create route-building and delivery trade-offs without using official copyrighted map artwork.
+Baseline, MCTS, and exact-benchmark experiments currently support `micro_map`, `toy_map`, `toy_medium_map`, and `semi_realistic_map`. The maps are artificial and self-created; they are intended to create route-building and delivery trade-offs without using official copyrighted map artwork.
 
 ## Phase 3A Map Realism
 
@@ -83,6 +83,12 @@ This improves external validity compared with the small toy maps, but it still d
 Phase 3B runs baseline and MCTS experiments on `semi_realistic_map`. The results show that the larger map changes algorithm behaviour: `greedy_expansion` benefits strongly from major-line bonuses, while MCTS improves over random and immediate-delivery greed but has higher runtime and does not yet dominate the expansion heuristic.
 
 This phase strengthens experimental reporting, but it does not add new official rules. The same single-player abstractions and exclusions still apply.
+
+## Phase 3D Exact Benchmark
+
+Phase 3D adds exact exhaustive search on `micro_map`. This is an evaluation tool rather than a new game rule: it searches the existing legal-action space to compute the true optimum under the implemented single-player abstraction.
+
+Exact search is intentionally limited to very small instances because the legal action space grows quickly on larger maps.
 
 ## Next Rule-Fidelity Checklist
 

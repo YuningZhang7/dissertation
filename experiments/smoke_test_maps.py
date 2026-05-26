@@ -18,8 +18,16 @@ MAP_PATHS = [
     PROJECT_ROOT / "data" / "toy_map.json",
     PROJECT_ROOT / "data" / "toy_medium_map.json",
     PROJECT_ROOT / "data" / "semi_realistic_map.json",
+    PROJECT_ROOT / "data" / "micro_map.json",
 ]
 CONFIG_PATH = PROJECT_ROOT / "data" / "rules_config.json"
+MICRO_CONFIG_PATH = PROJECT_ROOT / "data" / "micro_rules_config.json"
+MAP_CONFIG_PAIRS = [
+    (PROJECT_ROOT / "data" / "toy_map.json", CONFIG_PATH),
+    (PROJECT_ROOT / "data" / "toy_medium_map.json", CONFIG_PATH),
+    (PROJECT_ROOT / "data" / "semi_realistic_map.json", CONFIG_PATH),
+    (PROJECT_ROOT / "data" / "micro_map.json", MICRO_CONFIG_PATH),
+]
 
 
 def test_maps_load_successfully() -> None:
@@ -30,8 +38,8 @@ def test_maps_load_successfully() -> None:
 
 
 def test_maps_have_legal_initial_builds() -> None:
-    for map_path in MAP_PATHS:
-        state = reset_game(map_path=map_path, config_path=CONFIG_PATH)
+    for map_path, config_path in MAP_CONFIG_PAIRS:
+        state = reset_game(map_path=map_path, config_path=config_path)
         assert get_legal_build_actions(state), f"{map_path.name} has no legal builds"
 
 
@@ -54,9 +62,9 @@ def test_major_lines_reference_valid_cities() -> None:
 
 
 def test_goods_colours_are_valid() -> None:
-    config = load_config(CONFIG_PATH)
-    allowed_colours = set(config.allowed_good_colors)
-    for map_path in MAP_PATHS:
+    for map_path, config_path in MAP_CONFIG_PAIRS:
+        config = load_config(config_path)
+        allowed_colours = set(config.allowed_good_colors)
         cities, _, _ = load_map(map_path)
         for city in cities.values():
             if city.demand_color is not None:
@@ -66,26 +74,26 @@ def test_goods_colours_are_valid() -> None:
 
 
 def test_random_agent_short_episode_does_not_crash() -> None:
-    for map_path in MAP_PATHS:
+    for map_path, config_path in MAP_CONFIG_PAIRS:
         result = run_episode(
             RandomAgent(seed=1),
             seed=1,
             max_steps=80,
             map_path=map_path,
-            config_path=CONFIG_PATH,
+            config_path=config_path,
         )
         assert result["actions_taken"] > 0
         assert result["invalid_actions"] >= 0
 
 
 def test_greedy_delivery_short_episode_does_not_crash() -> None:
-    for map_path in MAP_PATHS:
+    for map_path, config_path in MAP_CONFIG_PAIRS:
         result = run_episode(
             GreedyDeliveryAgent(seed=2),
             seed=2,
             max_steps=80,
             map_path=map_path,
-            config_path=CONFIG_PATH,
+            config_path=config_path,
         )
         assert result["actions_taken"] > 0
         assert result["invalid_actions"] >= 0

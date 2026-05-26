@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 3C: semi-realistic result diagnosis and major-line-aware MCTS.
+The current version is Phase 3D: small-instance exact benchmark.
 
 ## Current Development Stage
 
-The project is currently focused on diagnosing semi-realistic results and improving MCTS awareness of major-line structure before moving to Genetic Algorithms or Reinforcement Learning.
+The project is currently focused on adding a small exact-search benchmark so heuristic agents and MCTS can be compared against a true optimum on micro instances.
 
 ## Current Rule Coverage
 
@@ -24,11 +24,12 @@ See [notes/MODEL_VALIDITY.md](notes/MODEL_VALIDITY.md).
 
 ## Scenario Design
 
-The project now includes three self-created scenarios:
+The project now includes four self-created scenarios:
 
 - `toy_map`
 - `toy_medium_map`
 - `semi_realistic_map`
+- `micro_map`
 
 See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
 
@@ -89,6 +90,12 @@ Run the MCTS smoke tests:
 
 ```bash
 python experiments/smoke_test_mcts.py
+```
+
+Run the exact benchmark smoke tests:
+
+```bash
+python experiments/smoke_test_exact.py
 ```
 
 The smoke tests cover connected track building, explicit delivery paths, empty-city-marker end conditions, major-line bonuses, bonds, income, and final scoring.
@@ -312,6 +319,34 @@ Diagnosis notes are stored in:
 notes/SEMI_REALISTIC_DIAGNOSIS.md
 ```
 
+## Exact Benchmark
+
+Phase 3D adds a small exact-search benchmark on `micro_map`. The exact solver uses the same legal-action and transition interface as the simulator, but searches the full action tree with memoisation.
+
+Run the exact solver:
+
+```bash
+python exact/run_exact_benchmark.py
+```
+
+Compare agents to the exact optimum:
+
+```bash
+python exact/compare_agents_to_exact.py
+```
+
+Run exact smoke tests:
+
+```bash
+python experiments/smoke_test_exact.py
+```
+
+Exact benchmark notes are stored in:
+
+```text
+notes/EXACT_BENCHMARK_RESULTS.md
+```
+
 ## Baseline Experiment Validation
 
 After running experiments, validate the outputs with:
@@ -371,7 +406,14 @@ railways-world-ai/
 |   |-- toy_map.json
 |   |-- toy_medium_map.json
 |   |-- semi_realistic_map.json
+|   |-- micro_map.json
+|   |-- micro_rules_config.json
 |   `-- rules_config.json
+|-- exact/
+|   |-- __init__.py
+|   |-- exact_solver.py
+|   |-- run_exact_benchmark.py
+|   `-- compare_agents_to_exact.py
 |-- railways/
 |   |-- __init__.py
 |   |-- actions.py
@@ -412,6 +454,7 @@ railways-world-ai/
 |   |-- run_experiments.py
 |   |-- simulation_runner.py
 |   |-- smoke_test_agents.py
+|   |-- smoke_test_exact.py
 |   |-- smoke_test_maps.py
 |   |-- smoke_test_mcts.py
 |   |-- smoke_test_rules.py
@@ -421,6 +464,7 @@ railways-world-ai/
 |   `-- validate_baselines.py
 `-- notes/
     |-- BASELINE_RESULTS_SUMMARY.md
+    |-- EXACT_BENCHMARK_RESULTS.md
     |-- EXPERIMENT_PLAN.md
     |-- MCTS_RESULTS_SUMMARY.md
     |-- MODEL_VALIDITY.md

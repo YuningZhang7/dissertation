@@ -57,9 +57,10 @@ Results should be interpreted as evidence about this simplified network-design e
 
 ## Path Toward Greater Realism
 
-1. `toy_map` for debugging.
-2. `toy_medium_map` for baseline comparison.
-3. `semi_realistic_map` for stronger external validity.
-4. Optional official-like map and rules if time permits.
+1. `micro_map` for exact optimality benchmarking.
+2. `toy_map` for debugging.
+3. `toy_medium_map` for baseline comparison.
+4. `semi_realistic_map` for stronger external validity.
+5. Optional official-like map and rules if time permits.
 
 The Phase 3A goal is to move from artificial debugging maps toward a more realistic single-player optimisation scenario without copying official artwork or attempting a full commercial game implementation.
