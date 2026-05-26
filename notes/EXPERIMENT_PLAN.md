@@ -2,7 +2,9 @@
 
 ## Current Goal
 
-Validate baseline agents across multiple artificial maps and compare them with the first search-based agent before implementing Genetic Algorithms or Reinforcement Learning.
+Validate agents on the semi-realistic scenario and report whether findings from the medium map still hold before implementing Genetic Algorithms or Reinforcement Learning.
+
+Current active phase: Phase 3B, semi-realistic experiment reporting.
 
 ## Maps / Scenarios
 
@@ -251,3 +253,37 @@ python experiments/plot_results.py --input results/raw/semi_realistic_baseline_r
 python experiments/analyse_results.py --input results/raw/semi_realistic_mcts_results.csv --output results/processed/semi_realistic_mcts_summary.csv
 python experiments/plot_results.py --input results/raw/semi_realistic_mcts_results.csv --output-dir results/plots/semi_realistic_mcts
 ```
+
+## Phase 3B: Semi-realistic Experiments
+
+The goal is to test whether algorithmic findings from `toy_medium_map` still hold on the larger `semi_realistic_map`.
+
+### Research Questions
+
+1. Do baseline agents still behave meaningfully on a larger map?
+2. Does MCTS still outperform greedy baselines on the semi-realistic map?
+3. How much does runtime increase on a larger scenario?
+4. Does the larger map reveal limitations of the current rules or agents?
+5. Is the semi-realistic map suitable for future GA or exact benchmark experiments?
+
+### Commands
+
+Run the full semi-realistic pipeline:
+
+```bash
+python experiments/run_semi_realistic_pipeline.py --baseline-episodes 50 --mcts-episodes 10 --mcts-iterations-list 50,100 --seed 0
+```
+
+Validate baseline and MCTS outputs separately:
+
+```bash
+python experiments/validate_baselines.py --input results/raw/semi_realistic_baseline_results.csv --episodes 50 --maps semi_realistic_map
+python experiments/validate_mcts_results.py --input results/raw/semi_realistic_mcts_results.csv --episodes 10 --maps semi_realistic_map --agents random,greedy_delivery,greedy_expansion,mcts_50,mcts_100
+```
+
+### Preliminary Findings
+
+- `greedy_expansion` is the strongest semi-realistic baseline because it captures major-line bonuses.
+- MCTS beats `random` and `greedy_delivery`, but the current random-rollout setting does not beat `greedy_expansion`.
+- Runtime grows substantially on the semi-realistic map, especially for `mcts_100`.
+- Invalid actions remain zero and all episodes terminate normally.

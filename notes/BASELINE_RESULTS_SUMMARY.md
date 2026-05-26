@@ -52,9 +52,9 @@
 
 The medium map makes baseline comparison more meaningful. The next sensible step is to keep the advanced AI postponed briefly and either calibrate the medium scenario further or begin a search-based agent, most likely Monte Carlo Tree Search.
 
-## Phase 3A Semi-realistic Baseline Extension
+## Semi-realistic Baseline Results
 
-Phase 3A adds `semi_realistic_map`, a larger artificial scenario intended to improve external validity before moving to GA or RL.
+Phase 3B reports baseline behaviour on `semi_realistic_map`, a larger artificial scenario intended to improve external validity before moving to GA or RL.
 
 Baseline command:
 
@@ -77,3 +77,9 @@ Initial observations:
 - `random` remains weak and variable.
 - All baseline runs had zero invalid actions and all episodes terminated normally.
 - `greedy_expansion` is slower than the other baselines, but still practical for batch experiments.
+
+Interpretation:
+
+- The semi-realistic baseline run confirms that the larger map is more useful than the small toy map for comparing strategy styles.
+- The large major-line rewards create a clear long-term planning objective that `greedy_delivery` mostly misses.
+- This makes `semi_realistic_map` suitable for later GA or exact-benchmark experiments, because simple immediate-delivery greed is no longer enough.

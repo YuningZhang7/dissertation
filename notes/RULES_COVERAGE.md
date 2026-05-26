@@ -78,6 +78,12 @@ Phase 3A improves scenario realism by adding `semi_realistic_map`, a larger arti
 
 This improves external validity compared with the small toy maps, but it still does not fully implement official multiplayer rules, official map-specific rules, terrain/tile placement, operation cards, Rail Baron cards, or opponent-owned track scoring.
 
+## Phase 3B Semi-realistic Experiment Reporting
+
+Phase 3B runs baseline and MCTS experiments on `semi_realistic_map`. The results show that the larger map changes algorithm behaviour: `greedy_expansion` benefits strongly from major-line bonuses, while MCTS improves over random and immediate-delivery greed but has higher runtime and does not yet dominate the expansion heuristic.
+
+This phase strengthens experimental reporting, but it does not add new official rules. The same single-player abstractions and exclusions still apply.
+
 ## Next Rule-Fidelity Checklist
 
 1. Decide whether each turn should always have exactly three actions or allow a formal end-turn/pass phase.

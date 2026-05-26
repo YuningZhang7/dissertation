@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 3A: model validity and semi-realistic scenario development.
+The current version is Phase 3B: semi-realistic experiment reporting.
 
 ## Current Development Stage
 
-The project is currently focused on improving model validity, documenting rule-fidelity limits, and adding a semi-realistic scenario before moving to Genetic Algorithms or Reinforcement Learning.
+The project is currently focused on running and reporting semi-realistic baseline and MCTS experiments before moving to Genetic Algorithms or Reinforcement Learning.
 
 ## Current Rule Coverage
 
@@ -257,6 +257,22 @@ python experiments/analyse_results.py --input results/raw/semi_realistic_mcts_re
 python experiments/plot_results.py --input results/raw/semi_realistic_mcts_results.csv --output-dir results/plots/semi_realistic_mcts
 ```
 
+## Semi-realistic Experiment Pipeline
+
+Run the full semi-realistic reporting workflow:
+
+```bash
+python experiments/run_semi_realistic_pipeline.py --baseline-episodes 50 --mcts-episodes 10 --mcts-iterations-list 50,100 --seed 0
+```
+
+This runs smoke tests, the project readiness check, baseline experiments, MCTS experiments, analysis, plotting, and validation for `semi_realistic_map`.
+
+Results are summarised in:
+
+```text
+notes/SEMI_REALISTIC_RESULTS_SUMMARY.md
+```
+
 ## Baseline Experiment Validation
 
 After running experiments, validate the outputs with:
@@ -347,6 +363,7 @@ railways-world-ai/
 |   |-- run_mcts_pipeline.py
 |   |-- run_mcts_tuning.py
 |   |-- run_mcts_tuning_pipeline.py
+|   |-- run_semi_realistic_pipeline.py
 |   |-- run_greedy.py
 |   |-- run_experiments.py
 |   |-- simulation_runner.py
@@ -365,5 +382,6 @@ railways-world-ai/
     |-- RULE_FIDELITY_ROADMAP.md
     |-- RULES_COVERAGE.md
     |-- SCENARIO_DESIGN.md
+    |-- SEMI_REALISTIC_RESULTS_SUMMARY.md
     `-- meeting_1_summary.md
 ```

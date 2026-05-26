@@ -68,3 +68,15 @@ The `semi_realistic_map` is self-created and artificial. It is not copied from o
 - south/coastal cluster.
 
 The main bottlenecks connect the north-west to the centre, the centre to the north-east, and the centre to the south/coastal region. This is intended to create trade-offs between short local deliveries, major-line investment, and locomotive upgrades.
+
+## Semi-realistic Scenario Observations
+
+The Phase 3B experiments show that `semi_realistic_map` produces meaningful differences between agents:
+
+- `random` remains weak and variable, with mean final score 3.84 in the 50-episode baseline run.
+- `greedy_delivery` achieves a stable mean final score of 22.00 by prioritising immediate deliveries.
+- `greedy_expansion` reaches mean final score 87.00 by exploiting the larger map's major-line opportunities.
+- `mcts_50` and `mcts_100` outperform `random` and `greedy_delivery`, but do not beat `greedy_expansion` in the current random-rollout configuration.
+- Runtime is much higher for MCTS on the semi-realistic map, which confirms that the larger scenario is a more demanding search problem.
+
+These results suggest that the semi-realistic map is useful for future GA, exact benchmark, or tuned MCTS experiments because it rewards longer-term network planning rather than only short delivery selection.

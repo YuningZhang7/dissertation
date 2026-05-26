@@ -141,9 +141,9 @@ MCTS-100, rollout depth 40, random rollout, fast action generation, 24 candidate
 
 This setting gives strong performance on the medium map without the much higher runtime of `mcts_250` or greedy rollouts. For score-runtime plots, `MCTS-50` should also be reported as the efficient lower-budget variant.
 
-## Phase 3A Semi-realistic MCTS Extension
+## Semi-realistic MCTS Results
 
-Phase 3A adds `semi_realistic_map` to test whether MCTS remains meaningful on a larger and more realistic single-player map.
+Phase 3B reports whether MCTS remains meaningful on a larger and more realistic single-player map.
 
 Command:
 
@@ -174,3 +174,7 @@ Initial observations:
 Interpretation:
 
 The semi-realistic map is a useful stress test. It shows that MCTS is not automatically dominant: a well-targeted heuristic can exploit map-specific reward structure more efficiently. This strengthens the dissertation discussion because the model now exposes both MCTS advantages and limitations.
+
+Next implication:
+
+The current MCTS should be treated as a strong but not final search baseline on the semi-realistic map. The most useful follow-up is either a semi-realistic MCTS tuning run with major-line-aware rollout/evaluation, or a Genetic Algorithm that can search over longer-term network construction plans.
