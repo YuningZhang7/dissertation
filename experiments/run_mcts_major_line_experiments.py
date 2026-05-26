@@ -21,6 +21,10 @@ from railways.environment import DEFAULT_CONFIG_PATH
 DEFAULT_OUTPUT = PROJECT_ROOT / "results" / "raw" / "mcts_major_line_results.csv"
 BASELINE_AGENT_NAMES = ["random", "greedy_delivery", "greedy_expansion"]
 EVALUATION_COLUMNS = [
+    "evaluation_mode",
+    "major_line_weight",
+    "delivery_weight",
+    "network_weight",
     "mcts_evaluation_mode",
     "mcts_major_line_weight",
     "mcts_delivery_weight",
@@ -89,6 +93,10 @@ def run_major_line_mcts_batch(
                         "mcts_rollout_policy": rollout_policy,
                         "mcts_action_generation": agent.action_generation,
                         "mcts_max_candidate_actions": agent.max_candidate_actions,
+                        "evaluation_mode": evaluation_mode,
+                        "major_line_weight": major_line_weight,
+                        "delivery_weight": delivery_weight,
+                        "network_weight": network_weight,
                         "mcts_evaluation_mode": evaluation_mode,
                         "mcts_major_line_weight": major_line_weight,
                         "mcts_delivery_weight": delivery_weight,
@@ -145,6 +153,10 @@ def _empty_mcts_metadata() -> dict[str, Any]:
         "mcts_rollout_policy": "",
         "mcts_action_generation": "",
         "mcts_max_candidate_actions": "",
+        "evaluation_mode": "",
+        "major_line_weight": "",
+        "delivery_weight": "",
+        "network_weight": "",
         "mcts_evaluation_mode": "",
         "mcts_major_line_weight": "",
         "mcts_delivery_weight": "",

@@ -324,6 +324,12 @@ Validate:
 python experiments/validate_major_line_experiments.py --input results/raw/mcts_major_line_results.csv --episodes 10
 ```
 
+Run the combined diagnosis pipeline:
+
+```bash
+python experiments/run_semi_realistic_diagnosis_pipeline.py --episodes 20 --mcts-episodes 5 --mcts-iterations-list 50,100 --multipliers 0,0.5,0.75,1.0 --seed 0
+```
+
 ### Preliminary Findings
 
 - Major-line bonus size strongly changes agent ranking.
