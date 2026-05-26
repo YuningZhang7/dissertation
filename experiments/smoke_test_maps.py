@@ -7,6 +7,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from agents.greedy_delivery_agent import GreedyDeliveryAgent
+from agents.random_agent import RandomAgent
+from experiments.simulation_runner import run_episode
 from railways.environment import reset_game
 from railways.map_loader import load_config, load_map
 from railways.rules import get_legal_build_actions
@@ -14,6 +17,7 @@ from railways.rules import get_legal_build_actions
 MAP_PATHS = [
     PROJECT_ROOT / "data" / "toy_map.json",
     PROJECT_ROOT / "data" / "toy_medium_map.json",
+    PROJECT_ROOT / "data" / "semi_realistic_map.json",
 ]
 CONFIG_PATH = PROJECT_ROOT / "data" / "rules_config.json"
 
@@ -61,6 +65,32 @@ def test_goods_colours_are_valid() -> None:
                 assert good in allowed_colours
 
 
+def test_random_agent_short_episode_does_not_crash() -> None:
+    for map_path in MAP_PATHS:
+        result = run_episode(
+            RandomAgent(seed=1),
+            seed=1,
+            max_steps=80,
+            map_path=map_path,
+            config_path=CONFIG_PATH,
+        )
+        assert result["actions_taken"] > 0
+        assert result["invalid_actions"] >= 0
+
+
+def test_greedy_delivery_short_episode_does_not_crash() -> None:
+    for map_path in MAP_PATHS:
+        result = run_episode(
+            GreedyDeliveryAgent(seed=2),
+            seed=2,
+            max_steps=80,
+            map_path=map_path,
+            config_path=CONFIG_PATH,
+        )
+        assert result["actions_taken"] > 0
+        assert result["invalid_actions"] >= 0
+
+
 def run_all() -> None:
     tests = [
         test_maps_load_successfully,
@@ -68,6 +98,8 @@ def run_all() -> None:
         test_edge_endpoints_reference_valid_cities,
         test_major_lines_reference_valid_cities,
         test_goods_colours_are_valid,
+        test_random_agent_short_episode_does_not_crash,
+        test_greedy_delivery_short_episode_does_not_crash,
     ]
     for test in tests:
         test()

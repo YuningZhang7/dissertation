@@ -25,7 +25,7 @@ def run_pipeline(
         str(episodes),
     ]
     if map_arg == "all":
-        validate_command.extend(["--maps", "toy_map,toy_medium_map"])
+        validate_command.extend(["--maps", "toy_map,toy_medium_map,semi_realistic_map"])
     elif map_arg:
         validate_command.extend(["--maps", Path(map_arg).stem])
 

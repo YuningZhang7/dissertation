@@ -24,6 +24,7 @@ BASE_DIR = Path(__file__).parent
 MAP_OPTIONS = {
     "toy_map": BASE_DIR / "data" / "toy_map.json",
     "toy_medium_map": BASE_DIR / "data" / "toy_medium_map.json",
+    "semi_realistic_map": BASE_DIR / "data" / "semi_realistic_map.json",
 }
 
 

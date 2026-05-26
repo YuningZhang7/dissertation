@@ -70,7 +70,13 @@
 
 The rule engine is now used by baseline automated agents. These agents are intended as simple benchmarks before implementing MCTS, Genetic Algorithms, Reinforcement Learning, or other advanced optimisation methods.
 
-Baseline experiments currently support both `toy_map` and `toy_medium_map`. The medium map is artificial and self-created; it is intended to create stronger route-building and delivery trade-offs without using official copyrighted map artwork.
+Baseline and MCTS experiments currently support `toy_map`, `toy_medium_map`, and `semi_realistic_map`. The maps are artificial and self-created; they are intended to create route-building and delivery trade-offs without using official copyrighted map artwork.
+
+## Phase 3A Map Realism
+
+Phase 3A improves scenario realism by adding `semi_realistic_map`, a larger artificial graph with multiple regions, bottleneck routes, grey cities, varied edge costs, and more major lines.
+
+This improves external validity compared with the small toy maps, but it still does not fully implement official multiplayer rules, official map-specific rules, terrain/tile placement, operation cards, Rail Baron cards, or opponent-owned track scoring.
 
 ## Next Rule-Fidelity Checklist
 
@@ -81,5 +87,5 @@ Baseline experiments currently support both `toy_map` and `toy_medium_map`. The 
 5. Calibrate income and bond rules against the selected official map/ruleset.
 6. Add operation card data structures and a minimal card effect engine.
 7. Expand major-line validation to match official card/map requirements.
-8. Add a richer map once the toy engine is stable.
+8. Calibrate `semi_realistic_map` and scenario-specific configs against dissertation experiment needs.
 9. Add automated test coverage for edge cases before implementing advanced AI.

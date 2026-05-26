@@ -8,6 +8,7 @@ Validate baseline agents across multiple artificial maps and compare them with t
 
 - `toy_map`: small development map.
 - `toy_medium_map`: medium artificial map for stronger baseline comparison.
+- `semi_realistic_map`: larger artificial map for stronger external validity and more realistic strategy trade-offs.
 
 ## Purpose of Medium Map
 
@@ -56,7 +57,13 @@ Run experiments on the medium map:
 python experiments/run_experiments.py --agent all --episodes 100 --seed 0 --map data/toy_medium_map.json
 ```
 
-Run experiments on both maps:
+Run experiments on the semi-realistic map:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 50 --seed 0 --map data/semi_realistic_map.json --output results/raw/semi_realistic_baseline_results.csv
+```
+
+Run experiments on all configured maps:
 
 ```bash
 python experiments/run_experiments.py --agent all --episodes 100 --seed 0 --map all --output results/raw/map_comparison_results.csv
@@ -77,7 +84,7 @@ python experiments/plot_results.py --input results/raw/map_comparison_results.cs
 Validate baselines:
 
 ```bash
-python experiments/validate_baselines.py --input results/raw/map_comparison_results.csv --episodes 100 --maps toy_map,toy_medium_map
+python experiments/validate_baselines.py --input results/raw/map_comparison_results.csv --episodes 100 --maps toy_map,toy_medium_map,semi_realistic_map
 ```
 
 Run the complete validation pipeline:
@@ -202,4 +209,45 @@ Run map robustness check:
 
 ```bash
 python experiments/run_mcts_tuning.py --map all --episodes 10 --iterations-list 50,100 --rollout-depth-list 40 --rollout-policy-list random --action-generation-list fast --max-candidate-actions-list 24 --seed 0 --output results/raw/mcts_map_robustness_results.csv
+```
+
+## Phase 3A: Semi-realistic Scenario
+
+### Research Questions
+
+1. Do baseline and MCTS results remain meaningful on a larger map?
+2. Does MCTS still outperform greedy baselines when the map is larger?
+3. How much does runtime increase?
+4. Which simplifications still limit external validity?
+
+### Metrics
+
+- final_score
+- runtime_seconds
+- deliveries
+- bonds
+- built_edges
+- major_line_bonus
+
+### Commands
+
+Run semi-realistic baseline experiments:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 50 --map data/semi_realistic_map.json --output results/raw/semi_realistic_baseline_results.csv
+```
+
+Run semi-realistic MCTS experiments:
+
+```bash
+python experiments/run_mcts_experiments.py --map data/semi_realistic_map.json --episodes 10 --iterations-list 50,100 --rollout-depth 60 --rollout-policy random --seed 0 --output results/raw/semi_realistic_mcts_results.csv
+```
+
+Analyse and plot:
+
+```bash
+python experiments/analyse_results.py --input results/raw/semi_realistic_baseline_results.csv --output results/processed/semi_realistic_baseline_summary.csv
+python experiments/plot_results.py --input results/raw/semi_realistic_baseline_results.csv --output-dir results/plots/semi_realistic_baseline
+python experiments/analyse_results.py --input results/raw/semi_realistic_mcts_results.csv --output results/processed/semi_realistic_mcts_summary.csv
+python experiments/plot_results.py --input results/raw/semi_realistic_mcts_results.csv --output-dir results/plots/semi_realistic_mcts
 ```

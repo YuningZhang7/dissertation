@@ -20,6 +20,7 @@ BASELINE_AGENT_NAMES = ["random", "greedy_delivery", "greedy_expansion"]
 DEFAULT_MAPS = [
     DEFAULT_MAP_PATH,
     PROJECT_ROOT / "data" / "toy_medium_map.json",
+    PROJECT_ROOT / "data" / "semi_realistic_map.json",
 ]
 CSV_COLUMNS = [
     "map",

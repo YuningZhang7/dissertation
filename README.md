@@ -4,17 +4,33 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 2C.6: MCTS tuning and robustness analysis.
+The current version is Phase 3A: model validity and semi-realistic scenario development.
 
 ## Current Development Stage
 
-The project is currently focused on tuning Monte Carlo Tree Search and studying its score-runtime trade-off across maps. Genetic Algorithms and Reinforcement Learning remain future work.
+The project is currently focused on improving model validity, documenting rule-fidelity limits, and adding a semi-realistic scenario before moving to Genetic Algorithms or Reinforcement Learning.
 
 ## Current Rule Coverage
 
 This version is a single-player rule-development prototype. It is not yet a full official implementation of Railways of the World. The current goal is to preserve the core local rules needed for optimisation experiments, while excluding player-vs-player interaction for now.
 
 See [notes/RULES_COVERAGE.md](notes/RULES_COVERAGE.md).
+
+## Model Validity
+
+The simulator is a defined single-player optimisation abstraction, not a claim to fully reproduce the official board game.
+
+See [notes/MODEL_VALIDITY.md](notes/MODEL_VALIDITY.md).
+
+## Scenario Design
+
+The project now includes three self-created scenarios:
+
+- `toy_map`
+- `toy_medium_map`
+- `semi_realistic_map`
+
+See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
 
 ## Implemented Core Rules
 
@@ -102,9 +118,10 @@ Run experiments on specific maps:
 ```bash
 python experiments/run_experiments.py --agent all --episodes 100 --map data/toy_map.json
 python experiments/run_experiments.py --agent all --episodes 100 --map data/toy_medium_map.json
+python experiments/run_experiments.py --agent all --episodes 50 --map data/semi_realistic_map.json --output results/raw/semi_realistic_baseline_results.csv
 ```
 
-Run all baseline agents on both maps:
+Run all baseline agents on all configured maps:
 
 ```bash
 python experiments/run_experiments.py --agent all --episodes 100 --map all --output results/raw/map_comparison_results.csv
@@ -212,6 +229,34 @@ Fast-vs-full candidate action check:
 python experiments/run_mcts_tuning.py --map data/toy_map.json --episodes 5 --iterations-list 20 --rollout-depth-list 30 --rollout-policy-list random --action-generation-list fast,full --seed 0 --output results/raw/mcts_fast_vs_full_results.csv
 ```
 
+## Semi-realistic Map
+
+Run baseline experiments:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 50 --map data/semi_realistic_map.json --output results/raw/semi_realistic_baseline_results.csv
+```
+
+Analyse and plot baseline results:
+
+```bash
+python experiments/analyse_results.py --input results/raw/semi_realistic_baseline_results.csv --output results/processed/semi_realistic_baseline_summary.csv
+python experiments/plot_results.py --input results/raw/semi_realistic_baseline_results.csv --output-dir results/plots/semi_realistic_baseline
+```
+
+Run MCTS experiments:
+
+```bash
+python experiments/run_mcts_experiments.py --map data/semi_realistic_map.json --episodes 10 --iterations-list 50,100 --rollout-depth 60 --rollout-policy random --seed 0 --output results/raw/semi_realistic_mcts_results.csv
+```
+
+Analyse and plot MCTS results:
+
+```bash
+python experiments/analyse_results.py --input results/raw/semi_realistic_mcts_results.csv --output results/processed/semi_realistic_mcts_summary.csv
+python experiments/plot_results.py --input results/raw/semi_realistic_mcts_results.csv --output-dir results/plots/semi_realistic_mcts
+```
+
 ## Baseline Experiment Validation
 
 After running experiments, validate the outputs with:
@@ -223,7 +268,7 @@ python experiments/validate_baselines.py --input results/raw/experiment_results.
 For map comparison results:
 
 ```bash
-python experiments/validate_baselines.py --input results/raw/map_comparison_results.csv --episodes 100 --maps toy_map,toy_medium_map
+python experiments/validate_baselines.py --input results/raw/map_comparison_results.csv --episodes 100 --maps toy_map,toy_medium_map,semi_realistic_map
 ```
 
 To run tests, experiments, analysis, plotting, and validation in one command:
@@ -232,7 +277,7 @@ To run tests, experiments, analysis, plotting, and validation in one command:
 python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0
 ```
 
-Run the full pipeline across both maps:
+Run the full pipeline across all configured maps:
 
 ```bash
 python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0 --map all --output results/raw/map_comparison_results.csv
@@ -270,6 +315,7 @@ railways-world-ai/
 |-- data/
 |   |-- toy_map.json
 |   |-- toy_medium_map.json
+|   |-- semi_realistic_map.json
 |   `-- rules_config.json
 |-- railways/
 |   |-- __init__.py
@@ -293,6 +339,7 @@ railways-world-ai/
 |-- experiments/
 |   |-- analyse_results.py
 |   |-- analyse_mcts_tuning.py
+|   |-- check_project_readiness.py
 |   |-- plot_results.py
 |   |-- plot_mcts_tuning.py
 |   |-- run_full_baseline_pipeline.py
@@ -314,6 +361,9 @@ railways-world-ai/
     |-- BASELINE_RESULTS_SUMMARY.md
     |-- EXPERIMENT_PLAN.md
     |-- MCTS_RESULTS_SUMMARY.md
+    |-- MODEL_VALIDITY.md
+    |-- RULE_FIDELITY_ROADMAP.md
     |-- RULES_COVERAGE.md
+    |-- SCENARIO_DESIGN.md
     `-- meeting_1_summary.md
 ```

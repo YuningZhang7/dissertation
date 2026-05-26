@@ -51,3 +51,29 @@
 ## Next Step
 
 The medium map makes baseline comparison more meaningful. The next sensible step is to keep the advanced AI postponed briefly and either calibrate the medium scenario further or begin a search-based agent, most likely Monte Carlo Tree Search.
+
+## Phase 3A Semi-realistic Baseline Extension
+
+Phase 3A adds `semi_realistic_map`, a larger artificial scenario intended to improve external validity before moving to GA or RL.
+
+Baseline command:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 50 --map data/semi_realistic_map.json --output results/raw/semi_realistic_baseline_results.csv
+```
+
+Summary from `results/processed/semi_realistic_baseline_summary.csv`:
+
+| map | agent | episodes | mean_final_score | std_final_score | mean_deliveries | mean_built_edges | mean_major_line_bonus | invalid_action_rate | terminal_rate | mean_runtime_seconds |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| semi_realistic_map | random | 50 | 3.84 | 6.13 | 5.98 | 8.58 | 1.04 | 0.0000 | 1.00 | 0.25 |
+| semi_realistic_map | greedy_delivery | 50 | 22.00 | 0.00 | 13.00 | 20.00 | 9.00 | 0.0000 | 1.00 | 0.27 |
+| semi_realistic_map | greedy_expansion | 50 | 87.00 | 0.00 | 13.00 | 20.00 | 74.00 | 0.0000 | 1.00 | 2.27 |
+
+Initial observations:
+
+- The semi-realistic map strongly distinguishes `greedy_delivery` and `greedy_expansion`.
+- `greedy_expansion` achieves much higher final score because it claims substantially more major-line bonus points.
+- `random` remains weak and variable.
+- All baseline runs had zero invalid actions and all episodes terminated normally.
+- `greedy_expansion` is slower than the other baselines, but still practical for batch experiments.

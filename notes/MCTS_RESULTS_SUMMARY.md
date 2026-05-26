@@ -140,3 +140,37 @@ MCTS-100, rollout depth 40, random rollout, fast action generation, 24 candidate
 ```
 
 This setting gives strong performance on the medium map without the much higher runtime of `mcts_250` or greedy rollouts. For score-runtime plots, `MCTS-50` should also be reported as the efficient lower-budget variant.
+
+## Phase 3A Semi-realistic MCTS Extension
+
+Phase 3A adds `semi_realistic_map` to test whether MCTS remains meaningful on a larger and more realistic single-player map.
+
+Command:
+
+```bash
+python experiments/run_mcts_experiments.py --map data/semi_realistic_map.json --episodes 10 --iterations-list 50,100 --rollout-depth 60 --rollout-policy random --seed 0 --output results/raw/semi_realistic_mcts_results.csv
+```
+
+The semi-realistic MCTS run is intentionally smaller than the medium-map MCTS experiment because the larger action space is expected to increase runtime.
+
+Summary from `results/processed/semi_realistic_mcts_summary.csv`:
+
+| Map | Agent | Episodes | Mean Final Score | Std | Mean Deliveries | Mean Built Edges | Mean Major Line Bonus | Invalid Rate | Terminal Rate | Mean Runtime (s) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| semi_realistic_map | random | 10 | 6.30 | 7.02 | 6.80 | 9.40 | 2.10 | 0.0000 | 1.00 | 0.26 |
+| semi_realistic_map | greedy_delivery | 10 | 22.00 | 0.00 | 13.00 | 20.00 | 9.00 | 0.0000 | 1.00 | 0.27 |
+| semi_realistic_map | greedy_expansion | 10 | 87.00 | 0.00 | 13.00 | 20.00 | 74.00 | 0.0000 | 1.00 | 2.30 |
+| semi_realistic_map | mcts_50 | 10 | 55.00 | 17.94 | 16.70 | 12.10 | 19.60 | 0.0000 | 1.00 | 23.78 |
+| semi_realistic_map | mcts_100 | 10 | 64.10 | 26.25 | 15.90 | 12.40 | 33.20 | 0.0000 | 1.00 | 45.07 |
+
+Initial observations:
+
+- MCTS still outperforms `random` and `greedy_delivery` on the semi-realistic map.
+- `greedy_expansion` outperforms MCTS in this scenario because it aggressively claims major-line bonuses.
+- `mcts_100` improves over `mcts_50`, but runtime roughly doubles.
+- MCTS has higher variance on the semi-realistic map, suggesting the larger action space makes planning harder.
+- All MCTS runs had zero invalid actions and all episodes terminated normally.
+
+Interpretation:
+
+The semi-realistic map is a useful stress test. It shows that MCTS is not automatically dominant: a well-targeted heuristic can exploit map-specific reward structure more efficiently. This strengthens the dissertation discussion because the model now exposes both MCTS advantages and limitations.
