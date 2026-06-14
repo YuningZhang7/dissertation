@@ -57,7 +57,7 @@ The current experiments do not claim to solve the full official board game. They
 
 Results should be interpreted as evidence about this simplified network-design environment. Strong performance by an agent means it performs well under the implemented rules, maps, and scoring assumptions. It does not yet imply strong play in the complete multiplayer board game.
 
-After supervisor feedback, the action model was corrected so that share issuing is no longer exposed as an agent decision. Financing is handled internally during payment. The model also avoids any fixed start-city or train-position assumption, because Railways of the World does not have a player start location in the sense used by train-token movement games.
+After supervisor feedback, the action model was corrected so that share issuing is no longer exposed as an agent decision. The legacy `issue_bond` action is rejected by the external action interface, and all financing is handled internally through `pay_money` during paid actions. The model also avoids any fixed start-city or train-position assumption, because Railways of the World does not have a player start location in the sense used by train-token movement games.
 
 ## Path Toward Greater Realism
 

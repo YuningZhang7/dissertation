@@ -8,7 +8,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from railways.environment import get_legal_actions, reset_game
+from railways.actions import Action
+from railways.environment import apply_action, get_legal_actions, reset_game
 from railways.models import PHASE_ACTION, PHASE_GAME_OVER
 from railways.rules import (
     build_track,
@@ -16,8 +17,8 @@ from railways.rules import (
     deliver_good,
     find_all_legal_delivery_paths,
     get_legal_build_actions,
-    issue_bond,
     next_turn,
+    pay_money,
     run_income_phase,
     upgrade_engine,
 )
@@ -96,6 +97,24 @@ def test_auto_financing_builds_without_separate_action() -> None:
         action.action_type != "issue_bond"
         for action in get_legal_actions(state)
     )
+
+
+def test_apply_action_rejects_issue_bond_external_action() -> None:
+    state = reset_game()
+    before_money = state.player.money
+    before_bonds = state.player.bonds
+    before_actions = state.actions_remaining
+
+    _, success, message = apply_action(state, Action("issue_bond"))
+
+    assert not success
+    assert (
+        "not a legal player action" in message
+        or "financing is handled internally" in message
+    )
+    assert state.player.money == before_money
+    assert state.player.bonds == before_bonds
+    assert state.actions_remaining == before_actions
 
 
 def test_no_start_city_or_train_position_required() -> None:
@@ -199,13 +218,43 @@ def test_upgrade_engine_costs_money_and_increases_level() -> None:
     assert state.player.money == 15
 
 
-def test_bonds_increase_money_and_count() -> None:
+def test_pay_money_auto_financing_increases_certificate_count() -> None:
     state = reset_game()
-    state.config = replace(state.config, allow_voluntary_bonds=True)
-    ok, _ = issue_bond(state)
-    assert ok
-    assert state.player.money == 25
-    assert state.player.bonds == 1
+    state.config = replace(
+        state.config,
+        allow_voluntary_bonds=False,
+        auto_issue_bonds_when_needed=True,
+    )
+    state.player.money = 0
+
+    ok, message = pay_money(
+        state,
+        7,
+        allow_auto_bonds=state.config.auto_issue_bonds_when_needed,
+    )
+
+    assert ok, message
+    assert state.player.money == 3
+    assert state.player.bonds == 2
+    assert any("automatically" in item for item in state.action_history)
+    assert all(action.action_type != "issue_bond" for action in get_legal_actions(state))
+
+
+def test_pay_money_does_not_auto_finance_when_disabled() -> None:
+    state = reset_game()
+    state.config = replace(state.config, auto_issue_bonds_when_needed=False)
+    state.player.money = 0
+
+    ok, message = pay_money(
+        state,
+        7,
+        allow_auto_bonds=state.config.auto_issue_bonds_when_needed,
+    )
+
+    assert not ok
+    assert "Need $7" in message
+    assert state.player.money == 0
+    assert state.player.bonds == 0
 
 
 def test_income_phase_adds_income_and_subtracts_interest() -> None:
@@ -306,6 +355,7 @@ def run_all() -> None:
         test_build_unaffordable_edge_fails_without_auto_bonds,
         test_no_issue_bond_in_legal_actions,
         test_auto_financing_builds_without_separate_action,
+        test_apply_action_rejects_issue_bond_external_action,
         test_no_start_city_or_train_position_required,
         test_delivery_without_built_path_fails,
         test_delivery_with_built_path_succeeds,
@@ -315,7 +365,8 @@ def run_all() -> None:
         test_explicit_delivery_path_rejects_unbuilt_segment,
         test_explicit_delivery_path_rejects_matching_city_skip,
         test_upgrade_engine_costs_money_and_increases_level,
-        test_bonds_increase_money_and_count,
+        test_pay_money_auto_financing_increases_certificate_count,
+        test_pay_money_does_not_auto_finance_when_disabled,
         test_income_phase_adds_income_and_subtracts_interest,
         test_final_score_subtracts_bond_penalty,
         test_empty_city_marker_added_when_last_good_removed,

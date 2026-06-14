@@ -30,7 +30,7 @@
 - The model has no fixed player starting city, home city, train position, or moving train token.
 - The first built edge can be anywhere on the map. If connected track building is enabled, later builds must touch the player's existing network only as a simplifying continuity assumption.
 - Goods delivery is based on source-city goods, target demand, built paths, locomotive level, and route validity. It is not based on a player origin city.
-- Issuing shares/bonds is no longer exposed as an agent action. Financing is handled internally by `pay_money` when an action cost must be paid and automatic financing is enabled.
+- Issuing shares/bonds is no longer exposed as an agent action. The legacy `issue_bond` action is also rejected by the external action interface. Financing is handled internally by `pay_money` when an action cost must be paid and automatic financing is enabled.
 - The code still uses the historical field name `bonds` in some places. This currently approximates Railways of the World's share certificate financing mechanism.
 
 ## Simplified Rules

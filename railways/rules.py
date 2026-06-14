@@ -433,6 +433,10 @@ def issue_bond(
     state: GameState,
     consume_action_flag: bool = True,
 ) -> tuple[bool, str]:
+    """Deprecated legacy helper. Do not use for player or agent actions.
+
+    Financing is internal through pay_money during paid actions.
+    """
     if consume_action_flag:
         ok, message = _ensure_action_phase(state)
         if not ok:
@@ -651,7 +655,13 @@ def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
             action.params.get("demand_color"),
         )
     if action.action_type == "issue_bond":
-        return issue_bond(state)
+        return (
+            False,
+            (
+                "Issuing bonds/share certificates is not a legal player action; "
+                "financing is handled internally during payment."
+            ),
+        )
     if action.action_type == "select_operation_card":
         return select_operation_card(state)
     if action.action_type == "pass":
@@ -676,7 +686,7 @@ def describe_action(action: Action | None) -> str:
     if action.action_type == "urbanize":
         return f"Urbanize city {action.params['city_id']}"
     if action.action_type == "issue_bond":
-        return "Issue bond"
+        return "Deprecated issue_bond action (not legal)"
     if action.action_type == "select_operation_card":
         return "Select operation card"
     if action.action_type == "pass":

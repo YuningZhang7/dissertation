@@ -38,12 +38,6 @@ class Action:
     def urbanize(cls, city_id: str, demand_color: str | None = None) -> "Action":
         return cls("urbanize", {"city_id": city_id, "demand_color": demand_color})
 
-    # Legacy helper only. The environment no longer exposes this as a legal
-    # agent action; financing normally happens inside payment rules.
-    @classmethod
-    def issue_bond(cls) -> "Action":
-        return cls("issue_bond")
-
     @classmethod
     def select_operation_card(cls) -> "Action":
         return cls("select_operation_card")
