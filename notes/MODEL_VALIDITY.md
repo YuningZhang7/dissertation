@@ -63,6 +63,8 @@ After supervisor feedback, the action model was corrected so that share issuing 
 
 Phase 4 adds a minimal original card framework as a fuller-rule foundation. It supports JSON-defined immediate cash cards, delivery objectives, network objectives, and end-game scoring cards. It is not a complete official card system and does not copy official card text.
 
+Cards are opt-in for programmatic simulations through `reset_game(..., card_path=...)`. The Streamlit demo enables `data/cards_basic.json`, while the exact `micro_map` benchmark remains card-disabled by default so earlier exact-search results stay comparable.
+
 ## Path Toward Greater Realism
 
 1. `micro_map` for exact optimality benchmarking.

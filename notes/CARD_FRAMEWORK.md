@@ -27,7 +27,30 @@ Financing remains separate from the action model. Issuing bonds/share certificat
 
 Cards are disabled by default in `reset_game` unless a `card_path` is supplied. This keeps existing card-free experiments and the `micro_map` exact benchmark comparable. The Streamlit app enables the basic card deck for interactive demonstration.
 
+The intended reset behaviour is:
+
+- `reset_game(..., card_path=None)`: card-disabled mode.
+- `reset_game(..., card_path=DEFAULT_CARDS_PATH)`: card-enabled mode.
+- `app.py`: card-enabled visual demo using `data/cards_basic.json`.
+- `exact/run_exact_benchmark.py`: card-disabled micro benchmark unless explicitly changed.
+
 Exact-search memoisation includes card state when cards are enabled: available cards, owned cards, card progress, completed cards, and awarded operation-card bonus.
+
+## Demo
+
+From the repository root:
+
+```bash
+python -m streamlit run app.py
+```
+
+or:
+
+```bash
+python run_app.py
+```
+
+The app entry point is `app.py`. If Streamlit shows a markdown prompt beginning with `Codex Task`, stop that process and restart the simulator with one of the commands above.
 
 ## Current Limitations
 

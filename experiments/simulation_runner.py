@@ -29,6 +29,7 @@ def run_episode(
     max_steps: int = 1000,
     map_path: str | Path | None = None,
     config_path: str | Path | None = None,
+    card_path: str | Path | None = None,
 ) -> dict[str, Any]:
     if seed is not None:
         agent.seed = seed
@@ -38,7 +39,12 @@ def run_episode(
     selected_config_path = (
         Path(config_path) if config_path is not None else DEFAULT_CONFIG_PATH
     )
-    state = reset_game(selected_map_path, selected_config_path)
+    selected_card_path = Path(card_path) if card_path is not None else None
+    state = reset_game(
+        selected_map_path,
+        selected_config_path,
+        card_path=selected_card_path,
+    )
     fallback_rng = random.Random(seed)
     actions_taken = 0
     invalid_actions = 0

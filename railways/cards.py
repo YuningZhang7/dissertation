@@ -16,7 +16,7 @@ def get_legal_operation_card_actions(state: GameState) -> list[Action]:
         return []
     return [
         Action.select_operation_card(card_id)
-        for card_id in state.available_operation_cards
+        for card_id in sorted(state.available_operation_cards)
         if card_id in state.operation_cards
     ]
 

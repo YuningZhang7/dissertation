@@ -75,11 +75,32 @@ See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
 - Opponent-owned track scoring
 - Genetic Algorithm and Reinforcement Learning agents
 
-## How to Run
+## Running the Streamlit Demo
+
+From the repository root:
+
+```bash
+python -m streamlit run app.py
+```
+
+or:
+
+```bash
+python run_app.py
+```
+
+The app entry point is always `app.py`. Do not run markdown files such as prompt notes or Codex task instructions.
+
+If the page shows a markdown prompt beginning with `Codex Task`, you are not running the simulator app. Stop Streamlit with `Ctrl+C` and run:
+
+```bash
+python -m streamlit run app.py
+```
+
+Install dependencies first if needed:
 
 ```bash
 pip install -r requirements.txt
-streamlit run app.py
 ```
 
 Then open the local URL shown by Streamlit, usually:
@@ -118,6 +139,12 @@ Run the minimal card-framework smoke tests:
 
 ```bash
 python experiments/smoke_test_cards.py
+```
+
+Run the Streamlit import smoke test:
+
+```bash
+python experiments/smoke_test_app_import.py
 ```
 
 The smoke tests cover connected track building, explicit delivery paths, corrected financing action space, automatic financing during payment, empty-city-marker end conditions, major-line bonuses, income, card loading, representative card effects, and final scoring.

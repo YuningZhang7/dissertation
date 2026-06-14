@@ -104,7 +104,7 @@ Exact search is intentionally limited to very small instances because the legal 
 
 Phase 4 adds a small representative card framework to support fuller-rule modelling without attempting to copy or implement the complete official deck. The framework loads original simplified card definitions from `data/cards_basic.json`, stores available and owned card state, exposes `select_operation_card(card_id)` as a normal player action when cards are enabled, and supports immediate cash, delivery-objective, network-objective, and end-game scoring card types.
 
-Cards are disabled by default in `reset_game` unless a `card_path` is supplied. This keeps existing card-free experiments and the `micro_map` exact benchmark comparable. The Streamlit app enables the basic card deck for demonstration.
+Cards are disabled by default in `reset_game` unless a `card_path` is supplied. This keeps existing card-free experiments and the `micro_map` exact benchmark comparable. The Streamlit app enables the basic card deck for demonstration. The app entry point is `app.py`; launch it with `python -m streamlit run app.py` or `python run_app.py`.
 
 ## Next Rule-Fidelity Checklist
 
