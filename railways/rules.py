@@ -6,6 +6,12 @@ import random
 import networkx as nx
 
 from railways.actions import Action
+from railways.cards import (
+    apply_card_on_select,
+    get_legal_operation_card_actions,
+    update_cards_after_build,
+    update_cards_after_delivery,
+)
 from railways.game_state import GameState
 from railways.models import PHASE_ACTION, PHASE_GAME_OVER, PHASE_INCOME
 from railways.scoring import compute_delivery_score, compute_income
@@ -128,6 +134,7 @@ def build_track(state: GameState, edge_id: str) -> tuple[bool, str]:
         f"Turn {state.turn}: built {edge.id} for ${edge.cost}. {payment_message}"
     )
     check_major_lines(state)
+    update_cards_after_build(state)
     consume_action(state)
     return True, f"Built track {edge_id}."
 
@@ -223,6 +230,12 @@ def deliver_good(
             f"Turn {state.turn}: delivered {good_color} from {source_city_id} "
             f"to {target_city_id} via {'-'.join(selected_path)} (+{delivery_score})."
         )
+    )
+    update_cards_after_delivery(
+        state,
+        source_city_id,
+        target_city_id,
+        good_color,
     )
     consume_action(state)
     return True, f"Delivered {good_color} from {source_city_id} to {target_city_id}."
@@ -569,11 +582,15 @@ def pass_action(state: GameState) -> tuple[bool, str]:
     return True, "Passed one action."
 
 
-def select_operation_card(state: GameState) -> tuple[bool, str]:
+def select_operation_card(state: GameState, card_id: str) -> tuple[bool, str]:
     ok, message = _ensure_action_phase(state)
     if not ok:
         return False, message
-    return False, "Operation cards are not implemented in this prototype."
+    selected, select_message = apply_card_on_select(state, card_id)
+    if not selected:
+        return False, select_message
+    consume_action(state)
+    return True, select_message
 
 
 def update_empty_city_marker(state: GameState, city_id: str) -> None:
@@ -663,7 +680,7 @@ def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
             ),
         )
     if action.action_type == "select_operation_card":
-        return select_operation_card(state)
+        return select_operation_card(state, str(action.params["card_id"]))
     if action.action_type == "pass":
         return pass_action(state)
     if action.action_type == "next_turn":
@@ -688,7 +705,7 @@ def describe_action(action: Action | None) -> str:
     if action.action_type == "issue_bond":
         return "Deprecated issue_bond action (not legal)"
     if action.action_type == "select_operation_card":
-        return "Select operation card"
+        return f"Select operation card {action.params.get('card_id', '')}"
     if action.action_type == "pass":
         return "Pass"
     if action.action_type == "next_turn":

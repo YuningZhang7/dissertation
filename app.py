@@ -7,12 +7,19 @@ import streamlit as st
 from agents.mcts_agent import MCTSAgent
 from agents.registry import create_agent, list_agent_names
 from railways.actions import Action
-from railways.environment import apply_action, get_legal_actions, reset_game
+from railways.cards import compute_end_game_card_bonus
+from railways.environment import (
+    DEFAULT_CARDS_PATH,
+    apply_action,
+    get_legal_actions,
+    reset_game,
+)
 from railways.game_state import GameState
 from railways.rules import (
     count_empty_city_markers,
     describe_action,
     get_engine_upgrade_cost,
+    get_legal_operation_card_actions,
     get_legal_build_actions,
     get_legal_deliveries,
     get_legal_upgrade_action,
@@ -30,7 +37,7 @@ MAP_OPTIONS = {
 
 def create_game_state(map_name: str | None = None) -> GameState:
     selected_map = map_name or st.session_state.get("selected_map", "toy_map")
-    return reset_game(map_path=MAP_OPTIONS[selected_map])
+    return reset_game(map_path=MAP_OPTIONS[selected_map], card_path=DEFAULT_CARDS_PATH)
 
 
 def initialise_session() -> None:
@@ -81,6 +88,7 @@ def main() -> None:
     with side_col:
         render_map_selector()
         render_player_panel(state)
+        render_card_panel(state)
         render_manual_controls(state)
         render_agent_controls(state)
         render_history(state)
@@ -113,7 +121,46 @@ def render_player_panel(state: GameState) -> None:
     metric_col_a.metric("Engine Level", state.player.locomotive_level)
     metric_col_b.metric("Delivered", state.player.delivered_goods_count)
     metric_col_a.metric("Major Line Bonus", state.player.major_line_bonus)
+    metric_col_b.metric("Card Bonus", state.player.operation_card_bonus)
+    metric_col_a.metric("End Card Estimate", compute_end_game_card_bonus(state))
     metric_col_b.metric("Empty Markers", count_empty_city_markers(state))
+
+
+def render_card_panel(state: GameState) -> None:
+    st.subheader("Operation Cards")
+    if not state.operation_cards:
+        st.caption("Cards are not enabled for this scenario.")
+        return
+
+    card_actions = get_legal_operation_card_actions(state)
+    card_labels = {
+        _card_label(state, action.params["card_id"]): action
+        for action in card_actions
+    }
+    selected_card = st.selectbox(
+        "Available card",
+        options=list(card_labels.keys()),
+        disabled=state.is_terminal() or not card_labels,
+    )
+    if st.button(
+        "Select Operation Card",
+        disabled=state.is_terminal() or not card_labels,
+    ):
+        submit_action(card_labels[selected_card])
+
+    owned = [
+        state.operation_cards[card_id].name
+        for card_id in state.player.owned_operation_cards
+        if card_id in state.operation_cards
+    ]
+    completed = [
+        state.operation_cards[card_id].name
+        for card_id in sorted(state.player.completed_operation_cards)
+        if card_id in state.operation_cards
+    ]
+    st.caption(f"Available: {len(state.available_operation_cards)}")
+    st.caption("Owned: " + (", ".join(owned) if owned else "none"))
+    st.caption("Completed/used: " + (", ".join(completed) if completed else "none"))
 
 
 def render_manual_controls(state: GameState) -> None:
@@ -397,9 +444,15 @@ def get_preview_actions(state: GameState) -> list[Action]:
     upgrade = get_legal_upgrade_action(state)
     if upgrade is not None:
         previews.append(upgrade)
+    previews.extend(get_legal_operation_card_actions(state)[:1])
     previews.extend(get_legal_urbanize_actions(state)[:1])
     previews.append(Action.pass_action())
     return previews[:4]
+
+
+def _card_label(state: GameState, card_id: str) -> str:
+    card = state.operation_cards[card_id]
+    return f"{card.name} ({card.card_type})"
 
 
 if __name__ == "__main__":

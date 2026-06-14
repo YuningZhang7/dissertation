@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from railways.models import GameConfig
+from railways.cards import compute_end_game_card_bonus
 
 if TYPE_CHECKING:
     from railways.game_state import GameState
@@ -40,4 +41,5 @@ def compute_final_score(state: GameState) -> int:
         + state.player.major_line_bonus
         + state.player.rail_baron_bonus
         + state.player.operation_card_bonus
+        + compute_end_game_card_bonus(state)
     )

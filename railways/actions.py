@@ -39,8 +39,8 @@ class Action:
         return cls("urbanize", {"city_id": city_id, "demand_color": demand_color})
 
     @classmethod
-    def select_operation_card(cls) -> "Action":
-        return cls("select_operation_card")
+    def select_operation_card(cls, card_id: str) -> "Action":
+        return cls("select_operation_card", {"card_id": card_id})
 
     @classmethod
     def pass_action(cls) -> "Action":

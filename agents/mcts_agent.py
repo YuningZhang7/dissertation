@@ -19,6 +19,7 @@ from railways.game_state import GameState
 from railways.rules import (
     describe_action,
     get_built_graph,
+    get_legal_operation_card_actions,
     get_legal_build_actions,
     get_legal_upgrade_action,
     get_legal_urbanize_actions,
@@ -226,6 +227,13 @@ class MCTSAgent(BaseAgent):
         upgrade_action = get_legal_upgrade_action(state)
         if upgrade_action is not None:
             actions.append(upgrade_action)
+
+        actions.extend(
+            sorted(
+                get_legal_operation_card_actions(state),
+                key=lambda action: str(action.params.get("card_id", "")),
+            )[:3]
+        )
 
         actions.extend(
             sorted(

@@ -5,6 +5,7 @@ from railways.actions import Action
 from railways.environment import apply_action, copy_state
 from railways.game_state import GameState
 from railways.rules import (
+    get_legal_operation_card_actions,
     get_legal_build_actions,
     get_legal_deliveries,
     get_legal_upgrade_action,
@@ -27,6 +28,13 @@ class GreedyExpansionAgent(BaseAgent):
         upgrade_action = get_legal_upgrade_action(state)
         if upgrade_action is not None:
             return upgrade_action
+
+        card_actions = get_legal_operation_card_actions(state)
+        if card_actions:
+            return sorted(
+                card_actions,
+                key=lambda action: str(action.params.get("card_id", "")),
+            )[0]
 
         urbanize_actions = get_legal_urbanize_actions(state)
         if urbanize_actions:

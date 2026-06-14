@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 
 PHASE_ACTION = "action"
@@ -46,6 +47,17 @@ class OperationCard:
     name: str
     card_type: str
     description: str
+    condition: dict[str, Any] = field(default_factory=dict)
+    reward: dict[str, Any] = field(default_factory=dict)
+    effect: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class PlayerCardState:
+    card_id: str
+    status: str
+    progress: int = 0
+    awarded_points: int = 0
 
 
 @dataclass
@@ -59,6 +71,9 @@ class PlayerState:
     major_line_bonus: int = 0
     rail_baron_bonus: int = 0
     operation_card_bonus: int = 0
+    owned_operation_cards: list[str] = field(default_factory=list)
+    active_operation_cards: dict[str, PlayerCardState] = field(default_factory=dict)
+    completed_operation_cards: set[str] = field(default_factory=set)
 
 
 @dataclass(frozen=True)

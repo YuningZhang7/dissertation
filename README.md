@@ -4,11 +4,11 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
 
-The current version is Phase 3D: small-instance exact benchmark.
+The current version is Phase 4: minimal card framework and fuller-rule foundation.
 
 ## Current Development Stage
 
-The project is currently focused on adding a small exact-search benchmark so heuristic agents and MCTS can be compared against a true optimum on micro instances.
+The project currently has a corrected basic-rule simulator, baseline agents, MCTS agents, an exact-search benchmark on micro instances, and a minimal representative card framework for fuller-rule modelling.
 
 ## Supervisor Feedback Corrections
 
@@ -58,13 +58,19 @@ See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
 - Fixed-turn and empty-city-marker end condition modes
 - Simplified urbanize action
 - Major-line loading, claiming, and final-score bonus support
+- Minimal representative operation-card framework:
+  - immediate cash cards
+  - delivery objective cards
+  - network objective cards
+  - end-game scoring cards
 - AI-ready environment interface
 
 ## Not Yet Implemented
 
 - Full official map
 - Full individual track tile placement
-- Full operation cards
+- Full official operation-card deck
+- Full Rail Baron / Tycoon objective-card system
 - Multiplayer auction and interaction
 - Opponent-owned track scoring
 - Genetic Algorithm and Reinforcement Learning agents
@@ -108,7 +114,13 @@ Run the exact benchmark smoke tests:
 python experiments/smoke_test_exact.py
 ```
 
-The smoke tests cover connected track building, explicit delivery paths, corrected financing action space, automatic financing during payment, empty-city-marker end conditions, major-line bonuses, income, and final scoring.
+Run the minimal card-framework smoke tests:
+
+```bash
+python experiments/smoke_test_cards.py
+```
+
+The smoke tests cover connected track building, explicit delivery paths, corrected financing action space, automatic financing during payment, empty-city-marker end conditions, major-line bonuses, income, card loading, representative card effects, and final scoring.
 
 Run the simple greedy baseline from the command line:
 

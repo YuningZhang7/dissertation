@@ -3,11 +3,13 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
+from railways.card_loader import load_cards
 from railways.map_loader import load_config, load_map
 from railways.models import (
     City,
     GameConfig,
     MajorLine,
+    OperationCard,
     PHASE_ACTION,
     PHASE_GAME_OVER,
     PlayerState,
@@ -26,6 +28,8 @@ class GameState:
         config: GameConfig | None = None,
         player: PlayerState | None = None,
         major_lines: dict[str, MajorLine] | None = None,
+        operation_cards: dict[str, OperationCard] | None = None,
+        available_operation_cards: list[str] | None = None,
         turn: int | None = None,
         phase: str = PHASE_ACTION,
         actions_remaining: int | None = None,
@@ -37,9 +41,17 @@ class GameState:
         self._initial_cities = deepcopy(cities)
         self._initial_edges = deepcopy(edges)
         self._initial_major_lines = deepcopy(major_lines or {})
+        self._initial_operation_cards = deepcopy(operation_cards or {})
+        self._initial_available_operation_cards = list(
+            available_operation_cards
+            if available_operation_cards is not None
+            else sorted((operation_cards or {}).keys())
+        )
         self.cities = deepcopy(cities)
         self.edges = deepcopy(edges)
         self.major_lines = deepcopy(major_lines or {})
+        self.operation_cards = deepcopy(operation_cards or {})
+        self.available_operation_cards = list(self._initial_available_operation_cards)
         self.player = deepcopy(player) if player else self.config.create_initial_player()
         self.turn = turn if turn is not None else self.config.initial_turn
         self.phase = phase
@@ -58,20 +70,25 @@ class GameState:
         cls,
         map_path: str | Path,
         config_path: str | Path,
+        card_path: str | Path | None = None,
     ) -> "GameState":
         cities, edges, major_lines = load_map(map_path)
         config = load_config(config_path)
+        operation_cards = load_cards(card_path) if card_path is not None else {}
         return cls(
             cities=cities,
             edges=edges,
             major_lines=major_lines,
             config=config,
+            operation_cards=operation_cards,
         )
 
     def reset(self) -> None:
         self.cities = deepcopy(self._initial_cities)
         self.edges = deepcopy(self._initial_edges)
         self.major_lines = deepcopy(self._initial_major_lines)
+        self.operation_cards = deepcopy(self._initial_operation_cards)
+        self.available_operation_cards = list(self._initial_available_operation_cards)
         self.player = self.config.create_initial_player()
         self.turn = self.config.initial_turn
         self.phase = PHASE_ACTION

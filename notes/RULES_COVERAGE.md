@@ -23,6 +23,7 @@
 - Empty-city-marker end condition with optional extra turn after the trigger.
 - Simplified urbanize action for gray or non-urbanized cities.
 - Major-line data loading, connection-based claiming, one-time bonus scoring, and action-history logging.
+- Minimal representative operation-card framework with JSON loading, card selection actions, immediate cash effects, delivery objectives, network objectives, and end-game scoring cards.
 - AI-ready environment functions: reset, legal actions, apply action, copy state, terminal check, final score.
 
 ## Supervisor Feedback Corrections
@@ -44,6 +45,7 @@
 - Share/bond financing is simplified to a fixed certificate value and fixed income-phase obligation.
 - Urbanize uses a simple cost, demand color, and random new goods.
 - Major lines are represented as source-target connection bonuses rather than full official route cards.
+- Operation cards use a small original test deck rather than the official deck or official card text.
 - The map is a toy map rather than an official board map.
 - End condition can be set to `fixed_turns` or `empty_city_markers`.
 
@@ -56,8 +58,8 @@
 - Full income and dividend rules.
 - Full bond and share/economic model.
 - Major Lines with official route requirements and map-specific bonuses.
-- Rail Baron cards.
-- Railroad Operations Cards.
+- Full official Railroad Operations Card deck and full official card timing.
+- Full Rail Baron / Tycoon objective-card system.
 - Full terrain-based track building.
 - Track tile placement and tile limits.
 - Official map-specific rules.
@@ -98,6 +100,12 @@ Phase 3D adds exact exhaustive search on `micro_map`. This is an evaluation tool
 
 Exact search is intentionally limited to very small instances because the legal action space grows quickly on larger maps.
 
+## Phase 4 Minimal Card Framework
+
+Phase 4 adds a small representative card framework to support fuller-rule modelling without attempting to copy or implement the complete official deck. The framework loads original simplified card definitions from `data/cards_basic.json`, stores available and owned card state, exposes `select_operation_card(card_id)` as a normal player action when cards are enabled, and supports immediate cash, delivery-objective, network-objective, and end-game scoring card types.
+
+Cards are disabled by default in `reset_game` unless a `card_path` is supplied. This keeps existing card-free experiments and the `micro_map` exact benchmark comparable. The Streamlit app enables the basic card deck for demonstration.
+
 ## Next Rule-Fidelity Checklist
 
 1. Decide whether each turn should always have exactly three actions or allow a formal end-turn/pass phase.
@@ -105,7 +113,8 @@ Exact search is intentionally limited to very small instances because the legal 
 3. Add terrain and tile-level build costs.
 4. Improve urbanize rules and goods generation.
 5. Calibrate income and share-certificate financing rules against the selected official map/ruleset.
-6. Add operation card data structures and a minimal card effect engine.
-7. Expand major-line validation to match official card/map requirements.
-8. Calibrate `semi_realistic_map` and scenario-specific configs against dissertation experiment needs.
-9. Add automated test coverage for edge cases before implementing advanced AI.
+6. Expand the minimal card framework toward a selected official-like operation-card subset.
+7. Add Rail Baron / Tycoon objective-card support.
+8. Expand major-line validation to match official card/map requirements.
+9. Calibrate `semi_realistic_map` and scenario-specific configs against dissertation experiment needs.
+10. Add automated test coverage for edge cases before implementing advanced AI.

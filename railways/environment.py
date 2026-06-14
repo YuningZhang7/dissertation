@@ -6,6 +6,7 @@ from railways.actions import Action
 from railways.game_state import GameState
 from railways.rules import (
     apply_action as apply_rule_action,
+    get_legal_operation_card_actions,
     get_legal_build_actions,
     get_legal_deliveries,
     get_legal_upgrade_action,
@@ -16,13 +17,15 @@ from railways.rules import (
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MAP_PATH = PROJECT_ROOT / "data" / "toy_map.json"
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "data" / "rules_config.json"
+DEFAULT_CARDS_PATH = PROJECT_ROOT / "data" / "cards_basic.json"
 
 
 def reset_game(
     map_path: str | Path = DEFAULT_MAP_PATH,
     config_path: str | Path = DEFAULT_CONFIG_PATH,
+    card_path: str | Path | None = None,
 ) -> GameState:
-    return GameState.from_files(map_path, config_path)
+    return GameState.from_files(map_path, config_path, card_path=card_path)
 
 
 def get_legal_actions(state: GameState) -> list[Action]:
@@ -38,6 +41,7 @@ def get_legal_actions(state: GameState) -> list[Action]:
         actions.append(upgrade_action)
 
     actions.extend(get_legal_urbanize_actions(state))
+    actions.extend(get_legal_operation_card_actions(state))
 
     # Financing is handled internally by payment rules, not exposed as a
     # strategic action for agents or exact search.
