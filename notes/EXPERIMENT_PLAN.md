@@ -6,6 +6,15 @@ Add exact optimality benchmarking on a micro instance while keeping larger-map e
 
 Current active phase: Phase 3D, small-instance exact benchmark.
 
+## Supervisor Feedback Corrections
+
+New experiments use the corrected basic-rule action space:
+
+- no fixed start city, home city, train position, or moving train token;
+- share/bond issuing is internal financing during payment, not an agent action;
+- `issue_bond` is not returned by `get_legal_actions` and is not part of MCTS or exact-search branching;
+- connected track building, when enabled, is a simplifying network-contiguity assumption.
+
 ## Maps / Scenarios
 
 - `toy_map`: small development map.

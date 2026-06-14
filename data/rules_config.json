@@ -8,8 +8,8 @@
   "bond_value": 5,
   "bond_interest": 1,
   "bond_final_penalty": 1,
-  "allow_voluntary_bonds": true,
-  "auto_issue_bonds_when_needed": false,
+  "allow_voluntary_bonds": false,
+  "auto_issue_bonds_when_needed": true,
   "require_connected_track_building": true,
   "max_locomotive_level": 6,
   "engine_upgrade_costs": {

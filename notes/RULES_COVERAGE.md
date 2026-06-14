@@ -8,14 +8,14 @@
 - Single-player turn structure with an action phase and income phase.
 - Configurable actions per turn.
 - Track construction as one city-to-city edge per action.
-- Optional connected track-building restriction. With `require_connected_track_building = true`, the first track may start anywhere, then later track must touch the player's existing network.
+- Optional connected track-building restriction. With `require_connected_track_building = true`, the first track may start anywhere, then later track must touch the player's existing network. This is a simplifying network-contiguity assumption, not an official fixed-start rule.
 - Goods delivery over built links only.
 - Explicit route-based delivery actions with a selected `path` field.
 - Locomotive level limiting delivery path length.
 - Delivery scoring based on path length.
 - Rule preventing a delivery from skipping an intermediate city that demands the delivered good color.
-- Voluntary bonds, configurable bond value, and configurable final bond penalty.
-- Bond interest during income phase.
+- Internal share/bond financing during payments, configurable financing value, and configurable final penalty.
+- Financing interest/dividend during income phase.
 - Score-based income using a configurable income table.
 - Engine upgrades using configurable level-by-level costs.
 - Empty city markers when a city loses its last good.
@@ -25,6 +25,14 @@
 - Major-line data loading, connection-based claiming, one-time bonus scoring, and action-history logging.
 - AI-ready environment functions: reset, legal actions, apply action, copy state, terminal check, final score.
 
+## Supervisor Feedback Corrections
+
+- The model has no fixed player starting city, home city, train position, or moving train token.
+- The first built edge can be anywhere on the map. If connected track building is enabled, later builds must touch the player's existing network only as a simplifying continuity assumption.
+- Goods delivery is based on source-city goods, target demand, built paths, locomotive level, and route validity. It is not based on a player origin city.
+- Issuing shares/bonds is no longer exposed as an agent action. Financing is handled internally by `pay_money` when an action cost must be paid and automatic financing is enabled.
+- The code still uses the historical field name `bonds` in some places. This currently approximates Railways of the World's share certificate financing mechanism.
+
 ## Simplified Rules
 
 - Each city-to-city link is modelled as one edge, not individual track tiles.
@@ -33,7 +41,7 @@
 - All built links are owned by the single player.
 - Delivery route selection uses explicit simple graph paths, but does not yet model opponent track fees or complex official route constraints.
 - Income uses a small configurable score table rather than the full official income chart.
-- Bond interest is simplified to a fixed amount per bond.
+- Share/bond financing is simplified to a fixed certificate value and fixed income-phase obligation.
 - Urbanize uses a simple cost, demand color, and random new goods.
 - Major lines are represented as source-target connection bonuses rather than full official route cards.
 - The map is a toy map rather than an official board map.
@@ -96,7 +104,7 @@ Exact search is intentionally limited to very small instances because the legal 
 2. Add official-style route choice details such as opponent track payments if multiplayer is ever reintroduced.
 3. Add terrain and tile-level build costs.
 4. Improve urbanize rules and goods generation.
-5. Calibrate income and bond rules against the selected official map/ruleset.
+5. Calibrate income and share-certificate financing rules against the selected official map/ruleset.
 6. Add operation card data structures and a minimal card effect engine.
 7. Expand major-line validation to match official card/map requirements.
 8. Calibrate `semi_realistic_map` and scenario-specific configs against dissertation experiment needs.

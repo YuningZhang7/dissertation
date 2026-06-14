@@ -72,8 +72,8 @@ class GameConfig:
     bond_value: int = 5
     bond_interest: int = 1
     bond_final_penalty: int = 1
-    allow_voluntary_bonds: bool = True
-    auto_issue_bonds_when_needed: bool = False
+    allow_voluntary_bonds: bool = False
+    auto_issue_bonds_when_needed: bool = True
     require_connected_track_building: bool = True
     max_locomotive_level: int = 6
     engine_upgrade_costs: dict[str, int] = field(default_factory=dict)

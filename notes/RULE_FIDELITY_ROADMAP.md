@@ -7,7 +7,7 @@
 - Connected track-building restriction
 - Explicit route-based goods delivery
 - Locomotive upgrades
-- Bonds and interest
+- Internal share/bond financing and income-phase obligations
 - Basic income phase
 - Empty city markers
 - Fixed-turn and empty-city-marker end conditions
@@ -16,6 +16,8 @@
 - Baseline and MCTS agent support
 - Multi-map experiment runners
 - MCTS tuning and validation scripts
+- Corrected action space: share/bond issuing is financing, not a normal agent action
+- No fixed start city, home city, train position, or moving train token
 
 ## High Priority Next Rules
 
@@ -24,7 +26,7 @@ These rules most affect optimisation behaviour:
 1. More realistic map data
 2. More realistic edge costs
 3. More realistic income table
-4. More complete bond/payment rules
+4. More complete share-certificate/payment rules
 5. More complete major-line data
 6. More complete end condition
 7. Better urbanize/goods replenishment rules
@@ -49,6 +51,6 @@ These rules most affect optimisation behaviour:
 
 ## Excluded for Current Single-player Scope
 
-Multiplayer interaction is intentionally excluded for now. The dissertation prototype focuses on the single-player optimisation problem: building a network, managing money and bonds, selecting deliveries, upgrading locomotive capacity, and comparing automated decision policies.
+Multiplayer interaction is intentionally excluded for now. The dissertation prototype focuses on the single-player optimisation problem: building a network, managing money and internal financing, selecting deliveries, upgrading locomotive capacity, and comparing automated decision policies.
 
 This keeps the computational question clear and allows baseline and MCTS agents to be compared without needing to model opponent behaviour.

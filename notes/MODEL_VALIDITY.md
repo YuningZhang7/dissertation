@@ -13,7 +13,7 @@ This simulator is a rule-based single-player abstraction of Railways of the Worl
 - Goods delivery through built railway paths
 - Explicit delivery-route selection
 - Locomotive level limiting delivery distance
-- Money, bonds, and bond interest
+- Money, internal share/bond financing, and financing obligations
 - Income phase
 - Empty city markers
 - Major-line bonuses
@@ -33,7 +33,9 @@ This simulator is a rule-based single-player abstraction of Railways of the Worl
 - Multiplayer auction and opponent interaction are excluded.
 - Opponent-owned track scoring is excluded.
 - Some official map-specific rules are not yet included.
-- Income, bonds, urbanisation, and end conditions are simplified but configurable.
+- Income, share/bond financing, urbanisation, and end conditions are simplified but configurable.
+- There is no fixed player start city, home city, train position, or moving train token.
+- The optional connected-track rule is a simplifying network-contiguity assumption, not a claim that the official game has a fixed origin.
 
 ## Why the Simplified Model Is Still Useful
 
@@ -41,7 +43,7 @@ The current model captures the core sequential network design problem:
 
 - expand a railway network;
 - manage limited money;
-- decide when to issue bonds;
+- use internal financing when payments exceed available cash;
 - decide when to upgrade locomotives;
 - choose which goods to deliver;
 - balance short-term scoring and long-term network expansion;
@@ -54,6 +56,8 @@ This is enough to compare algorithmic strategies under a defined abstraction. It
 The current experiments do not claim to solve the full official board game. They compare algorithms under a defined single-player abstraction.
 
 Results should be interpreted as evidence about this simplified network-design environment. Strong performance by an agent means it performs well under the implemented rules, maps, and scoring assumptions. It does not yet imply strong play in the complete multiplayer board game.
+
+After supervisor feedback, the action model was corrected so that share issuing is no longer exposed as an agent decision. Financing is handled internally during payment. The model also avoids any fixed start-city or train-position assumption, because Railways of the World does not have a player start location in the sense used by train-token movement games.
 
 ## Path Toward Greater Realism
 

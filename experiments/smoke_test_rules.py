@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from railways.environment import reset_game
+from railways.environment import get_legal_actions, reset_game
 from railways.models import PHASE_ACTION, PHASE_GAME_OVER
 from railways.rules import (
     build_track,
@@ -60,11 +60,65 @@ def test_connected_building_allows_edge_touching_network() -> None:
 
 def test_build_unaffordable_edge_fails_without_auto_bonds() -> None:
     state = reset_game()
+    state.config = replace(state.config, auto_issue_bonds_when_needed=False)
     state.player.money = 0
     ok, _ = build_track(state, "C-H")
     assert not ok
     assert not state.edges["C-H"].built
     assert state.player.bonds == 0
+
+
+def test_no_issue_bond_in_legal_actions() -> None:
+    state = reset_game()
+    actions = get_legal_actions(state)
+    assert actions
+    assert all(action.action_type != "issue_bond" for action in actions)
+
+
+def test_auto_financing_builds_without_separate_action() -> None:
+    state = reset_game()
+    state.config = replace(
+        state.config,
+        allow_voluntary_bonds=False,
+        auto_issue_bonds_when_needed=True,
+    )
+    state.player.money = 0
+    starting_actions = state.actions_remaining
+
+    ok, message = build_track(state, "C-H")
+    assert ok, message
+    assert state.edges["C-H"].built
+    assert state.player.bonds == 2
+    assert state.player.money == 4
+    assert state.actions_remaining == starting_actions - 1
+    assert any("automatically" in item for item in state.action_history)
+    assert all(
+        action.action_type != "issue_bond"
+        for action in get_legal_actions(state)
+    )
+
+
+def test_no_start_city_or_train_position_required() -> None:
+    state = reset_game()
+    for field_name in [
+        "start_city",
+        "starting_city",
+        "home_city",
+        "train_position",
+        "current_city",
+        "player_start",
+    ]:
+        assert not hasattr(state, field_name)
+
+    state.config = replace(state.config, require_connected_track_building=False)
+    legal_edge_ids = {
+        action.params["edge_id"]
+        for action in get_legal_build_actions(state)
+    }
+    assert {"A-B", "C-H"}.issubset(legal_edge_ids)
+    assert build_track(state, "A-B")[0]
+    ok, message = build_track(state, "C-H")
+    assert ok, message
 
 
 def test_delivery_without_built_path_fails() -> None:
@@ -147,6 +201,7 @@ def test_upgrade_engine_costs_money_and_increases_level() -> None:
 
 def test_bonds_increase_money_and_count() -> None:
     state = reset_game()
+    state.config = replace(state.config, allow_voluntary_bonds=True)
     ok, _ = issue_bond(state)
     assert ok
     assert state.player.money == 25
@@ -249,6 +304,9 @@ def run_all() -> None:
         test_connected_building_rejects_disconnected_second_edge,
         test_connected_building_allows_edge_touching_network,
         test_build_unaffordable_edge_fails_without_auto_bonds,
+        test_no_issue_bond_in_legal_actions,
+        test_auto_financing_builds_without_separate_action,
+        test_no_start_city_or_train_position_required,
         test_delivery_without_built_path_fails,
         test_delivery_with_built_path_succeeds,
         test_delivery_fails_when_path_exceeds_engine_level,

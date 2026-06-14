@@ -53,6 +53,7 @@ def test_exact_solver_terminates_and_replays() -> None:
     assert replay_ok, replay_message
     assert replay_state.is_terminal()
     assert final_score(replay_state) == result.optimal_score
+    assert all(action.action_type != "issue_bond" for action in result.optimal_actions)
 
 
 def test_existing_agents_run_on_micro_map() -> None:

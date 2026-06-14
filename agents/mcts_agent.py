@@ -234,9 +234,6 @@ class MCTSAgent(BaseAgent):
             )[:4]
         )
 
-        if state.config.allow_voluntary_bonds:
-            actions.append(Action.issue_bond())
-
         actions.append(Action.pass_action())
         actions.append(Action.next_turn())
         return actions[: self.max_candidate_actions]

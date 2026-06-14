@@ -39,9 +39,8 @@ def get_legal_actions(state: GameState) -> list[Action]:
 
     actions.extend(get_legal_urbanize_actions(state))
 
-    if state.config.allow_voluntary_bonds:
-        actions.append(Action.issue_bond())
-
+    # Financing is handled internally by payment rules, not exposed as a
+    # strategic action for agents or exact search.
     actions.append(Action.pass_action())
     actions.append(Action.next_turn())
     return actions

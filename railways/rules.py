@@ -442,8 +442,11 @@ def issue_bond(
 
     state.player.money += state.config.bond_value
     state.player.bonds += 1
+    financing_label = (
+        "bond action" if consume_action_flag else "financing certificate"
+    )
     state.record(
-        f"Turn {state.turn}: issued bond (+${state.config.bond_value})."
+        f"Turn {state.turn}: issued {financing_label} (+${state.config.bond_value})."
     )
 
     if consume_action_flag:
@@ -464,16 +467,34 @@ def pay_money(
     if amount <= 0:
         return True, "No payment required."
 
+    issued_certificates = 0
     if state.player.money < amount and allow_auto_bonds:
         shortfall = amount - state.player.money
         bonds_needed = math.ceil(shortfall / state.config.bond_value)
-        for _ in range(bonds_needed):
-            issue_bond(state, consume_action_flag=False)
+        financing_value = bonds_needed * state.config.bond_value
+        state.player.money += financing_value
+        state.player.bonds += bonds_needed
+        issued_certificates = bonds_needed
+        state.record(
+            (
+                f"Turn {state.turn}: issued {bonds_needed} financing "
+                f"certificate(s) automatically to cover payment shortfall "
+                f"(+${financing_value})."
+            )
+        )
 
     if state.player.money < amount:
         return False, f"Need ${amount}, but only ${state.player.money} is available."
 
     state.player.money -= amount
+    if issued_certificates:
+        return (
+            True,
+            (
+                f"Issued {issued_certificates} financing certificate(s) "
+                f"automatically. Paid ${amount}."
+            ),
+        )
     return True, f"Paid ${amount}."
 
 

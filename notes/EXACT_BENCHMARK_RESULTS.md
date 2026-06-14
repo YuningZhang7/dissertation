@@ -16,7 +16,8 @@ The `micro_map` scenario is a deliberately small artificial map for exact benchm
 - Goods: 4 initial goods
 - Horizon: 4 turns
 - Actions per turn: 2
-- Voluntary bonds: disabled
+- Voluntary share/bond action: disabled
+- Automatic financing during payment: enabled
 - End condition: fixed turns
 
 The map is small enough for exhaustive search, but it still contains a strategic trade-off:
@@ -38,6 +39,8 @@ The exact solver uses the existing simulator interface:
 
 It does not implement a separate game engine. The optimum is therefore computed under the same rule abstraction used by the baseline and MCTS agents.
 
+After supervisor feedback, this benchmark uses the corrected basic-rule action space: issuing shares/bonds is not a legal agent action and does not appear in the exact search tree. Financing is handled internally during payment when automatic financing is enabled.
+
 The solver performs recursive depth-first search over legal actions with memoisation. The canonical state key includes turn, phase, actions remaining, player money, score, bonds, locomotive level, built edges, remaining goods, city empty markers, claimed major lines, and other rule-relevant mutable state.
 
 Branch-and-bound is disabled in this phase. This avoids unsafe pruning and keeps the benchmark exact.
@@ -56,10 +59,10 @@ Result:
 | --- | ---: |
 | optimal final score | 10 |
 | optimal action count | 8 |
-| expanded states | 2365 |
-| memo hits | 3886 |
+| expanded states | 7526 |
+| memo hits | 10390 |
 | pruned states | 0 |
-| runtime seconds | 2.36 |
+| runtime seconds | 10.93 |
 
 One optimal action sequence:
 
@@ -74,6 +77,8 @@ One optimal action sequence:
 
 This sequence also connects `A` to `D`, claiming the `A-D` major-line bonus.
 
+The optimal sequence contains no `issue_bond` action. Any financing needed by alternative branches is handled internally by the payment rules.
+
 ## Agent Comparison
 
 Command:
@@ -87,21 +92,21 @@ Comparison against the exact optimum:
 | agent | episodes | mean score | std | min | max | optimum | absolute gap | relative gap |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | exact_optimum | 1 | 10.00 | 0.00 | 10.00 | 10.00 | 10.00 | 0.00 | 0.00% |
-| random | 30 | 2.77 | 2.69 | 0.00 | 8.00 | 10.00 | 7.23 | 72.33% |
+| random | 30 | 3.00 | 2.51 | -1.00 | 7.00 | 10.00 | 7.00 | 70.00% |
 | greedy_delivery | 1 | 10.00 | 0.00 | 10.00 | 10.00 | 10.00 | 0.00 | 0.00% |
-| greedy_expansion | 1 | 10.00 | 0.00 | 10.00 | 10.00 | 10.00 | 0.00 | 0.00% |
-| mcts_25 | 20 | 9.45 | 0.76 | 8.00 | 10.00 | 10.00 | 0.55 | 5.50% |
-| mcts_100 | 20 | 9.40 | 0.60 | 8.00 | 10.00 | 10.00 | 0.60 | 6.00% |
-| mcts_25_majorline | 20 | 9.10 | 0.64 | 8.00 | 10.00 | 10.00 | 0.90 | 9.00% |
-| mcts_100_majorline | 20 | 9.00 | 0.00 | 9.00 | 9.00 | 10.00 | 1.00 | 10.00% |
+| greedy_expansion | 1 | 5.00 | 0.00 | 5.00 | 5.00 | 10.00 | 5.00 | 50.00% |
+| mcts_25 | 20 | 8.80 | 1.01 | 7.00 | 10.00 | 10.00 | 1.20 | 12.00% |
+| mcts_100 | 20 | 9.25 | 0.79 | 8.00 | 10.00 | 10.00 | 0.75 | 7.50% |
+| mcts_25_majorline | 20 | 8.70 | 1.08 | 7.00 | 10.00 | 10.00 | 1.30 | 13.00% |
+| mcts_100_majorline | 20 | 9.50 | 0.76 | 8.00 | 10.00 | 10.00 | 0.50 | 5.00% |
 
 ## Interpretation
 
-On this micro instance, both greedy agents find an optimal solution. This is expected: the instance is small and the main useful routes are easy for the heuristics to identify.
+On this micro instance, `greedy_delivery` finds an optimal solution, while `greedy_expansion` underperforms because its expansion-first bias spends effort on network structure before taking enough immediate deliveries. This is useful: the micro benchmark is small enough to expose the exact opportunity cost of heuristic priorities.
 
 MCTS performs close to optimal but does not always find the optimum under the tested budgets. The small gap is useful evidence: stochastic search quality can be quantified against a true optimum on small instances.
 
-Major-line-aware MCTS does not outperform original MCTS on `micro_map`. This is acceptable and not a contradiction of the semi-realistic findings. The micro instance is an exact optimality benchmark with only one small major-line objective, so it is not the main scenario for demonstrating the value of major-line-aware search. The semi-realistic map remains the relevant setting for that claim, because it contains a larger delayed major-line reward structure.
+Major-line-aware MCTS is competitive but does not consistently dominate original MCTS on `micro_map`. This is acceptable and not a contradiction of the semi-realistic findings. The micro instance is an exact optimality benchmark with only one small major-line objective, so it is not the main scenario for demonstrating the value of major-line-aware search. The semi-realistic map remains the relevant setting for that claim, because it contains a larger delayed major-line reward structure.
 
 RandomAgent performs poorly and has high variance, as expected.
 

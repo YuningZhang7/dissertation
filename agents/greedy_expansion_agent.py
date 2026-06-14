@@ -35,9 +35,6 @@ class GreedyExpansionAgent(BaseAgent):
                 key=lambda action: str(action.params.get("city_id", "")),
             )[0]
 
-        if state.config.allow_voluntary_bonds and state.player.money < _cheapest_unbuilt_edge_cost(state):
-            return Action.issue_bond()
-
         return Action.pass_action()
 
 
@@ -95,8 +92,3 @@ def _delivery_rank(action: Action) -> tuple[int, int, str, str, str]:
         str(action.params.get("target", "")),
         "-".join(path),
     )
-
-
-def _cheapest_unbuilt_edge_cost(state: GameState) -> int:
-    costs = [edge.cost for edge in state.edges.values() if not edge.built]
-    return min(costs, default=0)

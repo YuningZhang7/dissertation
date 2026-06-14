@@ -68,7 +68,7 @@ def main() -> None:
     if state.is_terminal():
         st.warning(
             f"Game over. Final score: {state.final_score()} "
-            f"(raw score {state.player.score}, bonds {state.player.bonds})."
+            f"(raw score {state.player.score}, financing certs {state.player.bonds})."
         )
     elif st.session_state.last_message:
         st.info(st.session_state.last_message)
@@ -105,9 +105,9 @@ def render_player_panel(state: GameState) -> None:
     metric_col_b.metric("Money", state.player.money)
     metric_col_a.metric("Score", state.player.score)
     metric_col_b.metric("Final Estimate", state.final_score())
-    metric_col_a.metric("Bonds", state.player.bonds)
+    metric_col_a.metric("Financing Certs", state.player.bonds)
     metric_col_b.metric(
-        "Interest Due",
+        "Obligation Due",
         state.player.bonds * state.config.bond_interest,
     )
     metric_col_a.metric("Engine Level", state.player.locomotive_level)
@@ -301,13 +301,11 @@ def render_upgrade_and_urbanize_controls(
 
 
 def render_turn_controls(state: GameState, controls_disabled: bool) -> None:
-    bond_col, pass_col, end_col = st.columns(3)
-    with bond_col:
-        if st.button(
-            "Issue Bond",
-            disabled=controls_disabled or not state.config.allow_voluntary_bonds,
-        ):
-            submit_action(Action.issue_bond())
+    st.caption(
+        "Financing certificates are issued automatically during payments when "
+        "enabled by the rules config; they are not normal player actions."
+    )
+    pass_col, end_col = st.columns(2)
     with pass_col:
         if st.button("Pass Action", disabled=controls_disabled):
             submit_action(Action.pass_action())

@@ -42,6 +42,19 @@ def test_greedy_expansion_agent_returns_legal_action() -> None:
     assert action in get_legal_actions(state)
 
 
+def test_agents_do_not_choose_issue_bond() -> None:
+    state = reset_game()
+    agents = [
+        RandomAgent(seed=1),
+        GreedyDeliveryAgent(seed=1),
+        GreedyExpansionAgent(seed=1),
+    ]
+    legal_actions = get_legal_actions(state)
+    assert all(action.action_type != "issue_bond" for action in legal_actions)
+    for agent in agents:
+        assert agent.choose_action(state).action_type != "issue_bond"
+
+
 def test_run_episode_returns_required_metrics() -> None:
     result = run_episode(GreedyDeliveryAgent(seed=2), seed=2, max_steps=200)
     required_keys = {
@@ -84,6 +97,7 @@ def run_all() -> None:
         test_random_agent_returns_legal_action,
         test_greedy_delivery_agent_returns_delivery_when_available,
         test_greedy_expansion_agent_returns_legal_action,
+        test_agents_do_not_choose_issue_bond,
         test_run_episode_returns_required_metrics,
         test_batch_runner_writes_csv,
     ]

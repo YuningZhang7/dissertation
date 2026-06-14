@@ -10,6 +10,16 @@ The current version is Phase 3D: small-instance exact benchmark.
 
 The project is currently focused on adding a small exact-search benchmark so heuristic agents and MCTS can be compared against a true optimum on micro instances.
 
+## Supervisor Feedback Corrections
+
+The basic-rule action model has been corrected after supervisor feedback:
+
+- The simulator has no fixed player starting city, home city, train position, or moving train token.
+- Goods can be delivered from any source city with the required good to any demanding destination city if a valid built route exists.
+- Issuing shares/bonds is not exposed as an agent action. Financing is handled internally during payment when automatic financing is enabled.
+- The code still uses `bonds` naming in some fields for compatibility, but it currently approximates the share certificate financing mechanism.
+- Connected track building remains configurable as a simplifying network-contiguity assumption, not as an official start-point rule.
+
 ## Current Rule Coverage
 
 This version is a single-player rule-development prototype. It is not yet a full official implementation of Railways of the World. The current goal is to preserve the core local rules needed for optimisation experiments, while excluding player-vs-player interaction for now.
@@ -37,11 +47,11 @@ See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
 
 - Turn structure with action and income phases
 - Configurable actions per turn
-- Connected track-building restriction after the first built edge
+- Configurable connected track-building restriction after the first built edge
 - Explicit route-based goods delivery actions
 - Upgrade engine
-- Bonds
-- Bond interest during income
+- Internal share/bond financing during payments
+- Financing interest/dividend during income
 - Score-based income phase
 - Basic final scoring
 - Empty city markers
@@ -98,7 +108,7 @@ Run the exact benchmark smoke tests:
 python experiments/smoke_test_exact.py
 ```
 
-The smoke tests cover connected track building, explicit delivery paths, empty-city-marker end conditions, major-line bonuses, bonds, income, and final scoring.
+The smoke tests cover connected track building, explicit delivery paths, corrected financing action space, automatic financing during payment, empty-city-marker end conditions, major-line bonuses, income, and final scoring.
 
 Run the simple greedy baseline from the command line:
 
