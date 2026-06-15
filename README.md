@@ -187,6 +187,29 @@ Run the stronger MCTS comparison when runtime permits:
 python experiments/run_phase4_card_experiments.py --profile mcts100
 ```
 
+### MCTS Budget Comparison
+
+Run and validate the stronger MCTS budget profile:
+
+```bash
+python experiments/run_phase4_card_experiments.py --profile mcts100
+python experiments/validate_phase4_card_results.py --profile mcts100
+```
+
+Compare the standard and mcts100 summaries:
+
+```bash
+python experiments/compare_phase4_mcts_budget.py
+```
+
+Run the fast budget-comparison smoke test:
+
+```bash
+python experiments/smoke_test_phase4_budget_comparison.py
+```
+
+This comparison helps determine whether card-enabled MCTS performance is limited mainly by search budget or by the absence of card-aware evaluation and rollout behaviour. The mcts100 experiment may use fewer episodes than the standard profile when runtime is prohibitive; any override must be recorded in the result note.
+
 Explicit arguments such as `--episodes`, `--mcts-iterations`, `--mcts-rollout-depth`, and `--max-steps` override the selected profile. Output filenames include the profile name so quick and preliminary results do not overwrite standard results.
 
 Validate the standard result files:

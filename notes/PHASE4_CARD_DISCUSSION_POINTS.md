@@ -30,10 +30,22 @@ On `semi_realistic_map`, ordinary MCTS declined by 1.43 mean points and major-li
 
 The fuller rule model is a richer sequential network optimisation problem than the basic-rule version. Decisions now trade immediate deliveries and construction against optional objectives whose benefits depend on future network and delivery choices. This supports studying both score performance and behaviour, rather than treating final score as the only useful outcome.
 
+## What Does the mcts100 Budget Check Show?
+
+The 10-episode mcts100 diagnostic increased MCTS from 25 to 100 iterations and rollout depth from 40 to 80. Absolute performance improved strongly on `toy_medium_map` and `semi_realistic_map`, confirming that the standard search budget constrained overall solution quality.
+
+The card-specific result was mixed. Card effects stayed strongly positive on `toy_map`, became slightly smaller on `toy_medium_map`, and did not improve on `semi_realistic_map`. Ordinary MCTS changed from a -1.43 card effect under the standard profile to -5.00 under mcts100. Major-line-aware MCTS changed from +0.33 to 0.00.
+
+This suggests that simply increasing search budget is not enough to resolve the semi-realistic card trade-off. High-budget agents still selected and completed cards, but card-enabled plans lost delivery and major-line value relative to card-disabled plans. A card-aware rollout policy or evaluation feature may help the search distinguish cards that complement the current network plan from cards that distract from it.
+
+The result remains map-dependent. Cards were consistently valuable on the simpler `toy_map` and remained beneficial on `toy_medium_map`. The larger semi-realistic scenario presents more competing network, delivery, major-line, financing, and card priorities. Further testing is required before claiming that a card-aware agent is generally superior.
+
 ## Limitations
 
 - The cards are an original simplified representative deck, not the full official deck.
 - The maps are artificial research scenarios.
 - Existing greedy and MCTS policies are not card-aware in Phase 4C.
 - Finite samples and MCTS budget affect estimated performance.
+- The mcts100 diagnostic used 10 episodes, compared with 30 for the standard profile.
+- Higher-budget runtime was approximately four times the standard MCTS runtime on larger maps.
 - Results describe the implemented single-player abstraction, not the full official multiplayer game.
