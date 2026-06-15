@@ -20,6 +20,7 @@ from railways.environment import (
     is_terminal,
     reset_game,
 )
+from railways.cards import compute_end_game_card_bonus
 from railways.rules import count_empty_city_markers
 
 
@@ -66,6 +67,13 @@ def run_episode(
         actions_taken += 1
 
     runtime_seconds = time.perf_counter() - start_time
+    end_game_card_bonus = compute_end_game_card_bonus(state)
+    financing_penalty = state.player.bonds * state.config.bond_final_penalty
+    active_cards = sum(
+        1
+        for card_state in state.player.active_operation_cards.values()
+        if card_state.status == "active"
+    )
     return {
         "map": selected_map_path.stem,
         "config": selected_config_path.stem,
@@ -80,6 +88,18 @@ def run_episode(
         "major_line_bonus": state.player.major_line_bonus,
         "rail_baron_bonus": state.player.rail_baron_bonus,
         "operation_card_bonus": state.player.operation_card_bonus,
+        "cards_enabled": bool(state.operation_cards),
+        "cards_selected": len(state.player.owned_operation_cards),
+        "cards_completed": len(state.player.completed_operation_cards),
+        "active_cards": active_cards,
+        "available_cards_remaining": len(state.available_operation_cards),
+        "end_game_card_bonus": end_game_card_bonus,
+        "financing_penalty": financing_penalty,
+        "score_delivery_raw": state.player.score,
+        "score_major_line": state.player.major_line_bonus,
+        "score_operation_cards": state.player.operation_card_bonus,
+        "score_end_game_cards": end_game_card_bonus,
+        "score_financing_penalty": financing_penalty,
         "empty_markers": count_empty_city_markers(state),
         "turns": state.turn,
         "actions_taken": actions_taken,

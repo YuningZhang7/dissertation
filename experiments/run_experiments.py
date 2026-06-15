@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from agents.registry import AGENT_CLASSES, create_agent
 from experiments.simulation_runner import run_episode
-from railways.environment import DEFAULT_CONFIG_PATH, DEFAULT_MAP_PATH
+from railways.environment import DEFAULT_CARDS_PATH, DEFAULT_CONFIG_PATH, DEFAULT_MAP_PATH
 
 DEFAULT_OUTPUT = PROJECT_ROOT / "results" / "raw" / "experiment_results.csv"
 BASELINE_AGENT_NAMES = ["random", "greedy_delivery", "greedy_expansion"]
@@ -36,6 +36,18 @@ CSV_COLUMNS = [
     "major_line_bonus",
     "rail_baron_bonus",
     "operation_card_bonus",
+    "cards_enabled",
+    "cards_selected",
+    "cards_completed",
+    "active_cards",
+    "available_cards_remaining",
+    "end_game_card_bonus",
+    "financing_penalty",
+    "score_delivery_raw",
+    "score_major_line",
+    "score_operation_cards",
+    "score_end_game_cards",
+    "score_financing_penalty",
     "empty_markers",
     "turns",
     "actions_taken",
@@ -53,10 +65,12 @@ def run_batch(
     max_steps: int = 1000,
     map_arg: str | Path = DEFAULT_MAP_PATH,
     config_path: str | Path = DEFAULT_CONFIG_PATH,
+    card_path: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     agent_names = BASELINE_AGENT_NAMES if agent_name == "all" else [agent_name]
     map_paths = resolve_map_paths(map_arg)
     selected_config_path = resolve_project_path(config_path)
+    selected_card_path = resolve_project_path(card_path) if card_path is not None else None
     results: list[dict[str, Any]] = []
 
     for map_path in map_paths:
@@ -70,6 +84,7 @@ def run_batch(
                     max_steps=max_steps,
                     map_path=map_path,
                     config_path=selected_config_path,
+                    card_path=selected_card_path,
                 )
                 results.append(result)
 
@@ -132,11 +147,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-steps", type=int, default=1000)
     parser.add_argument("--map", default=str(DEFAULT_MAP_PATH))
     parser.add_argument("--config", default=str(DEFAULT_CONFIG_PATH))
+    parser.add_argument(
+        "--cards",
+        choices=["none", "basic"],
+        default="none",
+        help="Use no cards or the basic representative card deck.",
+    )
+    parser.add_argument(
+        "--card-path",
+        default=None,
+        help="Optional explicit card JSON path; overrides --cards.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    card_path = resolve_card_path(args.cards, args.card_path)
     results = run_batch(
         agent_name=args.agent,
         episodes=args.episodes,
@@ -145,9 +172,21 @@ def main() -> None:
         max_steps=args.max_steps,
         map_arg=args.map,
         config_path=args.config,
+        card_path=card_path,
     )
     print(f"Wrote {len(results)} rows to {args.output}")
     print_summary(results)
+
+
+def resolve_card_path(
+    cards: str = "none",
+    card_path: str | Path | None = None,
+) -> Path | None:
+    if card_path is not None:
+        return resolve_project_path(card_path)
+    if cards == "basic":
+        return DEFAULT_CARDS_PATH
+    return None
 
 
 if __name__ == "__main__":

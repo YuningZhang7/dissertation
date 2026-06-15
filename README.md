@@ -147,7 +147,35 @@ Run the Streamlit import smoke test:
 python experiments/smoke_test_app_import.py
 ```
 
+Run the Phase 4 experiment-pipeline smoke test:
+
+```bash
+python experiments/smoke_test_phase4_experiments.py
+```
+
 The smoke tests cover connected track building, explicit delivery paths, corrected financing action space, automatic financing during payment, empty-city-marker end conditions, major-line bonuses, income, card loading, representative card effects, and final scoring.
+
+## Phase 4 Card Experiments
+
+Card-disabled baseline using the original card-free simulator:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 50 --map data/toy_map.json --cards none --output results/raw/toy_card_disabled.csv
+```
+
+Card-enabled baseline using `data/cards_basic.json`:
+
+```bash
+python experiments/run_experiments.py --agent all --episodes 50 --map data/toy_map.json --cards basic --output results/raw/toy_card_enabled.csv
+```
+
+Run the standard Phase 4C comparison across all three experiment maps and the existing agents:
+
+```bash
+python experiments/run_phase4_card_experiments.py
+```
+
+`--cards none` preserves the card-free model used by earlier experiments. `--cards basic` enables the minimal representative card framework. The Phase 4C outputs include card-selection metrics and final-score decomposition.
 
 Run the simple greedy baseline from the command line:
 
