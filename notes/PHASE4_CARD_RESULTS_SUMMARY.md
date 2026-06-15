@@ -1,62 +1,98 @@
-# Phase 4C Preliminary Card Experiment Results
+# Phase 4C Card Experiment Results
 
-## Experiment Setup
+## 1. Purpose
 
-This preliminary run compared card-disabled and card-enabled modes on:
+Phase 4C compares card-disabled and card-enabled versions of the same single-player simulator using the existing Random, Greedy Delivery, Greedy Expansion, MCTS, and major-line-aware MCTS agents. The experiment asks how the minimal representative card framework changes score, score composition, card-selection behaviour, and runtime under the implemented abstraction.
 
-- `toy_map`
-- `toy_medium_map`
-- `semi_realistic_map`
+## 2. Preliminary Pipeline Run
 
-Agents:
+An earlier run used 2 episodes per condition, 5 MCTS iterations, rollout depth 20, and at most 100 steps. It confirmed that the pipeline, metrics, and card-enabled agents worked, but it was not used for dissertation-scale conclusions. Its broad patterns motivated the larger standard run: Random and MCTS selected cards, while the greedy agents ignored cards on the medium and semi-realistic scenarios.
 
-- Random
-- Greedy Delivery
-- Greedy Expansion
-- MCTS
-- Major-line-aware MCTS
+## 3. Standard Experiment Setup
 
-Each map, mode, and agent combination used 2 episodes. MCTS used 5 iterations and rollout depth 20. These settings were intentionally small so the full pipeline could be verified quickly; the results are not final dissertation-scale estimates.
+- Maps: `toy_map`, `toy_medium_map`, and `semi_realistic_map`
+- Agents: Random, Greedy Delivery, Greedy Expansion, MCTS, and major-line-aware MCTS
+- Card modes: disabled and enabled with `data/cards_basic.json`
+- Episodes: 30 per map, mode, and agent
+- Total episodes: 900
+- MCTS iterations: 25
+- MCTS rollout depth: 40
+- Maximum steps: 500
+- Seeds: 0 to 29 for every condition
+- Invalid actions: 0 across all episodes
+- Local wall-clock runtime: approximately 56 minutes
 
-The card-enabled mode used `data/cards_basic.json`. The card-disabled mode used the same simulator with `card_path=None`. All 60 episodes reported zero invalid actions.
+Generated outputs:
 
-## Preliminary Score Changes
+- `results/raw/phase4_standard_card_disabled_results.csv`
+- `results/raw/phase4_standard_card_enabled_results.csv`
+- `results/summary/phase4_standard_card_comparison_summary.csv`
+- `results/summary/phase4_standard_card_comparison_summary.md`
+- `results/summary/phase4_standard_card_effect_table.csv`
+- `results/summary/phase4_standard_card_effect_table.md`
+- `results/summary/phase4_standard_card_usage_table.csv`
+- `results/summary/phase4_standard_card_usage_table.md`
 
-| map | agent | cards disabled | cards enabled | change | cards selected | cards completed |
+## 4. Main Results
+
+| map | agent | cards disabled mean | cards enabled mean | change | cards selected | cards completed |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| toy_map | random | -10.0 | 4.0 | +14.0 | 6.5 | 4.0 |
-| toy_map | greedy_delivery | -5.5 | 2.0 | +7.5 | 8.0 | 4.0 |
-| toy_map | greedy_expansion | -21.0 | -15.0 | +6.0 | 8.0 | 4.0 |
-| toy_map | mcts | 14.0 | 31.5 | +17.5 | 7.0 | 4.5 |
-| toy_map | mcts_majorline | 9.0 | 28.5 | +19.5 | 6.5 | 4.0 |
-| toy_medium_map | random | 11.5 | 17.5 | +6.0 | 5.5 | 3.5 |
-| toy_medium_map | greedy_delivery | 32.0 | 32.0 | 0.0 | 0.0 | 0.0 |
-| toy_medium_map | greedy_expansion | -43.0 | -43.0 | 0.0 | 0.0 | 0.0 |
-| toy_medium_map | mcts | 35.5 | 30.0 | -5.5 | 6.0 | 3.5 |
-| toy_medium_map | mcts_majorline | 13.0 | 31.0 | +18.0 | 7.5 | 5.5 |
-| semi_realistic_map | random | -25.5 | -9.5 | +16.0 | 5.0 | 2.5 |
-| semi_realistic_map | greedy_delivery | 22.0 | 22.0 | 0.0 | 0.0 | 0.0 |
-| semi_realistic_map | greedy_expansion | -7.0 | -7.0 | 0.0 | 0.0 | 0.0 |
-| semi_realistic_map | mcts | -6.0 | 16.5 | +22.5 | 7.0 | 3.5 |
-| semi_realistic_map | mcts_majorline | 15.5 | 24.0 | +8.5 | 6.0 | 2.5 |
+| toy_map | random | -1.07 | 18.30 | +19.37 | 7.03 | 4.73 |
+| toy_map | greedy_delivery | -4.50 | 2.00 | +6.50 | 8.00 | 4.00 |
+| toy_map | greedy_expansion | -20.80 | -15.00 | +5.80 | 8.00 | 4.00 |
+| toy_map | mcts | 12.43 | 33.33 | +20.90 | 7.93 | 5.63 |
+| toy_map | mcts_majorline | 11.70 | 33.77 | +22.07 | 7.80 | 5.53 |
+| toy_medium_map | random | 1.43 | 15.80 | +14.37 | 5.57 | 3.30 |
+| toy_medium_map | greedy_delivery | 32.00 | 32.00 | +0.00 | 0.00 | 0.00 |
+| toy_medium_map | greedy_expansion | -43.00 | -43.00 | +0.00 | 0.00 | 0.00 |
+| toy_medium_map | mcts | 41.73 | 47.47 | +5.73 | 6.63 | 4.53 |
+| toy_medium_map | mcts_majorline | 42.70 | 48.20 | +5.50 | 6.33 | 4.33 |
+| semi_realistic_map | random | -39.67 | -25.47 | +14.20 | 4.87 | 1.93 |
+| semi_realistic_map | greedy_delivery | 22.00 | 22.00 | +0.00 | 0.00 | 0.00 |
+| semi_realistic_map | greedy_expansion | -7.00 | -7.00 | +0.00 | 0.00 | 0.00 |
+| semi_realistic_map | mcts | 32.73 | 31.30 | -1.43 | 5.63 | 2.40 |
+| semi_realistic_map | mcts_majorline | 39.80 | 40.13 | +0.33 | 5.07 | 2.27 |
 
-## Interpretation
+In this experiment, cards improved mean final score for every agent on `toy_map`. Random also improved on both larger maps. The greedy agents selected no cards on `toy_medium_map` or `semi_realistic_map`, so their results were unchanged there. Both MCTS variants improved on `toy_medium_map`; on `semi_realistic_map`, ordinary MCTS declined slightly and major-line-aware MCTS was approximately unchanged.
 
-- Card-enabled mode changed both score composition and action choice for Random and MCTS agents.
-- On `toy_map`, every tested agent selected cards and mean final scores increased in this small sample.
-- On `toy_medium_map` and `semi_realistic_map`, the two greedy agents selected no cards. Their existing priorities continued to choose build, delivery, or upgrade actions while those actions remained available.
-- MCTS selected cards across all maps. The card-enabled ordinary MCTS score improved strongly on `semi_realistic_map`, but declined on `toy_medium_map` in this two-episode sample. This is consistent with cards adding useful options while also increasing branching and planning difficulty.
-- Major-line-aware MCTS gained in all three card-enabled comparisons in this preliminary run, although the sample is too small for a strong claim.
-- End-game cards contributed substantially when agents selected most of the small deck. Financing penalties remained an important counterweight, so higher bonus scores did not always translate directly into equally large final-score gains.
+## 5. Score Decomposition
 
-## Limitations
+The MCTS results show why card bonuses should not be interpreted in isolation.
 
-- Two episodes per condition are insufficient for stable statistical conclusions.
-- MCTS used only 5 iterations, much lower than the main dissertation experiments.
-- The card deck is a small original representative subset, not the official deck.
-- Existing greedy agents are not card-aware, so zero card selection reflects their current priority ordering rather than evidence that cards have no value.
-- The same basic card definitions are used across maps even when some network-objective city IDs are map-specific abstractions.
+| map | agent | raw score disabled -> enabled | major line disabled -> enabled | operation + end-game cards | financing penalty disabled -> enabled | final change |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| toy_map | mcts | 13.00 -> 12.80 | 3.00 -> 3.00 | 18.90 | 3.57 -> 1.37 | +20.90 |
+| toy_map | mcts_majorline | 12.07 -> 13.63 | 3.00 -> 3.00 | 18.80 | 3.37 -> 1.67 | +22.07 |
+| toy_medium_map | mcts | 27.03 -> 17.37 | 17.87 -> 15.00 | 16.77 | 3.17 -> 1.67 | +5.73 |
+| toy_medium_map | mcts_majorline | 27.90 -> 17.70 | 17.87 -> 15.33 | 16.63 | 3.07 -> 1.47 | +5.50 |
+| semi_realistic_map | mcts | 24.80 -> 19.87 | 17.50 -> 8.03 | 10.47 | 9.57 -> 7.07 | -1.43 |
+| semi_realistic_map | mcts_majorline | 23.47 -> 19.00 | 25.87 -> 18.10 | 9.80 | 9.53 -> 6.77 | +0.33 |
 
-## Next Step Recommendation
+On `toy_map`, card bonuses were largely additive: delivery and major-line performance stayed similar while financing penalties also fell. On `toy_medium_map`, card-enabled MCTS sacrificed raw delivery and some major-line score, but the card bonuses and lower financing penalty more than compensated. On `semi_realistic_map`, the card bonuses did not fully compensate for reduced delivery and major-line performance for ordinary MCTS. This suggests that card actions can redirect search away from strong basic-rule plans when the map presents more competing network objectives.
 
-Run a larger Phase 4C experiment with more episodes and representative MCTS budgets. Report score decomposition and card-selection frequency alongside final score. Only after those results should Phase 4D consider card-aware greedy priorities, card-aware MCTS evaluation, or card-prioritised rollout policies.
+Card-enabled MCTS runtime increased from 1.33 to 1.90 seconds per episode on `toy_map` and from 1.34 to 1.95 seconds for major-line-aware MCTS. The relative runtime increase was smaller on the larger maps, but the additional card branches still changed which plans were explored.
+
+## 6. Interpretation
+
+- Cards introduced delayed rewards and optional objectives rather than simply adding a fixed score bonus.
+- Random selected cards on every map and improved by 14.20 to 19.37 mean points. This reflects broad access to card bonuses, but Random remained weak on `semi_realistic_map`.
+- The greedy agents used all eight cards on `toy_map` after their higher-priority actions became exhausted, but selected none on the two larger maps. Their fixed priorities do not estimate delayed card value.
+- MCTS used cards across all maps and completed more card objectives than Random in most conditions. This suggests search can coordinate card selection with later actions under the implemented abstraction.
+- MCTS did not benefit uniformly. The slight decline on `semi_realistic_map` suggests that increased branching and delayed rewards can offset the available bonus when the search budget is limited.
+- Major-line-aware MCTS retained a small positive change on `semi_realistic_map`, but the difference is too small to support a strong superiority claim.
+
+These results provide preliminary evidence that fuller rules make the optimisation problem more complex: the agent must balance immediate delivery, network expansion, financing, major lines, and optional card objectives within the same action budget.
+
+## 7. Limitations
+
+- The deck is a small original representative subset, not the full official card deck.
+- The three maps are artificial research scenarios rather than the official map.
+- Thirty episodes reduce noise but do not eliminate sampling uncertainty, especially for MCTS.
+- Existing greedy agents and MCTS evaluation are not card-aware.
+- MCTS used 25 iterations; different budgets may change the balance between card value and branching cost.
+- The experiment concerns the implemented single-player abstraction, not the full official multiplayer game.
+- Runtime values are machine-dependent.
+
+## 8. Next Step
+
+Phase 4D should test targeted card-aware improvements rather than adding unrelated algorithms. The clearest candidates are a card-aware greedy baseline, card-aware MCTS evaluation features, or a card-prioritised rollout policy. A stronger MCTS-only `mcts100` profile can first test whether additional search budget resolves the slight `semi_realistic_map` decline before changing the agent design.

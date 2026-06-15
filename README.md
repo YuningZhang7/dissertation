@@ -169,13 +169,35 @@ Card-enabled baseline using `data/cards_basic.json`:
 python experiments/run_experiments.py --agent all --episodes 50 --map data/toy_map.json --cards basic --output results/raw/toy_card_enabled.csv
 ```
 
-Run the standard Phase 4C comparison across all three experiment maps and the existing agents:
+Run a quick pipeline verification:
 
 ```bash
-python experiments/run_phase4_card_experiments.py
+python experiments/run_phase4_card_experiments.py --profile quick
 ```
 
-`--cards none` preserves the card-free model used by earlier experiments. `--cards basic` enables the minimal representative card framework. The Phase 4C outputs include card-selection metrics and final-score decomposition.
+Run the dissertation-scale baseline card comparison:
+
+```bash
+python experiments/run_phase4_card_experiments.py --profile standard
+```
+
+Run the stronger MCTS comparison when runtime permits:
+
+```bash
+python experiments/run_phase4_card_experiments.py --profile mcts100
+```
+
+Explicit arguments such as `--episodes`, `--mcts-iterations`, `--mcts-rollout-depth`, and `--max-steps` override the selected profile. Output filenames include the profile name so quick and preliminary results do not overwrite standard results.
+
+Validate the standard result files:
+
+```bash
+python experiments/validate_phase4_card_results.py --profile standard
+```
+
+Each profile writes card-disabled and card-enabled raw CSV files, a full summary, a card-effect comparison table, and a card-usage table under `results/`. `--cards none` in the general experiment runner preserves the card-free model, while `--cards basic` enables `data/cards_basic.json`. The exact `micro_map` benchmark remains card-free by default.
+
+The standard Phase 4 results are used to discuss how the representative cards affect existing agent behaviour, score composition, and search difficulty. No agent is made card-aware during this evidence-collection phase.
 
 Run the simple greedy baseline from the command line:
 
