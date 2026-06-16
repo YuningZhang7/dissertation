@@ -11,3 +11,5 @@ results/*
 !results/tables/
 !results/tables/*.md
 !results/tables/*.tex
+railways_dissertation_demo_pack/
+railways_dissertation_demo_pack.zip
