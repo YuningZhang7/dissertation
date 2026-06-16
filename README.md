@@ -159,7 +159,49 @@ Run the card-aware agent smoke tests:
 python experiments/smoke_test_card_aware_agents.py
 ```
 
+Run the dissertation figure smoke test:
+
+```bash
+python experiments/smoke_test_dissertation_figures.py
+```
+
 The smoke tests cover connected track building, explicit delivery paths, corrected financing action space, automatic financing during payment, empty-city-marker end conditions, major-line bonuses, income, card loading, representative card effects, and final scoring.
+
+## Dissertation Evidence Package
+
+Phase 5 consolidates the completed experiments into dissertation-ready validation, figures, tables, and writing notes.
+
+Validate that the expected result artefacts are present and structurally consistent:
+
+```bash
+python experiments/validate_all_results.py
+```
+
+Generate dissertation-ready figures:
+
+```bash
+python experiments/generate_dissertation_figures.py
+```
+
+Export summary tables in Markdown and simple LaTeX:
+
+```bash
+python experiments/export_dissertation_tables.py
+```
+
+Main evidence locations:
+
+```text
+results/raw/
+results/summary/
+results/figures/
+results/tables/
+notes/EXPERIMENT_MANIFEST.md
+notes/DISSERTATION_RESULTS_OUTLINE.md
+notes/PROJECT_STATUS_FINAL.md
+```
+
+The raw and summary result folders contain experiment outputs from earlier phases. The dissertation figure and table folders contain compact presentation artefacts generated from those summaries.
 
 ## Phase 4 Card Experiments
 

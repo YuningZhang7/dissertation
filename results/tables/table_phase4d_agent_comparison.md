@@ -1,0 +1,11 @@
+| Map | Comparison | Baseline | Phase 4D | Delta | Cards completed |
+| --- | --- | --- | --- | --- | --- |
+| semi realistic map | Card-aware greedy vs greedy delivery | 22.00 | 55.00 | +33.00 | 0.00 -> 4.00 |
+| semi realistic map | Card-aware rollout vs MCTS | 31.30 | 93.80 | +62.50 | 2.40 -> 3.07 |
+| semi realistic map | Card-aware rollout vs major-line MCTS | 40.13 | 72.20 | +32.07 | 2.27 -> 3.27 |
+| toy map | Card-aware greedy vs greedy delivery | 2.00 | 14.70 | +12.70 | 4.00 -> 6.00 |
+| toy map | Card-aware rollout vs MCTS | 33.33 | 40.67 | +7.33 | 5.63 -> 5.97 |
+| toy map | Card-aware rollout vs major-line MCTS | 33.77 | 40.57 | +6.80 | 5.53 -> 5.97 |
+| toy medium map | Card-aware greedy vs greedy delivery | 32.00 | 23.00 | -9.00 | 0.00 -> 6.00 |
+| toy medium map | Card-aware rollout vs MCTS | 47.47 | 60.53 | +13.07 | 4.53 -> 4.17 |
+| toy medium map | Card-aware rollout vs major-line MCTS | 48.20 | 61.53 | +13.33 | 4.33 -> 4.37 |
