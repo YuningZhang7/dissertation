@@ -153,6 +153,12 @@ Run the Phase 4 experiment-pipeline smoke test:
 python experiments/smoke_test_phase4_experiments.py
 ```
 
+Run the card-aware agent smoke tests:
+
+```bash
+python experiments/smoke_test_card_aware_agents.py
+```
+
 The smoke tests cover connected track building, explicit delivery paths, corrected financing action space, automatic financing during payment, empty-city-marker end conditions, major-line bonuses, income, card loading, representative card effects, and final scoring.
 
 ## Phase 4 Card Experiments
@@ -222,6 +228,47 @@ Each profile writes card-disabled and card-enabled raw CSV files, a full summary
 
 The standard Phase 4 results are used to discuss how the representative cards affect existing agent behaviour, score composition, and search difficulty. No agent is made card-aware during this evidence-collection phase.
 
+### Phase 4D Card-Aware Baselines
+
+Phase 4D adds a lightweight card-aware greedy baseline and a card-aware MCTS rollout policy:
+
+- `card_aware_greedy`
+- `rollout_policy="card_aware"`
+
+Run the Phase 4D card-enabled comparison:
+
+```bash
+python experiments/run_phase4_card_aware_experiments.py
+```
+
+Compare Phase 4D against the Phase 4C standard card-enabled baselines:
+
+```bash
+python experiments/compare_phase4d_to_phase4c.py
+```
+
+The default Phase 4D run writes:
+
+```text
+results/raw/phase4d_card_aware_results.csv
+results/summary/phase4d_card_aware_summary.csv
+results/summary/phase4d_card_aware_summary.md
+results/summary/phase4d_vs_phase4c_comparison.csv
+results/summary/phase4d_vs_phase4c_comparison.md
+```
+
+The design note is stored in:
+
+```text
+notes/PHASE4D_CARD_AWARE_AGENT_PLAN.md
+```
+
+The standard Phase 4D result note is stored in:
+
+```text
+notes/PHASE4D_CARD_AWARE_RESULTS.md
+```
+
 Run the simple greedy baseline from the command line:
 
 ```bash
@@ -235,6 +282,7 @@ Implemented baseline agents:
 - `RandomAgent`
 - `GreedyDeliveryAgent`
 - `GreedyExpansionAgent`
+- `CardAwareGreedyAgent`
 
 Run experiments:
 

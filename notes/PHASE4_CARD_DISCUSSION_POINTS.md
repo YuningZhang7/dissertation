@@ -40,6 +40,16 @@ This suggests that simply increasing search budget is not enough to resolve the 
 
 The result remains map-dependent. Cards were consistently valuable on the simpler `toy_map` and remained beneficial on `toy_medium_map`. The larger semi-realistic scenario presents more competing network, delivery, major-line, financing, and card priorities. Further testing is required before claiming that a card-aware agent is generally superior.
 
+## What Does Phase 4D Add?
+
+Phase 4D tests that next step directly. It adds a lightweight card-aware greedy baseline and a card-aware MCTS rollout policy without changing the core rules, financing model, action interface, or MCTS tree policy.
+
+The card-aware greedy baseline shows that explicit card heuristics can help, but also that greedy card use is not automatically superior. It improves over greedy delivery on `toy_map` and `semi_realistic_map`, but scores 23.00 on `toy_medium_map` compared with greedy delivery's 32.00. In that case, selecting and completing cards comes at too high a delivery-score cost.
+
+The card-aware rollout result is stronger. Compared with Phase 4C card-enabled MCTS, card-aware rollout improves mean final score by +7.33 on `toy_map`, +13.07 on `toy_medium_map`, and +62.50 on `semi_realistic_map`. The major-line-aware card rollout also improves by +6.80, +13.33, and +32.07 on the same maps.
+
+This supports the interpretation that MCTS needed better rollout guidance rather than only a larger budget. However, the result is not free: on `semi_realistic_map`, card-aware rollout raises ordinary MCTS mean runtime from about 14.21 seconds to 41.51 seconds per episode. This makes Phase 4D a score-runtime trade-off rather than a simple dominance result.
+
 ## Limitations
 
 - The cards are an original simplified representative deck, not the full official deck.

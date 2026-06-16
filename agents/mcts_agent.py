@@ -6,6 +6,7 @@ import math
 import networkx as nx
 
 from agents.base_agent import BaseAgent
+from agents.card_heuristics import choose_card_aware_rollout_action
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from railways.actions import Action
 from railways.environment import (
@@ -184,6 +185,10 @@ class MCTSAgent(BaseAgent):
             if greedy_agent is not None:
                 action = greedy_agent.choose_action(state)
                 if action not in legal_actions:
+                    action = self.rng.choice(legal_actions)
+            elif self.rollout_policy == "card_aware":
+                action = choose_card_aware_rollout_action(state, legal_actions)
+                if action is None or action not in legal_actions:
                     action = self.rng.choice(legal_actions)
             else:
                 action = self.rng.choice(legal_actions)

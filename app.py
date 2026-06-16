@@ -201,7 +201,7 @@ def render_agent_controls(state: GameState) -> None:
         )
         mcts_rollout_policy = st.selectbox(
             "MCTS rollout policy",
-            options=["random", "greedy_delivery"],
+            options=["random", "greedy_delivery", "card_aware"],
         )
 
     disabled = state.is_terminal()

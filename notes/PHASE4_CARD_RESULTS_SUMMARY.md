@@ -161,3 +161,29 @@ On `semi_realistic_map`, ordinary MCTS rose from 31.30 to 45.60 in card-enabled 
 Card use did not disappear at the higher budget. Ordinary MCTS selected 5.20 cards and completed 2.80 on average, with 3.90 operation-card points and 8.00 end-game-card points. However, its card-enabled raw score and major-line bonus were 23.50 and 11.00, compared with 31.10 and 20.70 without cards. The 11.90 card points did not compensate for those reductions. Major-line-aware MCTS showed the same basic trade-off: 10.10 card points accompanied lower raw and major-line components, producing the same 74.40 final mean as card-disabled mode.
 
 Under the implemented abstraction, this suggests that the earlier semi-realistic result was not only a search-budget limitation. Increasing simulations improved both modes, but the existing evaluation and rollout behaviour still allowed card actions to divert search from stronger delivery and major-line plans. This does not prove that card-aware heuristics will be superior, and the mcts100 sample is only 10 episodes. It does provide a reason for Phase 4D to test card-aware evaluation or rollout guidance rather than relying only on additional iterations.
+
+## 11. Phase 4D Follow-Up: Card-Aware Baselines
+
+Phase 4D added a lightweight card-aware greedy baseline and a `card_aware` MCTS rollout policy. The tree search algorithm itself was not rewritten; the new MCTS variant only changes rollout action choice.
+
+The standard Phase 4D run used 30 episodes per map and agent, MCTS iterations 25, rollout depth 40, and card-enabled mode only. It produced 630 episodes and 0 invalid actions. The local run took approximately 90 minutes.
+
+Main comparison against the Phase 4C standard card-enabled baselines:
+
+| map | comparison | Phase 4C baseline | Phase 4D result | change |
+| --- | --- | ---: | ---: | ---: |
+| toy_map | card-aware greedy vs greedy delivery | 2.00 | 14.70 | +12.70 |
+| toy_medium_map | card-aware greedy vs greedy delivery | 32.00 | 23.00 | -9.00 |
+| semi_realistic_map | card-aware greedy vs greedy delivery | 22.00 | 55.00 | +33.00 |
+| toy_map | card-aware MCTS rollout vs MCTS | 33.33 | 40.67 | +7.33 |
+| toy_medium_map | card-aware MCTS rollout vs MCTS | 47.47 | 60.53 | +13.07 |
+| semi_realistic_map | card-aware MCTS rollout vs MCTS | 31.30 | 93.80 | +62.50 |
+| toy_map | card-aware major-line rollout vs major-line MCTS | 33.77 | 40.57 | +6.80 |
+| toy_medium_map | card-aware major-line rollout vs major-line MCTS | 48.20 | 61.53 | +13.33 |
+| semi_realistic_map | card-aware major-line rollout vs major-line MCTS | 40.13 | 72.20 | +32.07 |
+
+The card-aware greedy baseline is useful but not uniformly superior: it improves on `toy_map` and `semi_realistic_map`, but underperforms greedy delivery on `toy_medium_map`. The card-aware MCTS rollout improves all three maps in this run, including the previously difficult `semi_realistic_map`.
+
+The improvement has a runtime cost. On `semi_realistic_map`, MCTS rose from 14.21 seconds per episode to 41.51 seconds with card-aware rollout, and major-line-aware MCTS rose from 15.58 seconds to 42.17 seconds. Phase 4D therefore supports card-aware rollout guidance as a stronger but more expensive search baseline.
+
+Detailed Phase 4D notes are stored in `notes/PHASE4D_CARD_AWARE_RESULTS.md`.
