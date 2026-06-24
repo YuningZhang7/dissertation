@@ -8,7 +8,6 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
-from agents.mcts_agent import MCTSAgent
 from agents.random_agent import RandomAgent
 from experiments.simulation_runner import run_episode
 from railways.actions import Action
@@ -214,16 +213,6 @@ def test_greedy_delivery_runs_with_cards_enabled() -> None:
     assert result["invalid_actions"] == 0
 
 
-def test_mcts_runs_with_cards_enabled_small_budget() -> None:
-    result = run_episode(
-        MCTSAgent(iterations=5, rollout_depth_limit=20, seed=0),
-        seed=0,
-        max_steps=100,
-        card_path=CARDS_PATH,
-    )
-    assert result["invalid_actions"] == 0
-
-
 def run_all() -> None:
     tests = [
         test_card_file_loads_representative_types,
@@ -241,7 +230,6 @@ def run_all() -> None:
         test_final_score_combines_card_and_existing_bonuses,
         test_random_agent_runs_with_cards_enabled,
         test_greedy_delivery_runs_with_cards_enabled,
-        test_mcts_runs_with_cards_enabled_small_budget,
     ]
     for test in tests:
         test()

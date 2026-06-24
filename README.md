@@ -2,13 +2,25 @@
 
 ## Overview
 
-This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for future AI and optimisation strategies.
+This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for interpretable AI and optimisation strategies.
 
-The current version is Phase 4: minimal card framework and fuller-rule foundation.
+The current meeting/demo version focuses on simulator correctness and three interpretable baseline agents.
 
 ## Current Development Stage
 
-The project currently has a corrected basic-rule simulator, baseline agents, MCTS agents, an exact-search benchmark on micro instances, and a minimal representative card framework for fuller-rule modelling.
+The main evaluated and demo-facing agents are `RandomAgent`, `GreedyDeliveryAgent`, and `GreedyExpansionAgent`. The corrected simulator, exact-search micro benchmark, and representative card framework remain available.
+
+## Meeting Demo Scope
+
+The main registry, Streamlit selector, and baseline experiment command expose only:
+
+- `random`
+- `greedy_delivery`
+- `greedy_expansion`
+
+`MCTSAgent` and `CardAwareGreedyAgent` are retained in the full repository as exploratory implementations, but are excluded from the meeting demo and its main evaluation path. This keeps the presentation focused, interpretable, and easy to validate. It is a scope-control decision, not a claim that those components never existed.
+
+See [notes/MEETING_DEMO_SCOPE.md](notes/MEETING_DEMO_SCOPE.md).
 
 ## Supervisor Feedback Corrections
 
@@ -109,6 +121,14 @@ Then open the local URL shown by Streamlit, usually:
 http://localhost:8501
 ```
 
+Build the clean meeting package with:
+
+```bash
+python scripts/create_meeting_demo_package.py
+```
+
+This creates `railways_meeting_demo_pack/` and `railways_meeting_demo_pack.zip`.
+
 ## Smoke Tests
 
 Run the rule-engine smoke tests:
@@ -121,12 +141,6 @@ Run the agent and experiment smoke tests:
 
 ```bash
 python experiments/smoke_test_agents.py
-```
-
-Run the MCTS smoke tests:
-
-```bash
-python experiments/smoke_test_mcts.py
 ```
 
 Run the exact benchmark smoke tests:
@@ -153,10 +167,10 @@ Run the Phase 4 experiment-pipeline smoke test:
 python experiments/smoke_test_phase4_experiments.py
 ```
 
-Run the card-aware agent smoke tests:
+Run the meeting-demo scope smoke test:
 
 ```bash
-python experiments/smoke_test_card_aware_agents.py
+python experiments/smoke_test_meeting_demo.py
 ```
 
 Run the dissertation figure smoke test:
@@ -203,7 +217,7 @@ notes/PROJECT_STATUS_FINAL.md
 
 The raw and summary result folders contain experiment outputs from earlier phases. The dissertation figure and table folders contain compact presentation artefacts generated from those summaries.
 
-## Phase 4 Card Experiments
+## Phase 4 Card Experiments (Exploratory Archive)
 
 Card-disabled baseline using the original card-free simulator:
 
@@ -235,7 +249,7 @@ Run the stronger MCTS comparison when runtime permits:
 python experiments/run_phase4_card_experiments.py --profile mcts100
 ```
 
-### MCTS Budget Comparison
+### MCTS Budget Comparison (Exploratory)
 
 Run and validate the stronger MCTS budget profile:
 
@@ -270,7 +284,7 @@ Each profile writes card-disabled and card-enabled raw CSV files, a full summary
 
 The standard Phase 4 results are used to discuss how the representative cards affect existing agent behaviour, score composition, and search difficulty. No agent is made card-aware during this evidence-collection phase.
 
-### Phase 4D Card-Aware Baselines
+### Phase 4D Card-Aware Baselines (Exploratory)
 
 Phase 4D adds a lightweight card-aware greedy baseline and a card-aware MCTS rollout policy:
 
@@ -324,7 +338,6 @@ Implemented baseline agents:
 - `RandomAgent`
 - `GreedyDeliveryAgent`
 - `GreedyExpansionAgent`
-- `CardAwareGreedyAgent`
 
 Run experiments:
 
@@ -372,9 +385,9 @@ results/processed/
 results/plots/
 ```
 
-## MCTS Agent
+## Exploratory Archive: MCTS Agent
 
-The first search-based agent is a Monte Carlo Tree Search agent. It uses the same legal-action environment interface as the baseline agents and plans on copied game states.
+The repository retains a Monte Carlo Tree Search implementation for research history and possible later tuning. It is not registered, shown in the Streamlit meeting demo, or included in the main baseline comparison.
 
 Run MCTS experiments:
 
@@ -389,7 +402,7 @@ python experiments/analyse_results.py --input results/raw/mcts_experiment_result
 python experiments/plot_results.py --input results/raw/mcts_experiment_results.csv
 ```
 
-## MCTS Validation
+## Exploratory Archive: MCTS Validation
 
 Run the MCTS smoke tests:
 
@@ -421,7 +434,7 @@ MCTS result notes are stored in:
 notes/MCTS_RESULTS_SUMMARY.md
 ```
 
-## MCTS Tuning
+## Exploratory Archive: MCTS Tuning
 
 Run MCTS tuning:
 
@@ -476,7 +489,7 @@ python experiments/analyse_results.py --input results/raw/semi_realistic_mcts_re
 python experiments/plot_results.py --input results/raw/semi_realistic_mcts_results.csv --output-dir results/plots/semi_realistic_mcts
 ```
 
-## Semi-realistic Experiment Pipeline
+## Semi-realistic Experiment Pipeline (Research Archive)
 
 Run the full semi-realistic reporting workflow:
 
@@ -492,7 +505,7 @@ Results are summarised in:
 notes/SEMI_REALISTIC_RESULTS_SUMMARY.md
 ```
 
-## Semi-realistic Diagnosis and Major-line-aware MCTS
+## Semi-realistic Diagnosis and Major-line-aware MCTS (Exploratory)
 
 Run major-line sensitivity experiments:
 

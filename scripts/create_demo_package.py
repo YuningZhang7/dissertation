@@ -41,7 +41,11 @@ EXCLUDE_NAMES = {
 }
 
 
-DEMO_GUIDE = """# Supervisor Demo Guide
+DEMO_GUIDE = """# Full Dissertation Demo Guide
+
+This package is the full research archive and includes exploratory MCTS and
+card-aware work. For the focused supervisor meeting package, run
+`python scripts/create_meeting_demo_package.py` from the source repository.
 
 ## What This Project Is
 
@@ -101,11 +105,14 @@ Core simulator:
 - railways/rules.py
 - railways/environment.py
 
-Agents:
+Main baseline agents:
 
 - agents/random_agent.py
 - agents/greedy_delivery_agent.py
 - agents/greedy_expansion_agent.py
+
+Exploratory agents retained in this full archive:
+
 - agents/card_aware_greedy_agent.py
 - agents/mcts_agent.py
 
@@ -125,11 +132,10 @@ Dissertation evidence:
 ## Short Supervisor Explanation
 
 The simulator represents the game as a graph-based sequential optimisation
-problem. Agents share the same legal-action interface. Random and greedy agents
-provide baselines, MCTS provides simulation-based planning, and card-aware
-variants test whether domain knowledge helps with delayed card rewards. The
-project is designed for controlled AI/OR experiments rather than full commercial
-board game reproduction.
+problem. The meeting narrative focuses on the random, greedy-delivery, and
+greedy-expansion baselines. MCTS and card-aware variants are preserved here as
+exploratory research history. The project is designed for controlled AI/OR
+experiments rather than full commercial board game reproduction.
 """
 
 

@@ -12,6 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.random_agent import RandomAgent
+from agents.registry import AGENT_CLASSES, list_agent_names
 from experiments.run_experiments import run_batch
 from experiments.simulation_runner import run_episode
 from railways.environment import apply_action, get_legal_actions, reset_game
@@ -53,6 +54,12 @@ def test_agents_do_not_choose_issue_bond() -> None:
     assert all(action.action_type != "issue_bond" for action in legal_actions)
     for agent in agents:
         assert agent.choose_action(state).action_type != "issue_bond"
+
+
+def test_main_registry_exposes_only_meeting_demo_agents() -> None:
+    expected = ["random", "greedy_delivery", "greedy_expansion"]
+    assert list(AGENT_CLASSES) == expected
+    assert list_agent_names() == expected
 
 
 def test_run_episode_returns_required_metrics() -> None:
@@ -108,6 +115,7 @@ def run_all() -> None:
         test_greedy_delivery_agent_returns_delivery_when_available,
         test_greedy_expansion_agent_returns_legal_action,
         test_agents_do_not_choose_issue_bond,
+        test_main_registry_exposes_only_meeting_demo_agents,
         test_run_episode_returns_required_metrics,
         test_batch_runner_writes_csv,
     ]

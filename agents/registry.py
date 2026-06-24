@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 from agents.base_agent import BaseAgent
-from agents.card_aware_greedy_agent import CardAwareGreedyAgent
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from agents.greedy_expansion_agent import GreedyExpansionAgent
-from agents.mcts_agent import MCTSAgent
 from agents.random_agent import RandomAgent
 
 
@@ -12,8 +10,6 @@ AGENT_CLASSES: dict[str, type[BaseAgent]] = {
     "random": RandomAgent,
     "greedy_delivery": GreedyDeliveryAgent,
     "greedy_expansion": GreedyExpansionAgent,
-    "card_aware_greedy": CardAwareGreedyAgent,
-    "mcts": MCTSAgent,
 }
 
 

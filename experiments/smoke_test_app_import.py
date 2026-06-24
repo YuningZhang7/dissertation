@@ -8,6 +8,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import app
+from agents.registry import list_agent_names
+from streamlit.testing.v1 import AppTest
 
 
 def test_app_imports() -> None:
@@ -21,10 +23,32 @@ def test_create_game_state_loads_cards() -> None:
     assert state.available_operation_cards
 
 
+def test_app_exposes_only_meeting_demo_agents() -> None:
+    assert list_agent_names() == [
+        "random",
+        "greedy_delivery",
+        "greedy_expansion",
+    ]
+
+
+def test_app_renders_meeting_agent_options() -> None:
+    rendered = AppTest.from_file(str(PROJECT_ROOT / "app.py")).run(timeout=20)
+    assert not rendered.exception
+    agent_selectors = [item for item in rendered.selectbox if item.label == "Agent"]
+    assert len(agent_selectors) == 1
+    assert list(agent_selectors[0].options) == [
+        "random",
+        "greedy_delivery",
+        "greedy_expansion",
+    ]
+
+
 def run_all() -> None:
     tests = [
         test_app_imports,
         test_create_game_state_loads_cards,
+        test_app_exposes_only_meeting_demo_agents,
+        test_app_renders_meeting_agent_options,
     ]
     for test in tests:
         test()

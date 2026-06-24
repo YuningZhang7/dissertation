@@ -49,7 +49,7 @@ def plot_results(
     _map_agent_bar_plot(grouped_by_map_agent, "runtime_seconds", "Mean Runtime by Map and Agent", "Runtime (seconds)", output / "runtime_by_map_agent.png")
     _score_runtime_tradeoff_plot(
         grouped_by_map_agent,
-        output / "mcts_score_runtime_tradeoff.png",
+        output / "score_runtime_tradeoff.png",
     )
 
 
