@@ -1,0 +1,100 @@
+{
+  "cards": [
+    {
+      "id": "cash_grant_1",
+      "name": "Local Investor",
+      "card_type": "immediate_cash",
+      "description": "Gain $5 immediately.",
+      "effect": {
+        "cash": 5
+      }
+    },
+    {
+      "id": "cash_grant_2",
+      "name": "Town Support",
+      "card_type": "immediate_cash",
+      "description": "Gain $3 immediately.",
+      "effect": {
+        "cash": 3
+      }
+    },
+    {
+      "id": "deliver_red_1",
+      "name": "Red Freight Contract",
+      "card_type": "delivery_objective",
+      "description": "Gain 3 bonus points after delivering one red good.",
+      "condition": {
+        "good_color": "red",
+        "required_count": 1
+      },
+      "reward": {
+        "points": 3
+      }
+    },
+    {
+      "id": "deliver_blue_1",
+      "name": "Blue Freight Contract",
+      "card_type": "delivery_objective",
+      "description": "Gain 3 bonus points after delivering one blue good.",
+      "condition": {
+        "good_color": "blue",
+        "required_count": 1
+      },
+      "reward": {
+        "points": 3
+      }
+    },
+    {
+      "id": "connect_a_d_1",
+      "name": "Regional Connection",
+      "card_type": "network_objective",
+      "description": "Gain 4 bonus points after connecting A and D.",
+      "condition": {
+        "source": "A",
+        "target": "D"
+      },
+      "reward": {
+        "points": 4
+      }
+    },
+    {
+      "id": "connect_b_e_1",
+      "name": "Industrial Link",
+      "card_type": "network_objective",
+      "description": "Gain 2 bonus points after connecting B and E.",
+      "condition": {
+        "source": "B",
+        "target": "E"
+      },
+      "reward": {
+        "points": 2
+      }
+    },
+    {
+      "id": "builder_bonus_1",
+      "name": "Railway Builder",
+      "card_type": "end_game_scoring",
+      "description": "Gain 1 point per built railway link at the end of the game, up to 5 points.",
+      "condition": {
+        "metric": "built_edges"
+      },
+      "reward": {
+        "points_per_item": 1,
+        "max_points": 5
+      }
+    },
+    {
+      "id": "builder_bonus_2",
+      "name": "Route Planner",
+      "card_type": "end_game_scoring",
+      "description": "Gain 1 point per built railway link at the end of the game, up to 3 points.",
+      "condition": {
+        "metric": "built_edges"
+      },
+      "reward": {
+        "points_per_item": 1,
+        "max_points": 3
+      }
+    }
+  ]
+}

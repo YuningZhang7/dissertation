@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "name": "micro_map",
+    "description": "Very small artificial map for exact-search benchmarking",
+    "version": "0.1",
+    "source": "Self-created artificial map for dissertation exact benchmark"
+  },
+  "cities": [
+    {
+      "id": "A",
+      "name": "Amber",
+      "x": 0.10,
+      "y": 0.70,
+      "demand_color": "red",
+      "goods": ["blue"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "B",
+      "name": "Benton",
+      "x": 0.35,
+      "y": 0.72,
+      "demand_color": "blue",
+      "goods": ["red"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "C",
+      "name": "Canton",
+      "x": 0.60,
+      "y": 0.68,
+      "demand_color": "yellow",
+      "goods": ["green"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "D",
+      "name": "Dover",
+      "x": 0.85,
+      "y": 0.70,
+      "demand_color": "green",
+      "goods": ["yellow"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "E",
+      "name": "Easton",
+      "x": 0.47,
+      "y": 0.35,
+      "demand_color": "red",
+      "goods": [],
+      "is_gray": false,
+      "is_urbanized": true
+    }
+  ],
+  "edges": [
+    {"id": "A-B", "source": "A", "target": "B", "cost": 2, "built": false},
+    {"id": "B-C", "source": "B", "target": "C", "cost": 3, "built": false},
+    {"id": "C-D", "source": "C", "target": "D", "cost": 3, "built": false},
+    {"id": "A-E", "source": "A", "target": "E", "cost": 4, "built": false},
+    {"id": "E-D", "source": "E", "target": "D", "cost": 4, "built": false},
+    {"id": "B-E", "source": "B", "target": "E", "cost": 2, "built": false}
+  ],
+  "major_lines": [
+    {"id": "A-D", "source": "A", "target": "D", "bonus_points": 6}
+  ]
+}
