@@ -15,6 +15,7 @@ from railways.environment import (
     get_legal_actions,
     reset_game,
 )
+from streamlit.testing.v1 import AppTest
 
 
 EXPECTED_AGENTS = ["random", "greedy_delivery", "greedy_expansion"]
@@ -28,6 +29,23 @@ def test_app_imports() -> None:
 def test_registry_exposes_only_included_agents() -> None:
     assert list(AGENT_CLASSES) == EXPECTED_AGENTS
     assert list_agent_names() == EXPECTED_AGENTS
+
+
+def test_app_renders_only_simple_supervisor_controls() -> None:
+    rendered = AppTest.from_file(str(PROJECT_ROOT / "app.py")).run(timeout=20)
+    assert not rendered.exception
+
+    selectors = {item.label: list(item.options) for item in rendered.selectbox}
+    assert selectors == {
+        "Map": ["toy_map", "toy_medium_map", "semi_realistic_map"],
+        "Agent": EXPECTED_AGENTS,
+    }
+    assert not rendered.number_input
+    assert [button.label for button in rendered.button] == [
+        "Run One Agent Action",
+        "Run Agent Until Game Over",
+        "Reset Game",
+    ]
 
 
 def test_each_agent_chooses_a_legal_action() -> None:
@@ -64,6 +82,7 @@ def run_all() -> None:
     tests = [
         test_app_imports,
         test_registry_exposes_only_included_agents,
+        test_app_renders_only_simple_supervisor_controls,
         test_each_agent_chooses_a_legal_action,
         test_each_agent_runs_a_short_valid_episode,
     ]

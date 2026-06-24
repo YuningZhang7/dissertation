@@ -6,6 +6,15 @@ This package contains the Streamlit simulator and three simple agents:
 - `greedy_delivery`
 - `greedy_expansion`
 
+The interface is intentionally simple for a supervisor meeting:
+
+1. Choose a map.
+2. Choose an agent.
+3. Run one agent action or the full simulation.
+4. Observe the map, player state, final-score estimate, and action history.
+
+The simulator still uses operation cards internally, but the demo does not expose manual rule or card controls.
+
 ## Create a Virtual Environment
 
 macOS:
