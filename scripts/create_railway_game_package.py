@@ -7,12 +7,12 @@ import zipfile
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PACKAGE_NAME = "railways_supervisor_demo"
+PACKAGE_NAME = "railway_game"
 PACKAGE_DIR = PROJECT_ROOT / PACKAGE_NAME
 ZIP_PATH = PROJECT_ROOT / f"{PACKAGE_NAME}.zip"
 
 INCLUDED_AGENTS = ["random", "greedy_delivery", "greedy_expansion"]
-ROOT_FILES = ["app.py", "run_app.py", "requirements.txt"]
+ROOT_FILES = ["run_app.py", "requirements.txt"]
 AGENT_FILES = [
     "__init__.py",
     "base_agent.py",
@@ -30,7 +30,7 @@ EXCLUDED_COPY_NAMES = {
     ".DS_Store",
 }
 
-README_RUN = """# Railways Supervisor Demo
+README_RUN = """# Railway Game
 
 This package contains the Streamlit simulator and three simple agents:
 
@@ -73,7 +73,7 @@ Streamlit normally opens `http://localhost:8501`.
 ## Run the Smoke Test
 
 ```bash
-python experiments/smoke_test_supervisor_demo.py
+python experiments/smoke_test_railway_game.py
 ```
 """
 
@@ -149,7 +149,7 @@ def run_all() -> None:
     for test in tests:
         test()
         print(f"PASS {test.__name__}")
-    print(f"{len(tests)} supervisor-demo smoke tests passed.")
+    print(f"{len(tests)} railway-game smoke tests passed.")
 
 
 if __name__ == "__main__":
@@ -158,14 +158,36 @@ if __name__ == "__main__":
 
 
 def main() -> None:
+    demo_files = _read_existing_demo_files()
     _prepare_output()
     _copy_root_files()
     _copy_core_packages()
     _copy_agent_files()
-    _write_demo_files()
+    _write_demo_files(demo_files)
     _validate_package()
     _create_zip()
     _print_summary()
+
+
+def _read_existing_demo_files() -> dict[str, str]:
+    """Preserve the simplified meeting UI when regenerating the package."""
+    paths = {
+        "app.py": PACKAGE_DIR / "app.py",
+        "README_RUN.md": PACKAGE_DIR / "README_RUN.md",
+        "experiments/smoke_test_railway_game.py": (
+            PACKAGE_DIR / "experiments" / "smoke_test_railway_game.py"
+        ),
+    }
+    missing = [relative for relative, path in paths.items() if not path.exists()]
+    if missing:
+        raise FileNotFoundError(
+            "Cannot regenerate railway_game because the existing package "
+            f"is missing template files: {missing}"
+        )
+    return {
+        relative: path.read_text(encoding="utf-8")
+        for relative, path in paths.items()
+    }
 
 
 def _prepare_output() -> None:
@@ -196,11 +218,18 @@ def _copy_agent_files() -> None:
         )
 
 
-def _write_demo_files() -> None:
-    (PACKAGE_DIR / "README_RUN.md").write_text(README_RUN, encoding="utf-8")
-    smoke_path = PACKAGE_DIR / "experiments" / "smoke_test_supervisor_demo.py"
+def _write_demo_files(demo_files: dict[str, str]) -> None:
+    (PACKAGE_DIR / "app.py").write_text(demo_files["app.py"], encoding="utf-8")
+    (PACKAGE_DIR / "README_RUN.md").write_text(
+        demo_files.get("README_RUN.md", README_RUN),
+        encoding="utf-8",
+    )
+    smoke_path = PACKAGE_DIR / "experiments" / "smoke_test_railway_game.py"
     smoke_path.parent.mkdir(parents=True, exist_ok=True)
-    smoke_path.write_text(SMOKE_TEST, encoding="utf-8")
+    smoke_path.write_text(
+        demo_files.get("experiments/smoke_test_railway_game.py", SMOKE_TEST),
+        encoding="utf-8",
+    )
 
 
 def _validate_package() -> None:
@@ -212,11 +241,11 @@ def _validate_package() -> None:
         "railways",
         "data",
         "agents/registry.py",
-        "experiments/smoke_test_supervisor_demo.py",
+        "experiments/smoke_test_railway_game.py",
     ]
     missing = [relative for relative in required if not (PACKAGE_DIR / relative).exists()]
     if missing:
-        raise FileNotFoundError(f"Supervisor demo is missing: {missing}")
+        raise FileNotFoundError(f"Railway game package is missing: {missing}")
 
     if (PACKAGE_DIR / "README.md").exists():
         raise ValueError("The main repository README must not be copied.")
@@ -274,7 +303,7 @@ def _print_summary() -> None:
     print(f"Created zip: {ZIP_PATH}")
     print(f"Included agents: {', '.join(INCLUDED_AGENTS)}")
     print("Run: python run_app.py")
-    print("Test: python experiments/smoke_test_supervisor_demo.py")
+    print("Test: python experiments/smoke_test_railway_game.py")
 
 
 def _copy_file(source: Path, target: Path) -> None:

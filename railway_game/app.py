@@ -44,11 +44,11 @@ def initialise_session() -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="Railways Supervisor Demo", layout="wide")
+    st.set_page_config(page_title="Railway Game", layout="wide")
     initialise_session()
 
     st.title("Railways of the World AI Simulator")
-    st.caption("Supervisor demo with three interpretable baseline agents.")
+    st.caption("Meeting-ready railway simulator with three interpretable baseline agents.")
 
     state: GameState = st.session_state.game_state
     if state.is_terminal():

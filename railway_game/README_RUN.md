@@ -1,4 +1,4 @@
-# Railways Supervisor Demo
+# Railway Game
 
 This package contains the Streamlit simulator and three simple agents:
 
@@ -50,5 +50,5 @@ Streamlit normally opens `http://localhost:8501`.
 ## Run the Smoke Test
 
 ```bash
-python experiments/smoke_test_supervisor_demo.py
+python experiments/smoke_test_railway_game.py
 ```

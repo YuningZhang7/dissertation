@@ -31,7 +31,7 @@ def test_registry_exposes_only_included_agents() -> None:
     assert list_agent_names() == EXPECTED_AGENTS
 
 
-def test_app_renders_only_simple_supervisor_controls() -> None:
+def test_app_renders_only_simple_railway_game_controls() -> None:
     rendered = AppTest.from_file(str(PROJECT_ROOT / "app.py")).run(timeout=20)
     assert not rendered.exception
 
@@ -82,14 +82,14 @@ def run_all() -> None:
     tests = [
         test_app_imports,
         test_registry_exposes_only_included_agents,
-        test_app_renders_only_simple_supervisor_controls,
+        test_app_renders_only_simple_railway_game_controls,
         test_each_agent_chooses_a_legal_action,
         test_each_agent_runs_a_short_valid_episode,
     ]
     for test in tests:
         test()
         print(f"PASS {test.__name__}")
-    print(f"{len(tests)} supervisor-demo smoke tests passed.")
+    print(f"{len(tests)} railway-game smoke tests passed.")
 
 
 if __name__ == "__main__":
