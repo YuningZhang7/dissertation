@@ -14,6 +14,8 @@ from railways.models import (
     PHASE_GAME_OVER,
     PlayerState,
     RailwayEdge,
+    Route,
+    TrackSegment,
 )
 from railways.scoring import compute_final_score
 
@@ -36,10 +38,14 @@ class GameState:
         end_triggered: bool = False,
         extra_turns_remaining: int = 0,
         action_history: list[str] | None = None,
+        routes: dict[str, Route] | None = None,
+        segments: dict[str, TrackSegment] | None = None,
     ) -> None:
         self.config = config or GameConfig()
         self._initial_cities = deepcopy(cities)
         self._initial_edges = deepcopy(edges)
+        self._initial_routes = deepcopy(routes or {})
+        self._initial_segments = deepcopy(segments or {})
         self._initial_major_lines = deepcopy(major_lines or {})
         self._initial_operation_cards = deepcopy(operation_cards or {})
         self._initial_available_operation_cards = list(
@@ -49,6 +55,8 @@ class GameState:
         )
         self.cities = deepcopy(cities)
         self.edges = deepcopy(edges)
+        self.routes = deepcopy(routes or {})
+        self.segments = deepcopy(segments or {})
         self.major_lines = deepcopy(major_lines or {})
         self.operation_cards = deepcopy(operation_cards or {})
         self.available_operation_cards = list(self._initial_available_operation_cards)
@@ -72,13 +80,18 @@ class GameState:
         config_path: str | Path,
         card_path: str | Path | None = None,
     ) -> "GameState":
-        cities, edges, major_lines = load_map(map_path)
+        cities, edges, major_lines, routes, segments = load_map(
+            map_path,
+            include_routes=True,
+        )
         config = load_config(config_path)
         operation_cards = load_cards(card_path) if card_path is not None else {}
         return cls(
             cities=cities,
             edges=edges,
             major_lines=major_lines,
+            routes=routes,
+            segments=segments,
             config=config,
             operation_cards=operation_cards,
         )
@@ -86,6 +99,8 @@ class GameState:
     def reset(self) -> None:
         self.cities = deepcopy(self._initial_cities)
         self.edges = deepcopy(self._initial_edges)
+        self.routes = deepcopy(self._initial_routes)
+        self.segments = deepcopy(self._initial_segments)
         self.major_lines = deepcopy(self._initial_major_lines)
         self.operation_cards = deepcopy(self._initial_operation_cards)
         self.available_operation_cards = list(self._initial_available_operation_cards)

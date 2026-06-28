@@ -1,0 +1,83 @@
+{
+  "cities": [
+    {
+      "id": "A",
+      "name": "Alpha",
+      "x": 0.1,
+      "y": 0.5,
+      "demand_color": "red",
+      "goods": ["blue"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "B",
+      "name": "Beta",
+      "x": 0.5,
+      "y": 0.5,
+      "demand_color": "blue",
+      "goods": ["red"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "C",
+      "name": "Gamma",
+      "x": 0.9,
+      "y": 0.5,
+      "demand_color": null,
+      "goods": [],
+      "is_gray": true,
+      "is_urbanized": false
+    }
+  ],
+  "routes": [
+    {
+      "id": "A-B",
+      "city_a": "A",
+      "city_b": "B",
+      "segments": [
+        {
+          "id": "A-B-1",
+          "terrain": "plain",
+          "cost": 2
+        },
+        {
+          "id": "A-B-2",
+          "terrain": "water",
+          "cost": 3
+        }
+      ]
+    },
+    {
+      "id": "B-C",
+      "city_a": "B",
+      "city_b": "C",
+      "segments": [
+        {
+          "id": "B-C-1",
+          "terrain": "plain",
+          "cost": 2
+        },
+        {
+          "id": "B-C-2",
+          "terrain": "mountain",
+          "cost": 4
+        },
+        {
+          "id": "B-C-3",
+          "terrain": "plain",
+          "cost": 2
+        }
+      ]
+    }
+  ],
+  "major_lines": [
+    {
+      "id": "A-C",
+      "source": "A",
+      "target": "C",
+      "bonus_points": 5
+    }
+  ]
+}
