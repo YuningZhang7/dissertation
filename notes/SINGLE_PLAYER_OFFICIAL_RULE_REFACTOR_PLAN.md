@@ -82,6 +82,10 @@ The loader should accept both legacy `edges` maps and new `routes` maps. Legacy
 maps continue to use the existing edge rules; the official-like map uses the
 segment rules.
 
+Phase 6C-1 introduces the `Route` and `TrackSegment` data structures and
+dual-format map loading. Segment-level construction, delivery, route completion,
+and incomplete-track cleanup remain future rule-engine work.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:

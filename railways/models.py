@@ -33,6 +33,29 @@ class RailwayEdge:
 
 
 @dataclass
+class TrackSegment:
+    id: str
+    route_id: str
+    index: int
+    source_node: str
+    target_node: str
+    terrain: str
+    cost: int
+    built: bool = False
+    owner: str | None = None
+    completed: bool = False
+
+
+@dataclass
+class Route:
+    id: str
+    city_a: str
+    city_b: str
+    segment_ids: list[str] = field(default_factory=list)
+    completed: bool = False
+
+
+@dataclass
 class MajorLine:
     id: str
     source: str
