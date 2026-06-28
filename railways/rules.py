@@ -13,7 +13,7 @@ from railways.cards import (
     update_cards_after_delivery,
 )
 from railways.game_state import GameState
-from railways.models import PHASE_ACTION, PHASE_GAME_OVER, PHASE_INCOME
+from railways.models import PHASE_ACTION, PHASE_GAME_OVER, PHASE_INCOME, RailwayEdge
 from railways.scoring import compute_delivery_score, compute_income
 
 
@@ -323,6 +323,18 @@ def path_skips_matching_city(
     return False
 
 
+def get_edge_between_cities(
+    state: GameState,
+    first_city: str,
+    second_city: str,
+) -> RailwayEdge | None:
+    """Return the undirected legacy edge connecting two cities, if present."""
+    for edge in state.edges.values():
+        if {edge.source, edge.target} == {first_city, second_city}:
+            return edge
+    return None
+
+
 def validate_delivery_path(
     state: GameState,
     path: list[str],
@@ -354,6 +366,18 @@ def validate_delivery_path(
     for first, second in zip(path, path[1:]):
         if not graph.has_edge(first, second):
             return False, f"Path segment {first}-{second} is not built."
+
+    first_edge = get_edge_between_cities(state, path[0], path[1])
+    if first_edge is None:
+        return False, f"First delivery link {path[0]}-{path[1]} does not exist."
+    if first_edge.owner != PLAYER_ID:
+        return (
+            False,
+            (
+                "Delivery must start on a player-owned link; "
+                f"{first_edge.id} is owned by {first_edge.owner!r}."
+            ),
+        )
 
     if path_skips_matching_city(state, path, good_color):
         return False, "Delivery path skips an intermediate city demanding that color."

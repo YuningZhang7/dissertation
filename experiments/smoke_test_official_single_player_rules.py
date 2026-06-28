@@ -135,6 +135,80 @@ def test_gray_city_delivery_is_rejected_and_not_generated() -> None:
     assert "green" in state.cities["C"].goods
 
 
+def test_delivery_rejects_unowned_first_link() -> None:
+    state = make_official_state()
+    state.cities["A"].goods = ["blue"]
+    state.cities["B"].demand_color = "blue"
+    state.cities["B"].is_gray = False
+    edge = state.edges["A-B"]
+    edge.built = True
+    edge.owner = None
+
+    success, message = deliver_good(
+        state,
+        "A",
+        "B",
+        "blue",
+        path=["A", "B"],
+    )
+
+    assert not success
+    assert "player-owned" in message
+    assert state.cities["A"].goods == ["blue"]
+
+
+def test_delivery_accepts_player_owned_first_link() -> None:
+    state = make_official_state()
+    state.cities["A"].goods = ["blue"]
+    state.cities["B"].demand_color = "blue"
+    state.cities["B"].is_gray = False
+    edge = state.edges["A-B"]
+    edge.built = True
+    edge.owner = "player"
+    starting_actions = state.actions_remaining
+
+    success, message = deliver_good(
+        state,
+        "A",
+        "B",
+        "blue",
+        path=["A", "B"],
+    )
+
+    assert success, message
+    assert "blue" not in state.cities["A"].goods
+    assert state.player.score >= 1
+    assert state.actions_remaining == starting_actions - 1
+
+
+def test_legal_deliveries_require_player_owned_first_link() -> None:
+    state = make_official_state()
+    state.cities["A"].goods = ["blue"]
+    state.cities["B"].demand_color = "blue"
+    state.cities["B"].is_gray = False
+    edge = state.edges["A-B"]
+    edge.built = True
+    edge.owner = None
+
+    legal_deliveries = get_legal_deliveries(state)
+    assert all(
+        not (
+            action.params["source"] == "A"
+            and action.params["target"] == "B"
+        )
+        for action in legal_deliveries
+    )
+
+    edge.owner = "player"
+    legal_deliveries = get_legal_deliveries(state)
+    assert any(
+        action.params["source"] == "A"
+        and action.params["target"] == "B"
+        and action.params["good_color"] == "blue"
+        for action in legal_deliveries
+    )
+
+
 def run_all() -> None:
     tests = [
         test_official_config_and_initial_state,
@@ -145,6 +219,9 @@ def run_all() -> None:
         test_urbanize_rejects_non_gray_city,
         test_urbanize_gray_city_and_remove_empty_marker,
         test_gray_city_delivery_is_rejected_and_not_generated,
+        test_delivery_rejects_unowned_first_link,
+        test_delivery_accepts_player_owned_first_link,
+        test_legal_deliveries_require_player_owned_first_link,
     ]
     for test in tests:
         test()
