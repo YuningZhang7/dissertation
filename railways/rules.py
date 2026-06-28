@@ -199,6 +199,8 @@ def deliver_good(
     target_city = state.get_city(target_city_id)
     if source_city is None or target_city is None:
         return False, "Source or target city does not exist."
+    if target_city.is_gray:
+        return False, "Goods cannot be delivered to a gray city."
     if good_color not in source_city.goods:
         return False, f"{source_city.name} does not contain a {good_color} good."
     if target_city.demand_color != good_color:
@@ -369,6 +371,8 @@ def get_legal_deliveries(state: GameState) -> list[Action]:
             for target_city in state.cities.values():
                 if source_city.id == target_city.id:
                     continue
+                if target_city.is_gray:
+                    continue
                 if target_city.demand_color != good_color:
                     continue
 
@@ -442,33 +446,22 @@ def get_legal_upgrade_action(state: GameState) -> Action | None:
     return None
 
 
-def issue_bond(
-    state: GameState,
-    consume_action_flag: bool = True,
-) -> tuple[bool, str]:
-    """Deprecated legacy helper. Do not use for player or agent actions.
-
-    Financing is internal through pay_money during paid actions.
-    """
-    if consume_action_flag:
-        ok, message = _ensure_action_phase(state)
-        if not ok:
-            return False, message
-        if not state.config.allow_voluntary_bonds:
-            return False, "Voluntary bond issue is disabled by configuration."
+def issue_bond(state: GameState) -> tuple[bool, str]:
+    """Voluntarily issue one bond without consuming a player action."""
+    ok, message = _ensure_action_phase(state)
+    if not ok:
+        return False, message
+    if not state.config.allow_voluntary_bonds:
+        return (
+            False,
+            "Voluntary bond issue is not a legal player action when disabled.",
+        )
 
     state.player.money += state.config.bond_value
     state.player.bonds += 1
-    financing_label = (
-        "bond action" if consume_action_flag else "financing certificate"
-    )
     state.record(
-        f"Turn {state.turn}: issued {financing_label} (+${state.config.bond_value})."
+        f"Turn {state.turn}: issued one bond (+${state.config.bond_value})."
     )
-
-    if consume_action_flag:
-        consume_action(state)
-
     return True, "Issued one bond."
 
 
@@ -527,8 +520,8 @@ def urbanize(
     city = state.get_city(city_id)
     if city is None:
         return False, f"City {city_id} does not exist."
-    if city.is_urbanized and not city.is_gray:
-        return False, f"{city.name} is already urbanized."
+    if not city.is_gray:
+        return False, f"{city.name} is not a gray city."
 
     chosen_color = demand_color or random.choice(state.config.allowed_good_colors)
     if chosen_color not in state.config.allowed_good_colors:
@@ -545,6 +538,7 @@ def urbanize(
     city.demand_color = chosen_color
     city.is_gray = False
     city.is_urbanized = True
+    city.empty_marker = False
     for _ in range(state.config.new_goods_on_urbanize):
         city.goods.append(random.choice(state.config.allowed_good_colors))
 
@@ -569,7 +563,7 @@ def get_legal_urbanize_actions(state: GameState) -> list[Action]:
     return [
         Action.urbanize(city.id)
         for city in state.cities.values()
-        if city.is_gray or not city.is_urbanized
+        if city.is_gray
     ]
 
 
@@ -672,13 +666,7 @@ def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
             action.params.get("demand_color"),
         )
     if action.action_type == "issue_bond":
-        return (
-            False,
-            (
-                "Issuing bonds/share certificates is not a legal player action; "
-                "financing is handled internally during payment."
-            ),
-        )
+        return issue_bond(state)
     if action.action_type == "select_operation_card":
         return select_operation_card(state, str(action.params["card_id"]))
     if action.action_type == "pass":
@@ -703,7 +691,7 @@ def describe_action(action: Action | None) -> str:
     if action.action_type == "urbanize":
         return f"Urbanize city {action.params['city_id']}"
     if action.action_type == "issue_bond":
-        return "Deprecated issue_bond action (not legal)"
+        return "Issue one bond"
     if action.action_type == "select_operation_card":
         return f"Select operation card {action.params.get('card_id', '')}"
     if action.action_type == "pass":
