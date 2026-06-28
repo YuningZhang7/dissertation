@@ -9,6 +9,7 @@ from railways.rules import (
     apply_action as apply_rule_action,
     get_legal_operation_card_actions,
     get_legal_build_actions,
+    get_legal_build_segment_actions,
     get_legal_deliveries,
     get_legal_upgrade_action,
     get_legal_urbanize_actions,
@@ -35,6 +36,7 @@ def get_legal_actions(state: GameState) -> list[Action]:
 
     actions: list[Action] = []
     actions.extend(get_legal_build_actions(state))
+    actions.extend(get_legal_build_segment_actions(state))
     actions.extend(get_legal_deliveries(state))
 
     upgrade_action = get_legal_upgrade_action(state)

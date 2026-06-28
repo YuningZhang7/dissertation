@@ -13,7 +13,13 @@ from railways.cards import (
     update_cards_after_delivery,
 )
 from railways.game_state import GameState
-from railways.models import PHASE_ACTION, PHASE_GAME_OVER, PHASE_INCOME, RailwayEdge
+from railways.models import (
+    PHASE_ACTION,
+    PHASE_GAME_OVER,
+    PHASE_INCOME,
+    RailwayEdge,
+    TrackSegment,
+)
 from railways.scoring import compute_delivery_score, compute_income
 
 
@@ -137,6 +143,118 @@ def build_track(state: GameState, edge_id: str) -> tuple[bool, str]:
     update_cards_after_build(state)
     consume_action(state)
     return True, f"Built track {edge_id}."
+
+
+def get_segments_for_ids(
+    state: GameState,
+    segment_ids: list[str],
+) -> list[TrackSegment] | None:
+    segments: list[TrackSegment] = []
+    for segment_id in segment_ids:
+        segment = state.segments.get(segment_id)
+        if segment is None:
+            return None
+        segments.append(segment)
+    return segments
+
+
+def validate_build_segment_chain(
+    state: GameState,
+    segment_ids: list[str],
+) -> tuple[bool, str]:
+    if not segment_ids:
+        return False, "Build segment action requires at least one segment."
+    if len(segment_ids) > 4:
+        return False, "A build action can place at most 4 track segments."
+
+    segments = get_segments_for_ids(state, segment_ids)
+    if segments is None:
+        return False, "One or more track segments do not exist."
+    if any(segment.built for segment in segments):
+        return False, "Cannot build an already built track segment."
+
+    route_ids = {segment.route_id for segment in segments}
+    if len(route_ids) != 1:
+        return (
+            False,
+            "All track segments in one build action must belong to the same route.",
+        )
+
+    indices = [segment.index for segment in segments]
+    if indices != sorted(indices):
+        return False, "Track segments must be selected in increasing route order."
+    expected_indices = list(range(indices[0], indices[0] + len(indices)))
+    if indices != expected_indices:
+        return False, "Track segments must be consecutive."
+
+    return True, "Track segment chain is valid."
+
+
+def build_track_segments(
+    state: GameState,
+    segment_ids: list[str],
+) -> tuple[bool, str]:
+    ok, message = _ensure_action_phase(state)
+    if not ok:
+        return False, message
+
+    valid, message = validate_build_segment_chain(state, segment_ids)
+    if not valid:
+        return False, message
+
+    segments = [state.segments[segment_id] for segment_id in segment_ids]
+    total_cost = sum(segment.cost for segment in segments)
+    paid, payment_message = pay_money(
+        state,
+        total_cost,
+        allow_auto_bonds=state.config.auto_issue_bonds_when_needed,
+    )
+    if not paid:
+        return False, f"Cannot build track segments: {payment_message}"
+
+    for segment in segments:
+        segment.built = True
+        segment.owner = PLAYER_ID
+
+    state.record(
+        (
+            f"Turn {state.turn}: built track segments "
+            f"{','.join(segment_ids)} for ${total_cost}. {payment_message}"
+        )
+    )
+    consume_action(state)
+    return True, f"Built {len(segment_ids)} track segment(s)."
+
+
+def get_legal_build_segment_actions(state: GameState) -> list[Action]:
+    if state.phase != PHASE_ACTION or not state.segments:
+        return []
+
+    actions: list[Action] = []
+    for route in state.routes.values():
+        ordered_segments = [
+            state.segments[segment_id]
+            for segment_id in route.segment_ids
+            if segment_id in state.segments
+        ]
+        ordered_segments.sort(key=lambda segment: segment.index)
+
+        for start in range(len(ordered_segments)):
+            for length in range(1, 5):
+                chain = ordered_segments[start : start + length]
+                if len(chain) != length:
+                    continue
+                segment_ids = [segment.id for segment in chain]
+                valid, _ = validate_build_segment_chain(state, segment_ids)
+                if not valid:
+                    continue
+                total_cost = sum(segment.cost for segment in chain)
+                if (
+                    can_pay(state, total_cost)
+                    or state.config.auto_issue_bonds_when_needed
+                ):
+                    actions.append(Action.build_track_segments(segment_ids))
+    return actions
 
 
 def get_legal_build_actions(state: GameState) -> list[Action]:
@@ -673,6 +791,11 @@ def check_major_lines(state: GameState) -> None:
 def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
     if action.action_type == "build_track":
         return build_track(state, str(action.params["edge_id"]))
+    if action.action_type == "build_track_segments":
+        return build_track_segments(
+            state,
+            list(action.params["segment_ids"]),
+        )
     if action.action_type == "deliver_good":
         return deliver_good(
             state,
@@ -705,6 +828,8 @@ def describe_action(action: Action | None) -> str:
         return "No action."
     if action.action_type == "build_track":
         return f"Build track {action.params['edge_id']}"
+    if action.action_type == "build_track_segments":
+        return f"Build track segments {action.params['segment_ids']}"
     if action.action_type == "deliver_good":
         return (
             f"Deliver {action.params['good_color']} from "
