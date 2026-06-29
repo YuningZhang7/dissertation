@@ -137,11 +137,13 @@ route-segment maps, city state, built and completed track, major lines, and the
 active Rail Baron objective. The feature is intended for debugging and dissertation
 presentation rather than as a full interactive GUI.
 
-Phase 6F-6 adds an automated agent episode animation pipeline. Users can choose a
-registered agent and a supported map, then generate a non-interactive visual replay
-of the agent playing the single-player simulator. The output includes PNG frames, a
-static HTML replay index, an episode log, and a JSON summary. This is designed for
-debugging and dissertation demonstrations rather than manual gameplay.
+Phase 6F-6 adds a non-interactive agent animation viewer. The user selects a map and
+a registered agent, and the system automatically runs an episode. The output
+includes a compact HTML replay viewer with playback controls, a main animation
+frame, an action-history panel, PNG frames, logs, and summary JSON. It is intended
+for supervisor demos and debugging, not manual gameplay. `--frame-mode all`
+captures every action, while `--frame-mode events` limits rendered frames to key
+events while retaining the complete action history.
 
 ## Planned Rule Changes
 

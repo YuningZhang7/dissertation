@@ -31,13 +31,16 @@ def test_tiny_agent_animation_writes_required_artifacts() -> None:
         frames_dir = run_dir / "frames"
         frame_paths = sorted(frames_dir.glob("frame_*.png"))
         summary_path = run_dir / "episode_summary.json"
+        history_path = run_dir / "episode_history.json"
+        index_path = run_dir / "index.html"
 
         assert run_dir.exists()
         assert frames_dir.exists()
         assert len(frame_paths) >= 2
-        assert (run_dir / "index.html").exists()
+        assert index_path.exists()
         assert (run_dir / "episode_log.txt").exists()
         assert summary_path.exists()
+        assert history_path.exists()
 
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         required_summary_fields = {
@@ -46,6 +49,7 @@ def test_tiny_agent_animation_writes_required_artifacts() -> None:
             "agent_name",
             "seed",
             "max_steps",
+            "frame_mode",
             "steps_executed",
             "terminal",
             "final_score",
@@ -77,6 +81,37 @@ def test_tiny_agent_animation_writes_required_artifacts() -> None:
         log_text = (run_dir / "episode_log.txt").read_text(encoding="utf-8")
         assert "chosen=" in log_text
         assert "completed_routes=" in log_text
+        html = index_path.read_text(encoding="utf-8")
+        assert "Action History" in html
+        assert "Play" in html
+        assert "Pause" in html
+        assert "frameData" in html
+        assert "viewerImage" in html
+        assert html.count("<figure") == 0
+
+
+def test_events_frame_mode_writes_sparse_frames_and_full_history() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        run_dir, summary = run_agent_episode_animation(
+            map_name="official_like",
+            agent_name="route_segment_greedy",
+            seed=42,
+            max_steps=10,
+            frame_mode="events",
+            output_root=temp_dir,
+        )
+
+        frame_paths = sorted((run_dir / "frames").glob("frame_*.png"))
+        history = json.loads(
+            (run_dir / "episode_history.json").read_text(encoding="utf-8")
+        )
+        assert summary["frame_mode"] == "events"
+        assert summary["frames_count"] >= 2
+        assert summary["frames_count"] <= summary["steps_executed"] + 1
+        assert summary["frames_count"] == len(frame_paths)
+        assert len(history) >= summary["steps_executed"]
+        assert all("event_labels" in entry for entry in history)
+        assert all("frame_index" in entry for entry in history)
 
 
 def test_agent_exception_still_writes_failure_summary() -> None:
@@ -103,11 +138,13 @@ def test_agent_exception_still_writes_failure_summary() -> None:
         assert saved_summary == summary
         assert (run_dir / "episode_log.txt").exists()
         assert (run_dir / "index.html").exists()
+        assert (run_dir / "episode_history.json").exists()
 
 
 def run_all() -> None:
     tests = [
         test_tiny_agent_animation_writes_required_artifacts,
+        test_events_frame_mode_writes_sparse_frames_and_full_history,
         test_agent_exception_still_writes_failure_summary,
     ]
     for test in tests:
