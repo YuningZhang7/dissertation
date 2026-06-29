@@ -65,6 +65,15 @@ class MajorLine:
 
 
 @dataclass
+class RailBaronObjective:
+    id: str
+    source: str
+    target: str
+    bonus_points: int
+    claimed: bool = False
+
+
+@dataclass
 class OperationCard:
     id: str
     name: str
@@ -93,6 +102,7 @@ class PlayerState:
     built_edges: set[str] = field(default_factory=set)
     major_line_bonus: int = 0
     rail_baron_bonus: int = 0
+    rail_baron_objectives_completed: int = 0
     operation_card_bonus: int = 0
     owned_operation_cards: list[str] = field(default_factory=list)
     active_operation_cards: dict[str, PlayerCardState] = field(default_factory=dict)

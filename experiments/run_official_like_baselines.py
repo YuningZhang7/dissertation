@@ -48,6 +48,9 @@ CSV_COLUMNS = [
     "locomotive_level",
     "delivered_goods_count",
     "major_line_bonus",
+    "active_rail_baron_objective_id",
+    "rail_baron_bonus",
+    "rail_baron_objectives_completed",
     "claimed_major_lines_count",
     "completed_routes_count",
     "built_segments_count",
@@ -123,6 +126,13 @@ def run_official_like_episode(
         "locomotive_level": state.player.locomotive_level,
         "delivered_goods_count": state.player.delivered_goods_count,
         "major_line_bonus": state.player.major_line_bonus,
+        "active_rail_baron_objective_id": (
+            state.active_rail_baron_objective_id or ""
+        ),
+        "rail_baron_bonus": state.player.rail_baron_bonus,
+        "rail_baron_objectives_completed": (
+            state.player.rail_baron_objectives_completed
+        ),
         "claimed_major_lines_count": sum(
             1 for line in state.major_lines.values() if line.claimed
         ),

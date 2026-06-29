@@ -246,5 +246,13 @@
     {"id": "Central-Connector", "source": "J", "target": "L", "bonus_points": 5},
     {"id": "Gray-Development-Line", "source": "Q", "target": "X", "bonus_points": 8},
     {"id": "Trade-Line", "source": "B", "target": "E", "bonus_points": 7}
+  ],
+  "rail_baron_objectives": [
+    {"id": "RB-A-N", "source": "A", "target": "N", "bonus_points": 12},
+    {"id": "RB-G-F", "source": "G", "target": "F", "bonus_points": 11},
+    {"id": "RB-C-U", "source": "C", "target": "U", "bonus_points": 10},
+    {"id": "RB-S-W", "source": "S", "target": "W", "bonus_points": 10},
+    {"id": "RB-B-E", "source": "B", "target": "E", "bonus_points": 9},
+    {"id": "RB-Q-X", "source": "Q", "target": "X", "bonus_points": 8}
   ]
 }

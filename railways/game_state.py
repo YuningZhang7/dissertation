@@ -13,6 +13,7 @@ from railways.models import (
     PHASE_ACTION,
     PHASE_GAME_OVER,
     PlayerState,
+    RailBaronObjective,
     RailwayEdge,
     Route,
     TrackSegment,
@@ -30,6 +31,8 @@ class GameState:
         config: GameConfig | None = None,
         player: PlayerState | None = None,
         major_lines: dict[str, MajorLine] | None = None,
+        rail_baron_objectives: dict[str, RailBaronObjective] | None = None,
+        active_rail_baron_objective_id: str | None = None,
         operation_cards: dict[str, OperationCard] | None = None,
         available_operation_cards: list[str] | None = None,
         turn: int | None = None,
@@ -47,6 +50,29 @@ class GameState:
         self._initial_routes = deepcopy(routes or {})
         self._initial_segments = deepcopy(segments or {})
         self._initial_major_lines = deepcopy(major_lines or {})
+        self._initial_rail_baron_objectives = deepcopy(
+            rail_baron_objectives or {}
+        )
+        selected_rail_baron_objective_id = active_rail_baron_objective_id
+        if (
+            selected_rail_baron_objective_id is None
+            and self._initial_rail_baron_objectives
+        ):
+            selected_rail_baron_objective_id = next(
+                iter(self._initial_rail_baron_objectives)
+            )
+        if (
+            selected_rail_baron_objective_id is not None
+            and selected_rail_baron_objective_id
+            not in self._initial_rail_baron_objectives
+        ):
+            raise ValueError(
+                "Unknown Rail Baron objective: "
+                f"{selected_rail_baron_objective_id}"
+            )
+        self._initial_active_rail_baron_objective_id = (
+            selected_rail_baron_objective_id
+        )
         self._initial_operation_cards = deepcopy(operation_cards or {})
         self._initial_available_operation_cards = list(
             available_operation_cards
@@ -58,6 +84,10 @@ class GameState:
         self.routes = deepcopy(routes or {})
         self.segments = deepcopy(segments or {})
         self.major_lines = deepcopy(major_lines or {})
+        self.rail_baron_objectives = deepcopy(rail_baron_objectives or {})
+        self.active_rail_baron_objective_id = (
+            selected_rail_baron_objective_id
+        )
         self.operation_cards = deepcopy(operation_cards or {})
         self.available_operation_cards = list(self._initial_available_operation_cards)
         self.player = deepcopy(player) if player else self.config.create_initial_player()
@@ -79,10 +109,19 @@ class GameState:
         map_path: str | Path,
         config_path: str | Path,
         card_path: str | Path | None = None,
+        rail_baron_objective_id: str | None = None,
     ) -> "GameState":
-        cities, edges, major_lines, routes, segments = load_map(
+        (
+            cities,
+            edges,
+            major_lines,
+            routes,
+            segments,
+            rail_baron_objectives,
+        ) = load_map(
             map_path,
             include_routes=True,
+            include_rail_baron_objectives=True,
         )
         config = load_config(config_path)
         operation_cards = load_cards(card_path) if card_path is not None else {}
@@ -90,6 +129,8 @@ class GameState:
             cities=cities,
             edges=edges,
             major_lines=major_lines,
+            rail_baron_objectives=rail_baron_objectives,
+            active_rail_baron_objective_id=rail_baron_objective_id,
             routes=routes,
             segments=segments,
             config=config,
@@ -102,6 +143,12 @@ class GameState:
         self.routes = deepcopy(self._initial_routes)
         self.segments = deepcopy(self._initial_segments)
         self.major_lines = deepcopy(self._initial_major_lines)
+        self.rail_baron_objectives = deepcopy(
+            self._initial_rail_baron_objectives
+        )
+        self.active_rail_baron_objective_id = (
+            self._initial_active_rail_baron_objective_id
+        )
         self.operation_cards = deepcopy(self._initial_operation_cards)
         self.available_operation_cards = list(self._initial_available_operation_cards)
         self.player = self.config.create_initial_player()

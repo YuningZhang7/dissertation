@@ -251,5 +251,10 @@
     {"id": "G-E", "source": "G", "target": "E", "bonus_points": 7},
     {"id": "B-J", "source": "B", "target": "J", "bonus_points": 6},
     {"id": "A-C", "source": "A", "target": "C", "bonus_points": 5}
+  ],
+  "rail_baron_objectives": [
+    {"id": "RB-A-F", "source": "A", "target": "F", "bonus_points": 10},
+    {"id": "RB-G-E", "source": "G", "target": "E", "bonus_points": 9},
+    {"id": "RB-B-J", "source": "B", "target": "J", "bonus_points": 8}
   ]
 }
