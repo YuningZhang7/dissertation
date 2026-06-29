@@ -1,0 +1,255 @@
+{
+  "cities": [
+    {
+      "id": "A",
+      "name": "Northport",
+      "x": 0.10,
+      "y": 0.82,
+      "demand_color": "red",
+      "goods": ["blue", "green", "black"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "B",
+      "name": "Ironford",
+      "x": 0.35,
+      "y": 0.86,
+      "demand_color": "blue",
+      "goods": ["red", "yellow"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "C",
+      "name": "Lakeview",
+      "x": 0.65,
+      "y": 0.84,
+      "demand_color": "yellow",
+      "goods": ["purple", "red"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "D",
+      "name": "Hilltown",
+      "x": 0.68,
+      "y": 0.55,
+      "demand_color": "green",
+      "goods": ["yellow", "blue"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "E",
+      "name": "Eastgate",
+      "x": 0.90,
+      "y": 0.68,
+      "demand_color": "black",
+      "goods": ["green", "purple"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "F",
+      "name": "Southport",
+      "x": 0.74,
+      "y": 0.18,
+      "demand_color": "purple",
+      "goods": ["black", "red"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "G",
+      "name": "Westhaven",
+      "x": 0.10,
+      "y": 0.48,
+      "demand_color": "red",
+      "goods": ["blue", "yellow"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "H",
+      "name": "Central",
+      "x": 0.43,
+      "y": 0.50,
+      "demand_color": "blue",
+      "goods": ["red", "green"],
+      "is_gray": false,
+      "is_urbanized": true
+    },
+    {
+      "id": "I",
+      "name": "Graymill",
+      "x": 0.34,
+      "y": 0.18,
+      "demand_color": null,
+      "goods": [],
+      "is_gray": true,
+      "is_urbanized": false
+    },
+    {
+      "id": "J",
+      "name": "Old Junction",
+      "x": 0.94,
+      "y": 0.36,
+      "demand_color": null,
+      "goods": [],
+      "is_gray": true,
+      "is_urbanized": false
+    }
+  ],
+  "routes": [
+    {
+      "id": "A-H",
+      "city_a": "A",
+      "city_b": "H",
+      "segments": [
+        {"id": "A-H-1", "terrain": "plain", "cost": 2},
+        {"id": "A-H-2", "terrain": "water", "cost": 3}
+      ]
+    },
+    {
+      "id": "H-B",
+      "city_a": "H",
+      "city_b": "B",
+      "segments": [
+        {"id": "H-B-1", "terrain": "plain", "cost": 2},
+        {"id": "H-B-2", "terrain": "mountain", "cost": 4}
+      ]
+    },
+    {
+      "id": "B-C",
+      "city_a": "B",
+      "city_b": "C",
+      "segments": [
+        {"id": "B-C-1", "terrain": "plain", "cost": 2},
+        {"id": "B-C-2", "terrain": "water", "cost": 3},
+        {"id": "B-C-3", "terrain": "plain", "cost": 2}
+      ]
+    },
+    {
+      "id": "C-E",
+      "city_a": "C",
+      "city_b": "E",
+      "segments": [
+        {"id": "C-E-1", "terrain": "water", "cost": 3},
+        {"id": "C-E-2", "terrain": "plain", "cost": 2},
+        {"id": "C-E-3", "terrain": "mountain", "cost": 4}
+      ]
+    },
+    {
+      "id": "E-F",
+      "city_a": "E",
+      "city_b": "F",
+      "segments": [
+        {"id": "E-F-1", "terrain": "plain", "cost": 2},
+        {"id": "E-F-2", "terrain": "mountain", "cost": 5},
+        {"id": "E-F-3", "terrain": "plain", "cost": 2}
+      ]
+    },
+    {
+      "id": "F-H",
+      "city_a": "F",
+      "city_b": "H",
+      "segments": [
+        {"id": "F-H-1", "terrain": "plain", "cost": 2},
+        {"id": "F-H-2", "terrain": "water", "cost": 3}
+      ]
+    },
+    {
+      "id": "H-G",
+      "city_a": "H",
+      "city_b": "G",
+      "segments": [
+        {"id": "H-G-1", "terrain": "plain", "cost": 2},
+        {"id": "H-G-2", "terrain": "mountain", "cost": 4},
+        {"id": "H-G-3", "terrain": "plain", "cost": 2}
+      ]
+    },
+    {
+      "id": "G-A",
+      "city_a": "G",
+      "city_b": "A",
+      "segments": [
+        {"id": "G-A-1", "terrain": "water", "cost": 3},
+        {"id": "G-A-2", "terrain": "plain", "cost": 2}
+      ]
+    },
+    {
+      "id": "B-D",
+      "city_a": "B",
+      "city_b": "D",
+      "segments": [
+        {"id": "B-D-1", "terrain": "plain", "cost": 2},
+        {"id": "B-D-2", "terrain": "mountain", "cost": 4},
+        {"id": "B-D-3", "terrain": "plain", "cost": 2}
+      ]
+    },
+    {
+      "id": "D-H",
+      "city_a": "D",
+      "city_b": "H",
+      "segments": [
+        {"id": "D-H-1", "terrain": "plain", "cost": 2},
+        {"id": "D-H-2", "terrain": "plain", "cost": 2}
+      ]
+    },
+    {
+      "id": "D-E",
+      "city_a": "D",
+      "city_b": "E",
+      "segments": [
+        {"id": "D-E-1", "terrain": "mountain", "cost": 4},
+        {"id": "D-E-2", "terrain": "plain", "cost": 2},
+        {"id": "D-E-3", "terrain": "water", "cost": 3}
+      ]
+    },
+    {
+      "id": "G-F",
+      "city_a": "G",
+      "city_b": "F",
+      "segments": [
+        {"id": "G-F-1", "terrain": "plain", "cost": 2},
+        {"id": "G-F-2", "terrain": "water", "cost": 3},
+        {"id": "G-F-3", "terrain": "mountain", "cost": 4}
+      ]
+    },
+    {
+      "id": "H-I",
+      "city_a": "H",
+      "city_b": "I",
+      "segments": [
+        {"id": "H-I-1", "terrain": "plain", "cost": 2},
+        {"id": "H-I-2", "terrain": "mountain", "cost": 4}
+      ]
+    },
+    {
+      "id": "E-J",
+      "city_a": "E",
+      "city_b": "J",
+      "segments": [
+        {"id": "E-J-1", "terrain": "water", "cost": 3},
+        {"id": "E-J-2", "terrain": "plain", "cost": 2},
+        {"id": "E-J-3", "terrain": "mountain", "cost": 5}
+      ]
+    },
+    {
+      "id": "I-J",
+      "city_a": "I",
+      "city_b": "J",
+      "segments": [
+        {"id": "I-J-1", "terrain": "plain", "cost": 2},
+        {"id": "I-J-2", "terrain": "water", "cost": 3}
+      ]
+    }
+  ],
+  "major_lines": [
+    {"id": "A-F", "source": "A", "target": "F", "bonus_points": 8},
+    {"id": "G-E", "source": "G", "target": "E", "bonus_points": 7},
+    {"id": "B-J", "source": "B", "target": "J", "bonus_points": 6},
+    {"id": "A-C", "source": "A", "target": "C", "bonus_points": 5}
+  ]
+}
