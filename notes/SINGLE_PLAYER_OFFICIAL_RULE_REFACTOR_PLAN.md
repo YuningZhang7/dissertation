@@ -95,6 +95,12 @@ cleanup. `mini_route_segment_map.json` remains the compact unit-test map; the
 official-like scenario is intended for scenario smoke tests and later agent
 evaluation.
 
+Phase 6F-1 adds a deterministic baseline evaluation runner for the official-like
+route-segment scenario. It compares the existing baseline agents using repeatable
+episode seeds and records per-episode CSV metrics plus aggregated JSON metrics for
+later dissertation analysis. The runner provides baseline behaviour and
+sanity-check evidence for the implemented rules; it is not evidence of optimality.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:
