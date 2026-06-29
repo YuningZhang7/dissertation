@@ -386,6 +386,10 @@ def is_build_connected_to_player_network(
     return edge.source in network_cities or edge.target in network_cities
 
 
+def uses_route_segment_delivery(state: GameState) -> bool:
+    return bool(state.routes and state.segments)
+
+
 def deliver_good(
     state: GameState,
     source_city_id: str,
@@ -411,22 +415,50 @@ def deliver_good(
     if target_city.demand_color != good_color:
         return False, f"{target_city.name} does not demand {good_color}."
 
-    selected_path = path or find_shortest_built_path(state, source_city_id, target_city_id)
-    if selected_path is None:
-        return False, "No built route connects the source and target."
+    if uses_route_segment_delivery(state):
+        selected_path = path
+        if selected_path is None:
+            paths = find_all_completed_route_delivery_paths(
+                state,
+                source_city_id,
+                target_city_id,
+                good_color,
+            )
+            selected_path = paths[0] if paths else None
+        if selected_path is None:
+            return False, "No completed route connects the source and target."
 
-    valid_path, path_message = validate_delivery_path(
-        state,
-        selected_path,
-        source_city_id,
-        target_city_id,
-        good_color,
-    )
-    if not valid_path:
-        return False, path_message
+        valid_path, path_message = validate_completed_route_delivery_path(
+            state,
+            selected_path,
+            source_city_id,
+            target_city_id,
+            good_color,
+        )
+        if not valid_path:
+            return False, path_message
+        distance = completed_route_path_segment_length(state, selected_path)
+    else:
+        selected_path = path or find_shortest_built_path(
+            state,
+            source_city_id,
+            target_city_id,
+        )
+        if selected_path is None:
+            return False, "No built route connects the source and target."
 
-    length = path_length(selected_path)
-    delivery_score = compute_delivery_score(length, state.config)
+        valid_path, path_message = validate_delivery_path(
+            state,
+            selected_path,
+            source_city_id,
+            target_city_id,
+            good_color,
+        )
+        if not valid_path:
+            return False, path_message
+        distance = path_length(selected_path)
+
+    delivery_score = compute_delivery_score(distance, state.config)
     source_city.goods.remove(good_color)
     update_empty_city_marker(state, source_city_id)
     check_end_condition(state)
@@ -711,7 +743,49 @@ def validate_delivery_path(
     return True, "Delivery path is valid."
 
 
-def get_legal_deliveries(state: GameState) -> list[Action]:
+def get_legal_completed_route_deliveries(state: GameState) -> list[Action]:
+    if state.phase != PHASE_ACTION:
+        return []
+
+    actions: list[Action] = []
+    for source_id, source_city in state.cities.items():
+        for good_color in sorted(set(source_city.goods)):
+            for target_id, target_city in state.cities.items():
+                if source_id == target_id:
+                    continue
+                if target_city.is_gray:
+                    continue
+                if target_city.demand_color != good_color:
+                    continue
+
+                paths = find_all_completed_route_delivery_paths(
+                    state,
+                    source_id,
+                    target_id,
+                    good_color,
+                )
+                for path in paths:
+                    distance = completed_route_path_segment_length(state, path)
+                    actions.append(
+                        Action(
+                            "deliver_good",
+                            {
+                                "source": source_id,
+                                "target": target_id,
+                                "good_color": good_color,
+                                "path": path,
+                                "path_length": distance,
+                                "score": compute_delivery_score(
+                                    distance,
+                                    state.config,
+                                ),
+                            },
+                        )
+                    )
+    return actions
+
+
+def get_legal_legacy_deliveries(state: GameState) -> list[Action]:
     if state.phase != PHASE_ACTION:
         return []
 
@@ -747,6 +821,12 @@ def get_legal_deliveries(state: GameState) -> list[Action]:
                         )
                     )
     return deliveries
+
+
+def get_legal_deliveries(state: GameState) -> list[Action]:
+    if uses_route_segment_delivery(state):
+        return get_legal_completed_route_deliveries(state)
+    return get_legal_legacy_deliveries(state)
 
 
 def upgrade_engine(state: GameState) -> tuple[bool, str]:
