@@ -292,6 +292,7 @@ def build_track_segments(
         )
     )
     update_route_completion(state, segments[0].route_id)
+    check_major_lines(state)
     consume_action(state)
     return True, f"Built {len(segment_ids)} track segment(s)."
 
@@ -1059,7 +1060,7 @@ def is_terminal(state: GameState) -> bool:
     return state.phase == PHASE_GAME_OVER
 
 
-def check_major_lines(state: GameState) -> None:
+def check_legacy_major_lines(state: GameState) -> None:
     for line in state.major_lines.values():
         if line.claimed:
             continue
@@ -1074,6 +1075,37 @@ def check_major_lines(state: GameState) -> None:
                 f"(+{line.bonus_points})."
             )
         )
+
+
+def check_completed_route_major_lines(state: GameState) -> None:
+    graph = get_completed_route_graph(state)
+
+    for line in state.major_lines.values():
+        if line.claimed:
+            continue
+        if line.source not in graph or line.target not in graph:
+            continue
+
+        try:
+            nx.shortest_path(graph, source=line.source, target=line.target)
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            continue
+
+        line.claimed = True
+        state.player.major_line_bonus += line.bonus_points
+        state.record(
+            (
+                f"Turn {state.turn}: claimed major line {line.id} "
+                f"(+{line.bonus_points})."
+            )
+        )
+
+
+def check_major_lines(state: GameState) -> None:
+    if uses_route_segment_delivery(state):
+        check_completed_route_major_lines(state)
+    else:
+        check_legacy_major_lines(state)
 
 
 def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
