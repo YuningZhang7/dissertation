@@ -6,6 +6,7 @@ __pycache__/
 venv/
 *.log
 results/*
+experiments/results/
 !results/figures/
 !results/figures/*.png
 !results/tables/
