@@ -106,6 +106,21 @@ legacy-oriented greedy agents, it prioritises completed-route deliveries and
 segment builds that complete or extend useful routes. It is intended as a stronger
 interpretable baseline, not an optimal solver.
 
+Phase 6F-3 adds an expanded official-style route-segment scenario map. The new map
+is a fictional experimental network and is not a reproduction of the official
+board. It increases the number of cities, route corridors, terrain-dependent track
+segments, gray cities, and major-line objectives to provide a more strategically
+varied environment for agent evaluation.
+
+The project now uses three route-segment maps:
+
+- `mini_route_segment_map.json`: unit tests
+- `official_like_route_segment_map.json`: small scenario and smoke tests
+- `expanded_official_style_route_segment_map.json`: larger experiment scenario
+
+The expanded map still uses predefined route corridors. It does not implement full
+hex-tile placement or free-form track drawing.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:
