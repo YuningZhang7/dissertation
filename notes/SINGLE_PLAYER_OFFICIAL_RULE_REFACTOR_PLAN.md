@@ -137,13 +137,17 @@ route-segment maps, city state, built and completed track, major lines, and the
 active Rail Baron objective. The feature is intended for debugging and dissertation
 presentation rather than as a full interactive GUI.
 
-Phase 6F-6 adds a non-interactive agent animation viewer. The user selects a map and
-a registered agent, and the system automatically runs an episode. The output
-includes a compact HTML replay viewer with playback controls, a main animation
-frame, an action-history panel, PNG frames, logs, and summary JSON. It is intended
-for supervisor demos and debugging, not manual gameplay. `--frame-mode all`
-captures every action, while `--frame-mode events` limits rendered frames to key
-events while retaining the complete action history.
+Phase 6F-6 adds a non-interactive agent animation viewer. It provides both a CLI
+animation generator and a lightweight Streamlit meeting-demo launcher. The user
+selects a map, a registered agent, seed, maximum steps, and frame mode, and the
+system automatically runs an episode. The output includes a compact HTML replay
+viewer with playback controls, a main animation frame, an action-history panel,
+PNG frames, logs, and summary JSON. The meeting-demo launcher embeds that generated
+replay and reports its output path and summary metrics. It is intended for
+supervisor demos and debugging, not manual gameplay. `--frame-mode all` captures
+every action, while `--frame-mode events` limits rendered frames to key events while
+retaining the complete action history. Launch the demo with
+`streamlit run experiments/demo_agent_animation_app.py`.
 
 ## Planned Rule Changes
 
