@@ -23,15 +23,16 @@ def test_create_game_state_loads_cards() -> None:
     assert state.available_operation_cards
 
 
-def test_app_exposes_only_meeting_demo_agents() -> None:
+def test_app_exposes_registered_agents() -> None:
     assert list_agent_names() == [
         "random",
         "greedy_delivery",
         "greedy_expansion",
+        "route_segment_greedy",
     ]
 
 
-def test_app_renders_meeting_agent_options() -> None:
+def test_app_renders_registered_agent_options() -> None:
     rendered = AppTest.from_file(str(PROJECT_ROOT / "app.py")).run(timeout=20)
     assert not rendered.exception
     agent_selectors = [item for item in rendered.selectbox if item.label == "Agent"]
@@ -40,6 +41,7 @@ def test_app_renders_meeting_agent_options() -> None:
         "random",
         "greedy_delivery",
         "greedy_expansion",
+        "route_segment_greedy",
     ]
 
 
@@ -47,8 +49,8 @@ def run_all() -> None:
     tests = [
         test_app_imports,
         test_create_game_state_loads_cards,
-        test_app_exposes_only_meeting_demo_agents,
-        test_app_renders_meeting_agent_options,
+        test_app_exposes_registered_agents,
+        test_app_renders_registered_agent_options,
     ]
     for test in tests:
         test()
