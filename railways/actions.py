@@ -14,6 +14,10 @@ class Action:
         return cls("build_track", {"edge_id": edge_id})
 
     @classmethod
+    def build_track_segments(cls, segment_ids: list[str]) -> "Action":
+        return cls("build_track_segments", {"segment_ids": list(segment_ids)})
+
+    @classmethod
     def deliver_good(
         cls,
         source: str,
