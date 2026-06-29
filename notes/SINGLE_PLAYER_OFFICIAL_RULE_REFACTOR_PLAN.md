@@ -121,6 +121,17 @@ The project now uses three route-segment maps:
 The expanded map still uses predefined route corridors. It does not implement full
 hex-tile placement or free-form track drawing.
 
+Phase 6F-4 adds a single-player Rail Baron-style objective system. Each compatible
+map can define Rail Baron objectives as source-target connection goals. At game
+reset, one active objective is assigned deterministically unless an explicit
+objective ID is provided. When the player connects the objective endpoints through
+the player-owned completed-route network, the objective is claimed and a one-time
+bonus is awarded.
+
+This is an official-style abstraction rather than a full reproduction of an
+official Rail Baron deck. Multiplayer, auction, operation-card deck handling, and
+full official-board reproduction remain outside the scope.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:

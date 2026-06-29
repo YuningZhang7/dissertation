@@ -7,6 +7,7 @@ from railways.models import (
     City,
     GameConfig,
     MajorLine,
+    RailBaronObjective,
     RailwayEdge,
     Route,
     TrackSegment,
@@ -17,6 +18,7 @@ def load_map(
     path: str | Path,
     *,
     include_routes: bool = False,
+    include_rail_baron_objectives: bool = False,
 ) -> (
     tuple[dict[str, City], dict[str, RailwayEdge], dict[str, MajorLine]]
     | tuple[
@@ -26,12 +28,26 @@ def load_map(
         dict[str, Route],
         dict[str, TrackSegment],
     ]
+    | tuple[
+        dict[str, City],
+        dict[str, RailwayEdge],
+        dict[str, MajorLine],
+        dict[str, RailBaronObjective],
+    ]
+    | tuple[
+        dict[str, City],
+        dict[str, RailwayEdge],
+        dict[str, MajorLine],
+        dict[str, Route],
+        dict[str, TrackSegment],
+        dict[str, RailBaronObjective],
+    ]
 ):
     """Load a legacy edge map or a route-segment map.
 
     The default three-item return preserves the original public API. Callers
-    that need route data can pass ``include_routes=True`` for the extended
-    five-item result.
+    can opt into route data, Rail Baron objectives, or both without changing
+    the existing three-item and five-item result shapes.
     """
     map_path = Path(path)
     with map_path.open("r", encoding="utf-8") as file:
@@ -114,8 +130,43 @@ def load_map(
         for line_data in data.get("major_lines", [])
     }
 
+    rail_baron_objectives: dict[str, RailBaronObjective] = {}
+    for objective_data in data.get("rail_baron_objectives", []):
+        objective_id = str(objective_data["id"])
+        source = str(objective_data["source"])
+        target = str(objective_data["target"])
+        bonus_points = int(objective_data["bonus_points"])
+        if objective_id in rail_baron_objectives:
+            raise ValueError(f"Duplicate Rail Baron objective ID: {objective_id}")
+        if source not in cities or target not in cities:
+            raise ValueError(
+                f"Rail Baron objective {objective_id} references an unknown city."
+            )
+        if bonus_points <= 0:
+            raise ValueError(
+                f"Rail Baron objective {objective_id} must have a positive bonus."
+            )
+        rail_baron_objectives[objective_id] = RailBaronObjective(
+            id=objective_id,
+            source=source,
+            target=target,
+            bonus_points=bonus_points,
+            claimed=bool(objective_data.get("claimed", False)),
+        )
+
     if include_routes:
+        if include_rail_baron_objectives:
+            return (
+                cities,
+                edges,
+                major_lines,
+                routes,
+                segments,
+                rail_baron_objectives,
+            )
         return cities, edges, major_lines, routes, segments
+    if include_rail_baron_objectives:
+        return cities, edges, major_lines, rail_baron_objectives
     return cities, edges, major_lines
 
 

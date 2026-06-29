@@ -132,6 +132,15 @@ def canonical_state_key(state: GameState) -> tuple[Any, ...]:
             for line_id, line in state.major_lines.items()
         )
     )
+    rail_baron_state = (
+        state.active_rail_baron_objective_id,
+        tuple(
+            sorted(
+                (objective_id, objective.claimed)
+                for objective_id, objective in state.rail_baron_objectives.items()
+            )
+        ),
+    )
     player_state = (
         state.player.money,
         state.player.score,
@@ -141,6 +150,7 @@ def canonical_state_key(state: GameState) -> tuple[Any, ...]:
         tuple(sorted(state.player.built_edges)),
         state.player.major_line_bonus,
         state.player.rail_baron_bonus,
+        state.player.rail_baron_objectives_completed,
         state.player.operation_card_bonus,
         tuple(state.player.owned_operation_cards),
         tuple(
@@ -170,6 +180,7 @@ def canonical_state_key(state: GameState) -> tuple[Any, ...]:
         city_state,
         edge_state,
         major_line_state,
+        rail_baron_state,
         card_state,
     )
 

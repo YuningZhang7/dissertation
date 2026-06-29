@@ -26,8 +26,14 @@ def reset_game(
     map_path: str | Path = DEFAULT_MAP_PATH,
     config_path: str | Path = DEFAULT_CONFIG_PATH,
     card_path: str | Path | None = None,
+    rail_baron_objective_id: str | None = None,
 ) -> GameState:
-    return GameState.from_files(map_path, config_path, card_path=card_path)
+    return GameState.from_files(
+        map_path,
+        config_path,
+        card_path=card_path,
+        rail_baron_objective_id=rail_baron_objective_id,
+    )
 
 
 def get_legal_actions(state: GameState) -> list[Action]:

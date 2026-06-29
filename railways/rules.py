@@ -17,6 +17,7 @@ from railways.models import (
     PHASE_ACTION,
     PHASE_GAME_OVER,
     PHASE_INCOME,
+    RailBaronObjective,
     RailwayEdge,
     TrackSegment,
 )
@@ -141,6 +142,7 @@ def build_track(state: GameState, edge_id: str) -> tuple[bool, str]:
         f"Turn {state.turn}: built {edge.id} for ${edge.cost}. {payment_message}"
     )
     check_major_lines(state)
+    check_rail_baron_objective(state)
     update_cards_after_build(state)
     consume_action(state)
     return True, f"Built track {edge_id}."
@@ -293,6 +295,7 @@ def build_track_segments(
     )
     update_route_completion(state, segments[0].route_id)
     check_major_lines(state)
+    check_rail_baron_objective(state)
     consume_action(state)
     return True, f"Built {len(segment_ids)} track segment(s)."
 
@@ -1111,6 +1114,55 @@ def check_major_lines(state: GameState) -> None:
         check_completed_route_major_lines(state)
     else:
         check_legacy_major_lines(state)
+
+
+def get_active_rail_baron_objective(
+    state: GameState,
+) -> RailBaronObjective | None:
+    objective_id = state.active_rail_baron_objective_id
+    if objective_id is None:
+        return None
+    return state.rail_baron_objectives.get(objective_id)
+
+
+def get_player_owned_legacy_graph(state: GameState) -> nx.Graph:
+    graph = nx.Graph()
+    graph.add_nodes_from(state.cities)
+    for edge in state.edges.values():
+        if edge.built and edge.owner == PLAYER_ID:
+            graph.add_edge(edge.source, edge.target)
+    return graph
+
+
+def check_rail_baron_objective(state: GameState) -> bool:
+    objective = get_active_rail_baron_objective(state)
+    if objective is None or objective.claimed:
+        return False
+
+    graph = (
+        get_completed_route_graph(state)
+        if uses_route_segment_delivery(state)
+        else get_player_owned_legacy_graph(state)
+    )
+    if objective.source not in graph or objective.target not in graph:
+        return False
+    try:
+        connected = nx.has_path(graph, objective.source, objective.target)
+    except (nx.NetworkXError, nx.NodeNotFound):
+        return False
+    if not connected:
+        return False
+
+    objective.claimed = True
+    state.player.rail_baron_bonus += objective.bonus_points
+    state.player.rail_baron_objectives_completed += 1
+    state.record(
+        (
+            f"Turn {state.turn}: claimed Rail Baron objective {objective.id} "
+            f"(+{objective.bonus_points})."
+        )
+    )
+    return True
 
 
 def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
