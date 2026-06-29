@@ -583,12 +583,17 @@ def find_all_completed_route_delivery_paths(
         return []
 
     paths: list[list[str]] = []
+    # Every completed-route hop uses at least one track segment. Paths with
+    # more hops than the locomotive level can never pass delivery validation,
+    # so pruning them here preserves behaviour and avoids exponential work on
+    # larger route graphs.
+    route_hop_cutoff = max(1, state.player.locomotive_level)
     try:
         candidate_paths = nx.all_simple_paths(
             graph,
             source=source,
             target=target,
-            cutoff=max(1, len(state.cities)),
+            cutoff=route_hop_cutoff,
         )
     except (nx.NetworkXNoPath, nx.NodeNotFound):
         return []

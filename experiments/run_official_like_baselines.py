@@ -64,9 +64,11 @@ def run_official_like_episode(
     episode: int,
     seed: int,
     max_steps: int,
+    map_path: str | Path = OFFICIAL_LIKE_MAP,
+    config_path: str | Path = OFFICIAL_CONFIG,
 ) -> dict[str, Any]:
     random.seed(seed)
-    state = reset_game(map_path=OFFICIAL_LIKE_MAP, config_path=OFFICIAL_CONFIG)
+    state = reset_game(map_path=map_path, config_path=config_path)
     agent = create_agent(agent_name, seed=seed)
     steps = 0
     fallback_actions = 0
@@ -202,6 +204,8 @@ def run_baseline_experiment(
     base_seed: int = 42,
     output_csv: str | Path = DEFAULT_OUTPUT_CSV,
     output_summary: str | Path = DEFAULT_OUTPUT_SUMMARY,
+    map_path: str | Path = OFFICIAL_LIKE_MAP,
+    config_path: str | Path = OFFICIAL_CONFIG,
 ) -> tuple[list[dict[str, Any]], dict[str, dict[str, int | float]]]:
     if episodes_per_agent <= 0:
         raise ValueError("episodes_per_agent must be positive.")
@@ -218,6 +222,8 @@ def run_baseline_experiment(
                     episode=episode_index + 1,
                     seed=episode_seed,
                     max_steps=max_steps_per_episode,
+                    map_path=map_path,
+                    config_path=config_path,
                 )
             )
 
@@ -236,6 +242,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-csv", default=str(DEFAULT_OUTPUT_CSV))
     parser.add_argument("--output-summary", default=str(DEFAULT_OUTPUT_SUMMARY))
+    parser.add_argument("--map-path", default=str(OFFICIAL_LIKE_MAP))
+    parser.add_argument("--config-path", default=str(OFFICIAL_CONFIG))
     return parser.parse_args()
 
 
@@ -247,6 +255,8 @@ def main() -> None:
         base_seed=args.seed,
         output_csv=args.output_csv,
         output_summary=args.output_summary,
+        map_path=args.map_path,
+        config_path=args.config_path,
     )
     print(f"Wrote {len(rows)} episode rows to {args.output_csv}")
     print(f"Wrote {len(summary)} agent summaries to {args.output_summary}")
