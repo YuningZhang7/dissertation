@@ -132,6 +132,11 @@ This is an official-style abstraction rather than a full reproduction of an
 official Rail Baron deck. Multiplayer, auction, operation-card deck handling, and
 full official-board reproduction remain outside the scope.
 
+Phase 6F-5 adds a lightweight state visualization and replay facility. It renders
+route-segment maps, city state, built and completed track, major lines, and the
+active Rail Baron objective. The feature is intended for debugging and dissertation
+presentation rather than as a full interactive GUI.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:
