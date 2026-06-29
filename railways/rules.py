@@ -460,6 +460,127 @@ def get_built_graph(state: GameState) -> nx.Graph:
     return graph
 
 
+def get_completed_route_graph(state: GameState) -> nx.Graph:
+    graph = nx.Graph()
+    for city_id, city in state.cities.items():
+        graph.add_node(city_id, city=city)
+
+    for route in state.routes.values():
+        if not route.completed:
+            continue
+
+        route_segments = get_route_segments(state, route.id)
+        if not route_segments:
+            continue
+        if not all(segment.completed and segment.built for segment in route_segments):
+            continue
+        if not all(segment.owner == PLAYER_ID for segment in route_segments):
+            continue
+
+        graph.add_edge(
+            route.city_a,
+            route.city_b,
+            route_id=route.id,
+            segment_ids=[segment.id for segment in route_segments],
+            segment_count=len(route_segments),
+        )
+
+    return graph
+
+
+def completed_route_path_segment_length(
+    state: GameState,
+    path: list[str],
+) -> int:
+    graph = get_completed_route_graph(state)
+    total = 0
+    for first, second in zip(path, path[1:]):
+        if not graph.has_edge(first, second):
+            return 10**9
+        total += int(graph[first][second].get("segment_count", 1))
+    return total
+
+
+def validate_completed_route_delivery_path(
+    state: GameState,
+    path: list[str],
+    source: str,
+    target: str,
+    good_color: str,
+) -> tuple[bool, str]:
+    if not path:
+        return False, "Delivery path is empty."
+    if path[0] != source or path[-1] != target:
+        return False, "Delivery path must start at source and end at target."
+
+    length = completed_route_path_segment_length(state, path)
+    if length <= 0 or length >= 10**9:
+        return False, "Delivery path must use completed route segments."
+    if length > state.player.locomotive_level:
+        return (
+            False,
+            (
+                f"Route segment length {length} exceeds locomotive level "
+                f"{state.player.locomotive_level}."
+            ),
+        )
+
+    graph = get_completed_route_graph(state)
+    for first, second in zip(path, path[1:]):
+        if not graph.has_edge(first, second):
+            return False, f"Completed route {first}-{second} does not exist."
+
+    if path_skips_matching_city(state, path, good_color):
+        return False, "Delivery path skips an intermediate city demanding that color."
+
+    return True, "Completed route delivery path is valid."
+
+
+def find_all_completed_route_delivery_paths(
+    state: GameState,
+    source: str,
+    target: str,
+    good_color: str,
+) -> list[list[str]]:
+    if source == target:
+        return []
+
+    graph = get_completed_route_graph(state)
+    if source not in graph or target not in graph:
+        return []
+
+    paths: list[list[str]] = []
+    try:
+        candidate_paths = nx.all_simple_paths(
+            graph,
+            source=source,
+            target=target,
+            cutoff=max(1, len(state.cities)),
+        )
+    except (nx.NetworkXNoPath, nx.NodeNotFound):
+        return []
+
+    for candidate_path in candidate_paths:
+        candidate_path = list(candidate_path)
+        valid, _ = validate_completed_route_delivery_path(
+            state,
+            candidate_path,
+            source,
+            target,
+            good_color,
+        )
+        if valid:
+            paths.append(candidate_path)
+
+    paths.sort(
+        key=lambda route: (
+            completed_route_path_segment_length(state, route),
+            route,
+        )
+    )
+    return paths
+
+
 def find_shortest_built_path(
     state: GameState,
     source: str,
