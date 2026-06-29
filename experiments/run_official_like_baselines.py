@@ -30,7 +30,12 @@ DEFAULT_OUTPUT_CSV = DEFAULT_OUTPUT_DIR / "official_like_baselines.csv"
 DEFAULT_OUTPUT_SUMMARY = (
     DEFAULT_OUTPUT_DIR / "official_like_baselines_summary.json"
 )
-BASELINE_AGENT_NAMES = ("random", "greedy_delivery", "greedy_expansion")
+BASELINE_AGENT_NAMES = (
+    "random",
+    "greedy_delivery",
+    "greedy_expansion",
+    "route_segment_greedy",
+)
 CSV_COLUMNS = [
     "agent_name",
     "episode",

@@ -101,6 +101,11 @@ episode seeds and records per-episode CSV metrics plus aggregated JSON metrics f
 later dissertation analysis. The runner provides baseline behaviour and
 sanity-check evidence for the implemented rules; it is not evidence of optimality.
 
+Phase 6F-2 adds a route-segment-aware greedy heuristic agent. Unlike the earlier
+legacy-oriented greedy agents, it prioritises completed-route deliveries and
+segment builds that complete or extend useful routes. It is intended as a stronger
+interpretable baseline, not an optimal solver.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:
