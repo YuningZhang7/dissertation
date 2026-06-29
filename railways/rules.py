@@ -72,6 +72,7 @@ def run_income_phase(state: GameState) -> None:
             f"interest -${interest_due}. {payment_message}"
         )
     )
+    cleanup_incomplete_track_segments(state)
     check_end_condition(state)
     advance_turn(state)
 
@@ -158,6 +159,66 @@ def get_segments_for_ids(
     return segments
 
 
+def get_route_segments(state: GameState, route_id: str) -> list[TrackSegment]:
+    route = state.routes.get(route_id)
+    if route is None:
+        return []
+    segments = [
+        state.segments[segment_id]
+        for segment_id in route.segment_ids
+        if segment_id in state.segments
+    ]
+    return sorted(segments, key=lambda segment: segment.index)
+
+
+def is_route_completed(state: GameState, route_id: str) -> bool:
+    route_segments = get_route_segments(state, route_id)
+    return bool(route_segments) and all(segment.built for segment in route_segments)
+
+
+def update_route_completion(state: GameState, route_id: str) -> None:
+    route = state.routes.get(route_id)
+    if route is None or route.completed or not is_route_completed(state, route_id):
+        return
+
+    route.completed = True
+    for segment in get_route_segments(state, route_id):
+        segment.completed = True
+    state.record(f"Turn {state.turn}: completed route {route_id}.")
+
+
+def get_built_segment_endpoints_for_route(
+    state: GameState,
+    route_id: str,
+) -> set[str]:
+    endpoints: set[str] = set()
+    for segment in get_route_segments(state, route_id):
+        if segment.built and not segment.completed and segment.owner == PLAYER_ID:
+            endpoints.add(segment.source_node)
+            endpoints.add(segment.target_node)
+    return endpoints
+
+
+def build_segment_chain_touches_valid_endpoint(
+    state: GameState,
+    segments: list[TrackSegment],
+) -> bool:
+    if not segments:
+        return False
+
+    route = state.routes.get(segments[0].route_id)
+    if route is None:
+        return False
+
+    chain_endpoints = {
+        segments[0].source_node,
+        segments[-1].target_node,
+    }
+    valid_endpoints = {route.city_a, route.city_b}
+    valid_endpoints.update(get_built_segment_endpoints_for_route(state, route.id))
+    return bool(chain_endpoints & valid_endpoints)
+
+
 def validate_build_segment_chain(
     state: GameState,
     segment_ids: list[str],
@@ -186,6 +247,14 @@ def validate_build_segment_chain(
     expected_indices = list(range(indices[0], indices[0] + len(indices)))
     if indices != expected_indices:
         return False, "Track segments must be consecutive."
+    if not build_segment_chain_touches_valid_endpoint(state, segments):
+        return (
+            False,
+            (
+                "Track segment chain must start from a city or an existing "
+                "incomplete track endpoint."
+            ),
+        )
 
     return True, "Track segment chain is valid."
 
@@ -222,8 +291,26 @@ def build_track_segments(
             f"{','.join(segment_ids)} for ${total_cost}. {payment_message}"
         )
     )
+    update_route_completion(state, segments[0].route_id)
     consume_action(state)
     return True, f"Built {len(segment_ids)} track segment(s)."
+
+
+def cleanup_incomplete_track_segments(state: GameState) -> int:
+    removed = 0
+    for segment in state.segments.values():
+        if segment.built and not segment.completed:
+            segment.built = False
+            segment.owner = None
+            removed += 1
+    if removed:
+        state.record(
+            (
+                f"Turn {state.turn}: removed {removed} incomplete track "
+                "segment(s) during income."
+            )
+        )
+    return removed
 
 
 def get_legal_build_segment_actions(state: GameState) -> list[Action]:

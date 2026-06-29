@@ -70,6 +70,101 @@ def test_build_multiple_consecutive_segments_succeeds() -> None:
     assert state.actions_remaining == starting_actions - 1
 
 
+def test_isolated_middle_segment_is_rejected() -> None:
+    state = make_segment_state()
+    starting_actions = state.actions_remaining
+
+    _, success, message = apply_segment_build(state, ["B-C-2"])
+
+    assert not success
+    assert "city" in message or "endpoint" in message
+    assert not state.segments["B-C-2"].built
+    assert state.actions_remaining == starting_actions
+
+
+def test_build_can_start_from_either_city_end() -> None:
+    state = make_segment_state()
+    _, success, message = apply_segment_build(state, ["B-C-1"])
+    assert success, message
+    assert state.segments["B-C-1"].built
+    assert state.segments["B-C-1"].owner == "player"
+
+    state = make_segment_state()
+    _, success, message = apply_segment_build(state, ["B-C-3"])
+    assert success, message
+    assert state.segments["B-C-3"].built
+    assert state.segments["B-C-3"].owner == "player"
+
+
+def test_build_can_continue_from_incomplete_endpoint() -> None:
+    state = make_segment_state()
+    _, success, message = apply_segment_build(state, ["B-C-1"])
+    assert success, message
+
+    _, success, message = apply_segment_build(state, ["B-C-2"])
+
+    assert success, message
+    assert state.segments["B-C-1"].built
+    assert state.segments["B-C-2"].built
+    assert not state.routes["B-C"].completed
+
+
+def test_completed_route_marks_all_segments_completed() -> None:
+    state = make_segment_state()
+
+    _, success, message = apply_segment_build(state, ["A-B-1", "A-B-2"])
+
+    assert success, message
+    assert state.routes["A-B"].completed
+    assert state.segments["A-B-1"].completed
+    assert state.segments["A-B-2"].completed
+    assert any("completed route A-B" in entry for entry in state.action_history)
+
+
+def test_income_removes_incomplete_segments() -> None:
+    state = make_segment_state()
+    _, success, message = apply_segment_build(state, ["B-C-1"])
+    assert success, message
+    assert state.segments["B-C-1"].built
+    assert not state.segments["B-C-1"].completed
+
+    assert apply_action(state, Action.pass_action())[1]
+    assert apply_action(state, Action.pass_action())[1]
+
+    assert not state.segments["B-C-1"].built
+    assert state.segments["B-C-1"].owner is None
+    assert any("removed 1 incomplete" in entry for entry in state.action_history)
+
+
+def test_completed_route_survives_income_cleanup() -> None:
+    state = make_segment_state()
+    _, success, message = apply_segment_build(state, ["A-B-1", "A-B-2"])
+    assert success, message
+    assert state.routes["A-B"].completed
+
+    assert apply_action(state, Action.pass_action())[1]
+    assert apply_action(state, Action.pass_action())[1]
+
+    assert state.segments["A-B-1"].built
+    assert state.segments["A-B-2"].built
+    assert state.segments["A-B-1"].completed
+    assert state.segments["A-B-2"].completed
+
+
+def test_legal_actions_exclude_isolated_middle_segment() -> None:
+    state = make_segment_state()
+    segment_actions = [
+        action
+        for action in get_legal_actions(state)
+        if action.action_type == "build_track_segments"
+    ]
+    segment_id_lists = [action.params["segment_ids"] for action in segment_actions]
+
+    assert ["B-C-2"] not in segment_id_lists
+    assert ["B-C-1"] in segment_id_lists
+    assert ["B-C-3"] in segment_id_lists
+
+
 def test_empty_segment_list_is_rejected() -> None:
     state = make_segment_state()
     starting_actions = state.actions_remaining
@@ -165,6 +260,13 @@ def run_all() -> None:
         test_legal_segment_build_actions_are_generated,
         test_build_one_segment_uses_automatic_financing,
         test_build_multiple_consecutive_segments_succeeds,
+        test_isolated_middle_segment_is_rejected,
+        test_build_can_start_from_either_city_end,
+        test_build_can_continue_from_incomplete_endpoint,
+        test_completed_route_marks_all_segments_completed,
+        test_income_removes_incomplete_segments,
+        test_completed_route_survives_income_cleanup,
+        test_legal_actions_exclude_isolated_middle_segment,
         test_empty_segment_list_is_rejected,
         test_more_than_four_segments_are_rejected,
         test_non_consecutive_segments_are_rejected,
