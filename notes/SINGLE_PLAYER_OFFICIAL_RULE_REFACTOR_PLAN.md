@@ -82,9 +82,18 @@ The loader should accept both legacy `edges` maps and new `routes` maps. Legacy
 maps continue to use the existing edge rules; the official-like map uses the
 segment rules.
 
-Phase 6C-1 introduces the `Route` and `TrackSegment` data structures and
-dual-format map loading. Segment-level construction, delivery, route completion,
-and incomplete-track cleanup remain future rule-engine work.
+Phase 6C-1 introduced the `Route` and `TrackSegment` data structures and
+dual-format map loading. Phases 6C-2 through 6E-1 subsequently added segment
+construction, route completion and cleanup, segment-distance delivery, and
+route-based major-line scoring.
+
+Phase 6E-2 adds `official_like_route_segment_map.json`, a medium-sized
+single-player scenario for experiments. It is an original functional abstraction,
+not a reproduction of an official board, and exercises route construction,
+delivery, major-line scoring, grey-city urbanisation, bond financing, and income
+cleanup. `mini_route_segment_map.json` remains the compact unit-test map; the
+official-like scenario is intended for scenario smoke tests and later agent
+evaluation.
 
 ## Planned Rule Changes
 
