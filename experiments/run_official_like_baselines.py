@@ -35,6 +35,7 @@ BASELINE_AGENT_NAMES = (
     "greedy_delivery",
     "greedy_expansion",
     "route_segment_greedy",
+    "objective_aware_greedy",
 )
 CSV_COLUMNS = [
     "agent_name",

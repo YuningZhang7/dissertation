@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from agents.greedy_expansion_agent import GreedyExpansionAgent
+from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
 from agents.random_agent import RandomAgent
 from agents.route_segment_greedy_agent import RouteSegmentGreedyAgent
 from agents.registry import AGENT_CLASSES, list_agent_names
@@ -29,7 +30,11 @@ def test_random_agent_returns_legal_action() -> None:
 def test_greedy_delivery_agent_returns_delivery_when_available() -> None:
     state = reset_game()
     assert apply_action(state, get_legal_actions(state)[0])[1]
-    deliveries = [action for action in get_legal_actions(state) if action.action_type == "deliver_good"]
+    deliveries = [
+        action
+        for action in get_legal_actions(state)
+        if action.action_type == "deliver_good"
+    ]
     if not deliveries:
         raise AssertionError("Expected a legal delivery after first build.")
 
@@ -51,6 +56,7 @@ def test_agents_do_not_choose_issue_bond() -> None:
         GreedyDeliveryAgent(seed=1),
         GreedyExpansionAgent(seed=1),
         RouteSegmentGreedyAgent(seed=1),
+        ObjectiveAwareGreedyAgent(seed=1),
     ]
     legal_actions = get_legal_actions(state)
     assert all(action.action_type != "issue_bond" for action in legal_actions)
@@ -64,6 +70,7 @@ def test_main_registry_exposes_registered_agents() -> None:
         "greedy_delivery",
         "greedy_expansion",
         "route_segment_greedy",
+        "objective_aware_greedy",
     ]
     assert list(AGENT_CLASSES) == expected
     assert list_agent_names() == expected
