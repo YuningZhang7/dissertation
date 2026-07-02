@@ -1,0 +1,347 @@
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+from pathlib import Path
+import random
+import statistics
+import sys
+import time
+from typing import Any
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from agents.registry import create_agent, list_agent_names
+from railways.actions import Action
+from railways.environment import (
+    apply_action,
+    get_legal_actions,
+    is_terminal,
+    reset_game,
+)
+
+
+MAP_PATHS = {
+    "official_like": PROJECT_ROOT / "data" / "official_like_route_segment_map.json",
+    "expanded": PROJECT_ROOT
+    / "data"
+    / "expanded_official_style_route_segment_map.json",
+}
+CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "experiments" / "results" / "agent_benchmark"
+DEFAULT_AGENTS = (
+    "random",
+    "greedy_delivery",
+    "greedy_expansion",
+    "route_segment_greedy",
+    "objective_aware_greedy",
+    "adaptive_objective_greedy",
+)
+QUICK_AGENTS = DEFAULT_AGENTS[-3:]
+CSV_COLUMNS = [
+    "map_name",
+    "agent_name",
+    "episode",
+    "seed",
+    "steps",
+    "terminal",
+    "success",
+    "error",
+    "final_score",
+    "score",
+    "money",
+    "bonds",
+    "locomotive_level",
+    "delivered_goods_count",
+    "major_line_bonus",
+    "rail_baron_bonus",
+    "rail_baron_objectives_completed",
+    "claimed_major_lines_count",
+    "completed_routes_count",
+    "built_segments_count",
+    "completed_segments_count",
+    "empty_marker_count",
+    "fallback_actions",
+    "runtime_seconds",
+]
+
+
+def run_benchmark_episode(
+    map_name: str,
+    agent_name: str,
+    episode: int,
+    seed: int,
+    max_steps: int,
+    config_path: str | Path = CONFIG_PATH,
+) -> dict[str, Any]:
+    random.seed(seed)
+    state = reset_game(map_path=MAP_PATHS[map_name], config_path=config_path)
+    agent = create_agent(agent_name, seed=seed)
+    steps = 0
+    fallback_actions = 0
+    success = True
+    error = ""
+    started = time.perf_counter()
+    try:
+        while not is_terminal(state) and steps < max_steps:
+            legal_actions = get_legal_actions(state)
+            if not legal_actions:
+                break
+            try:
+                action = agent.choose_action(state)
+            except Exception as exc:
+                success = False
+                error = f"{type(exc).__name__}: {exc}"
+                break
+            if action is None or action not in legal_actions:
+                fallback_actions += 1
+                action = Action.pass_action()
+            _, applied, message = apply_action(state, action)
+            if not applied:
+                fallback_actions += 1
+                fallback = Action.pass_action()
+                if fallback not in get_legal_actions(state):
+                    success = False
+                    error = f"Action failed and no pass fallback was legal: {message}"
+                    break
+                _, fallback_applied, fallback_message = apply_action(state, fallback)
+                if not fallback_applied:
+                    success = False
+                    error = f"Pass fallback failed: {fallback_message}"
+                    break
+            steps += 1
+    except Exception as exc:
+        success = False
+        error = f"{type(exc).__name__}: {exc}"
+    runtime_seconds = time.perf_counter() - started
+    return {
+        "map_name": map_name,
+        "agent_name": agent_name,
+        "episode": episode,
+        "seed": seed,
+        "steps": steps,
+        "terminal": is_terminal(state),
+        "success": success,
+        "error": error,
+        "final_score": state.final_score(),
+        "score": state.player.score,
+        "money": state.player.money,
+        "bonds": state.player.bonds,
+        "locomotive_level": state.player.locomotive_level,
+        "delivered_goods_count": state.player.delivered_goods_count,
+        "major_line_bonus": state.player.major_line_bonus,
+        "rail_baron_bonus": state.player.rail_baron_bonus,
+        "rail_baron_objectives_completed": state.player.rail_baron_objectives_completed,
+        "claimed_major_lines_count": sum(
+            line.claimed for line in state.major_lines.values()
+        ),
+        "completed_routes_count": sum(
+            route.completed for route in state.routes.values()
+        ),
+        "built_segments_count": sum(
+            segment.built for segment in state.segments.values()
+        ),
+        "completed_segments_count": sum(
+            segment.completed for segment in state.segments.values()
+        ),
+        "empty_marker_count": sum(city.empty_marker for city in state.cities.values()),
+        "fallback_actions": fallback_actions,
+        "runtime_seconds": runtime_seconds,
+    }
+
+
+def summarise_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, Any]]]:
+    summary: dict[str, dict[str, dict[str, Any]]] = {}
+    for map_name in sorted({str(row["map_name"]) for row in rows}):
+        summary[map_name] = {}
+        map_rows = [row for row in rows if row["map_name"] == map_name]
+        for agent_name in sorted({str(row["agent_name"]) for row in map_rows}):
+            group = [row for row in map_rows if row["agent_name"] == agent_name]
+            finals = [float(row["final_score"]) for row in group]
+            metrics: dict[str, Any] = {
+                "episodes": len(group),
+                "success_rate": statistics.fmean(bool(row["success"]) for row in group),
+                "mean_final_score": statistics.fmean(finals),
+                "median_final_score": statistics.median(finals),
+                "best_final_score": max(finals),
+                "worst_final_score": min(finals),
+                "std_final_score": statistics.stdev(finals) if len(finals) > 1 else 0.0,
+            }
+            for field in (
+                "score",
+                "money",
+                "bonds",
+                "delivered_goods_count",
+                "major_line_bonus",
+                "rail_baron_bonus",
+                "rail_baron_objectives_completed",
+                "claimed_major_lines_count",
+                "completed_routes_count",
+                "built_segments_count",
+                "completed_segments_count",
+                "empty_marker_count",
+                "steps",
+                "fallback_actions",
+                "runtime_seconds",
+            ):
+                metrics[f"mean_{field}"] = statistics.fmean(
+                    float(row[field]) for row in group
+                )
+            summary[map_name][agent_name] = metrics
+    return summary
+
+
+def write_outputs(
+    rows: list[dict[str, Any]],
+    summary: dict[str, dict[str, dict[str, Any]]],
+    output_dir: str | Path,
+    settings: dict[str, Any],
+) -> Path:
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    with (output / "benchmark_rows.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as file:
+        writer = csv.DictWriter(file, fieldnames=CSV_COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
+    (output / "benchmark_summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    (output / "benchmark_summary.md").write_text(
+        _markdown_summary(summary, settings),
+        encoding="utf-8",
+    )
+    return output
+
+
+def _markdown_summary(
+    summary: dict[str, dict[str, dict[str, Any]]],
+    settings: dict[str, Any],
+) -> str:
+    lines = [
+        "# Agent Benchmark Summary",
+        "",
+        "## Settings",
+        "",
+        f"- Maps: {', '.join(settings['maps'])}",
+        f"- Agents: {', '.join(settings['agents'])}",
+        f"- Episodes per map-agent pair: {settings['episodes']}",
+        f"- Maximum steps: {settings['max_steps']}",
+        f"- Base seed: {settings['base_seed']}",
+        f"- Config path: {settings['config_path']}",
+        "",
+    ]
+    headers = (
+        "Agent | Mean Final | Median Final | Best | Worst | Mean Deliveries | "
+        "Mean Bonds | Mean Major Bonus | Mean Rail Baron Bonus | Mean Routes | "
+        "Success Rate | Mean Runtime"
+    )
+    for map_name, agents in summary.items():
+        lines.extend([f"## {map_name}", "", f"| {headers} |", "|" + " --- |" * 12])
+        for agent_name, item in agents.items():
+            lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        agent_name,
+                        f"{item['mean_final_score']:.2f}",
+                        f"{item['median_final_score']:.2f}",
+                        f"{item['best_final_score']:.0f}",
+                        f"{item['worst_final_score']:.0f}",
+                        f"{item['mean_delivered_goods_count']:.2f}",
+                        f"{item['mean_bonds']:.2f}",
+                        f"{item['mean_major_line_bonus']:.2f}",
+                        f"{item['mean_rail_baron_bonus']:.2f}",
+                        f"{item['mean_completed_routes_count']:.2f}",
+                        f"{item['success_rate']:.2%}",
+                        f"{item['mean_runtime_seconds']:.4f}s",
+                    ]
+                )
+                + " |"
+            )
+        lines.append("")
+    lines.extend(
+        [
+            "These are benchmark outputs for development comparison only. They are not "
+            "final dissertation results.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def run_benchmark(
+    maps: list[str],
+    agents: list[str],
+    episodes: int = 10,
+    max_steps: int = 100,
+    base_seed: int = 42,
+    output_dir: str | Path = DEFAULT_OUTPUT_DIR,
+    config_path: str | Path = CONFIG_PATH,
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, dict[str, Any]]], Path]:
+    unknown_maps = sorted(set(maps) - set(MAP_PATHS))
+    unknown_agents = sorted(set(agents) - set(list_agent_names()))
+    if unknown_maps:
+        raise ValueError(f"Unknown benchmark maps: {', '.join(unknown_maps)}")
+    if unknown_agents:
+        raise ValueError(f"Unknown benchmark agents: {', '.join(unknown_agents)}")
+    if episodes <= 0 or max_steps <= 0:
+        raise ValueError("episodes and max_steps must be positive")
+    rows = [
+        run_benchmark_episode(
+            map_name, agent_name, index + 1, base_seed + index, max_steps, config_path
+        )
+        for map_name in maps
+        for agent_name in agents
+        for index in range(episodes)
+    ]
+    summary = summarise_rows(rows)
+    settings = {
+        "maps": maps,
+        "agents": agents,
+        "episodes": episodes,
+        "max_steps": max_steps,
+        "base_seed": base_seed,
+        "config_path": str(config_path),
+    }
+    return rows, summary, write_outputs(rows, summary, output_dir, settings)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run reproducible multi-seed agent benchmarks."
+    )
+    parser.add_argument("--maps", nargs="+", default=list(MAP_PATHS))
+    parser.add_argument("--agents", nargs="+")
+    parser.add_argument("--episodes", type=int, default=10)
+    parser.add_argument("--max-steps", type=int, default=100)
+    parser.add_argument("--base-seed", type=int, default=42)
+    parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
+    parser.add_argument("--include-random", action="store_true")
+    parser.add_argument("--quick", action="store_true")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    agents = list(args.agents or (QUICK_AGENTS if args.quick else DEFAULT_AGENTS))
+    if args.include_random and "random" not in agents:
+        agents.insert(0, "random")
+    episodes = 2 if args.quick else args.episodes
+    max_steps = 20 if args.quick else args.max_steps
+    rows, summary, output = run_benchmark(
+        args.maps, agents, episodes, max_steps, args.base_seed, args.output_dir
+    )
+    print(
+        f"Wrote {len(rows)} episode rows and "
+        f"{sum(map(len, summary.values()))} groups to {output}"
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -167,6 +167,14 @@ and does not use learning, MCTS, or full-plan search. It is still heuristic, has
 global-optimality guarantee, and relies on hand-designed weights that should be
 evaluated empirically.
 
+Phase 6F-9 introduced a reproducible multi-seed benchmark runner for comparing
+registered agents across the official-like and expanded maps. It writes per-episode
+CSV rows, grouped JSON summaries, and a Markdown summary. The benchmark is intended
+for development comparison of heuristic baselines, not final dissertation results.
+It can compare `route_segment_greedy`, `objective_aware_greedy`, and
+`adaptive_objective_greedy` over multiple seeds and longer episodes before deciding
+whether additional heuristic tuning is justified.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:
