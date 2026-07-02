@@ -175,6 +175,15 @@ It can compare `route_segment_greedy`, `objective_aware_greedy`, and
 `adaptive_objective_greedy` over multiple seeds and longer episodes before deciding
 whether additional heuristic tuning is justified.
 
+Phase 6F-10 extended the benchmark system with behaviour diagnostics and
+recommendation support. In addition to final score, it records action mix, bond
+usage, estimated build cost, score efficiency, deliveries and routes per bond, and
+objective claim events. The analysis helper identifies the best-performing
+heuristic per map and highlights whether `adaptive_objective_greedy` improves on
+`objective_aware_greedy`. Recommendations remain benchmark-based: when
+`objective_aware_greedy` leads longer runs, it is the default demonstration
+heuristic while `adaptive_objective_greedy` remains experimental.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:

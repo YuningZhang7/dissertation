@@ -118,7 +118,20 @@ def main() -> None:
             help="When supplied, this JSON map overrides the selected built-in map.",
         )
     with agent_col:
-        agent_name = st.selectbox("Agent", options=available_agent_names())
+        agent_options = available_agent_names()
+        recommended_agent = "objective_aware_greedy"
+        recommended_index = (
+            agent_options.index(recommended_agent)
+            if recommended_agent in agent_options
+            else 0
+        )
+        agent_name = st.selectbox(
+            "Agent", options=agent_options, index=recommended_index
+        )
+        st.caption(
+            "objective_aware_greedy is currently recommended from development "
+            "benchmarks; adaptive_objective_greedy remains experimental."
+        )
         frame_mode = st.selectbox("Frame mode", options=FRAME_MODE_OPTIONS)
 
     settings = st.columns(3)
