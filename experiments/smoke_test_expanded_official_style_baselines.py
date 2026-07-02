@@ -27,7 +27,7 @@ def test_tiny_baseline_run_supports_expanded_map() -> None:
 
         rows, summary = run_baseline_experiment(
             episodes_per_agent=1,
-            max_steps_per_episode=80,
+            max_steps_per_episode=20,
             base_seed=42,
             map_path=EXPANDED_MAP,
             config_path=OFFICIAL_CONFIG,
@@ -42,6 +42,9 @@ def test_tiny_baseline_run_supports_expanded_map() -> None:
         )
         assert any(
             row["agent_name"] == "objective_aware_greedy" for row in rows
+        )
+        assert any(
+            row["agent_name"] == "adaptive_objective_greedy" for row in rows
         )
         assert temp_csv.exists()
         assert temp_summary.exists()

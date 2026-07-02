@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from agents.base_agent import BaseAgent
+from agents.adaptive_objective_greedy_agent import AdaptiveObjectiveGreedyAgent
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
@@ -14,6 +15,7 @@ AGENT_CLASSES: dict[str, type[BaseAgent]] = {
     "greedy_expansion": GreedyExpansionAgent,
     "route_segment_greedy": RouteSegmentGreedyAgent,
     "objective_aware_greedy": ObjectiveAwareGreedyAgent,
+    "adaptive_objective_greedy": AdaptiveObjectiveGreedyAgent,
 }
 
 

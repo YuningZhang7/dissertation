@@ -1,5 +1,6 @@
 """Agents exposed by the main simulator and meeting demo."""
 
+from agents.adaptive_objective_greedy_agent import AdaptiveObjectiveGreedyAgent
 from agents.base_agent import BaseAgent
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from agents.greedy_expansion_agent import GreedyExpansionAgent
@@ -14,4 +15,5 @@ __all__ = [
     "GreedyExpansionAgent",
     "RouteSegmentGreedyAgent",
     "ObjectiveAwareGreedyAgent",
+    "AdaptiveObjectiveGreedyAgent",
 ]
