@@ -13,7 +13,13 @@ from experiments.simulation_runner import run_episode
 from railways.environment import DEFAULT_CARDS_PATH, get_legal_actions, reset_game
 
 
-EXPECTED_AGENTS = ["random", "greedy_delivery", "greedy_expansion"]
+EXPECTED_AGENTS = [
+    "random",
+    "greedy_delivery",
+    "greedy_expansion",
+    "route_segment_greedy",
+    "objective_aware_greedy",
+]
 
 
 def test_registry_contains_only_meeting_agents() -> None:

@@ -149,6 +149,14 @@ every action, while `--frame-mode events` limits rendered frames to key events w
 retaining the complete action history. Launch the demo with
 `streamlit run experiments/demo_agent_animation_app.py`.
 
+Phase 6F-7 introduced an objective-aware greedy agent. Unlike the earlier
+`route_segment_greedy` baseline, this agent scores candidate actions using one-step
+simulation and explicit progress toward deliveries, Rail Baron objectives, Major
+Lines, route completion, and debt-adjusted cost. The agent remains deterministic
+and interpretable; it is intended as a stronger heuristic baseline rather than an
+optimal planner. It is still a one-step heuristic, does not search over full plans,
+and may make locally reasonable but globally suboptimal decisions.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:
