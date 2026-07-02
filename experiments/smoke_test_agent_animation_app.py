@@ -24,6 +24,7 @@ def test_demo_options_are_discoverable() -> None:
         "greedy_expansion",
         "route_segment_greedy",
         "objective_aware_greedy",
+        "adaptive_objective_greedy",
     ]
     assert demo_app.FRAME_MODE_OPTIONS == ("all", "events")
 

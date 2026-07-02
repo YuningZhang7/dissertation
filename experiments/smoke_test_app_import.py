@@ -30,6 +30,7 @@ def test_app_exposes_registered_agents() -> None:
         "greedy_expansion",
         "route_segment_greedy",
         "objective_aware_greedy",
+        "adaptive_objective_greedy",
     ]
 
 
@@ -44,6 +45,7 @@ def test_app_renders_registered_agent_options() -> None:
         "greedy_expansion",
         "route_segment_greedy",
         "objective_aware_greedy",
+        "adaptive_objective_greedy",
     ]
 
 

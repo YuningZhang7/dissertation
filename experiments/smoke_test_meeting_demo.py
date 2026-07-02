@@ -19,6 +19,7 @@ EXPECTED_AGENTS = [
     "greedy_expansion",
     "route_segment_greedy",
     "objective_aware_greedy",
+    "adaptive_objective_greedy",
 ]
 
 

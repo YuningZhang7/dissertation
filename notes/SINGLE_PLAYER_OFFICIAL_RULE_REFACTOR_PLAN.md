@@ -157,6 +157,16 @@ and interpretable; it is intended as a stronger heuristic baseline rather than a
 optimal planner. It is still a one-step heuristic, does not search over full plans,
 and may make locally reasonable but globally suboptimal decisions.
 
+Phase 6F-8 introduced `adaptive_objective_greedy`, a stronger deterministic
+heuristic baseline. It extends `objective_aware_greedy` with phase-aware weights,
+objective ROI scoring, debt-level-sensitive penalties, future delivery value
+estimation, stronger incomplete-route handling, and optional bounded shallow
+lookahead over top candidate actions. Lookahead is implemented but disabled by
+default so expanded-map runs remain lightweight. The agent remains interpretable
+and does not use learning, MCTS, or full-plan search. It is still heuristic, has no
+global-optimality guarantee, and relies on hand-designed weights that should be
+evaluated empirically.
+
 ## Planned Rule Changes
 
 Implementation will proceed in small, testable increments:
