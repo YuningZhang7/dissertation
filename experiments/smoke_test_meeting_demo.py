@@ -23,12 +23,12 @@ EXPECTED_AGENTS = [
 ]
 
 
-def test_registry_contains_only_meeting_agents() -> None:
+def test_registry_contains_expected_agents() -> None:
     assert list(AGENT_CLASSES) == EXPECTED_AGENTS
     assert list_agent_names() == EXPECTED_AGENTS
 
 
-def test_meeting_agents_choose_legal_actions() -> None:
+def test_registered_agents_choose_legal_actions() -> None:
     state = reset_game(card_path=DEFAULT_CARDS_PATH)
     legal_actions = get_legal_actions(state)
     for index, name in enumerate(EXPECTED_AGENTS):
@@ -36,7 +36,7 @@ def test_meeting_agents_choose_legal_actions() -> None:
         assert action in legal_actions, (name, action)
 
 
-def test_meeting_agents_complete_small_episodes() -> None:
+def test_registered_agents_complete_small_episodes() -> None:
     for index, name in enumerate(EXPECTED_AGENTS):
         result = run_episode(
             create_agent(name, seed=index),
@@ -47,22 +47,22 @@ def test_meeting_agents_complete_small_episodes() -> None:
         assert result["invalid_actions"] == 0, (name, result)
 
 
-def test_streamlit_app_uses_meeting_registry() -> None:
+def test_streamlit_app_uses_registered_agents() -> None:
     assert hasattr(app, "main")
     assert list_agent_names() == EXPECTED_AGENTS
 
 
 def run_all() -> None:
     tests = [
-        test_registry_contains_only_meeting_agents,
-        test_meeting_agents_choose_legal_actions,
-        test_meeting_agents_complete_small_episodes,
-        test_streamlit_app_uses_meeting_registry,
+        test_registry_contains_expected_agents,
+        test_registered_agents_choose_legal_actions,
+        test_registered_agents_complete_small_episodes,
+        test_streamlit_app_uses_registered_agents,
     ]
     for test in tests:
         test()
         print(f"PASS {test.__name__}")
-    print(f"{len(tests)} meeting-demo smoke tests passed.")
+    print(f"{len(tests)} registered-agent smoke tests passed.")
 
 
 if __name__ == "__main__":

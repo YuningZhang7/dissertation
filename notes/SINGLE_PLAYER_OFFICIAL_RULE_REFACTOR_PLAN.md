@@ -138,13 +138,13 @@ active Rail Baron objective. The feature is intended for debugging and dissertat
 presentation rather than as a full interactive GUI.
 
 Phase 6F-6 adds a non-interactive agent animation viewer. It provides both a CLI
-animation generator and a lightweight Streamlit meeting-demo launcher. The user
+animation generator and a lightweight Streamlit replay launcher. The user
 selects a map, a registered agent, seed, maximum steps, and frame mode, and the
 system automatically runs an episode. The output includes a compact HTML replay
 viewer with playback controls, a main animation frame, an action-history panel,
-PNG frames, logs, and summary JSON. The meeting-demo launcher embeds that generated
+PNG frames, logs, and summary JSON. The replay launcher embeds that generated
 replay and reports its output path and summary metrics. It is intended for
-supervisor demos and debugging, not manual gameplay. `--frame-mode all` captures
+interactive inspection and debugging, not manual gameplay. `--frame-mode all` captures
 every action, while `--frame-mode events` limits rendered frames to key events while
 retaining the complete action history. Launch the demo with
 `streamlit run experiments/demo_agent_animation_app.py`.
@@ -181,8 +181,15 @@ usage, estimated build cost, score efficiency, deliveries and routes per bond, a
 objective claim events. The analysis helper identifies the best-performing
 heuristic per map and highlights whether `adaptive_objective_greedy` improves on
 `objective_aware_greedy`. Recommendations remain benchmark-based: when
-`objective_aware_greedy` leads longer runs, it is the default demonstration
+`objective_aware_greedy` leads longer runs, it is the default replay-interface
 heuristic while `adaptive_objective_greedy` remains experimental.
+
+### Phase 6F-11: Agent Replay Interface Cleanup
+
+Phase 6F-11 polished the Streamlit replay interface as a formal project component.
+The interface now defaults to `objective_aware_greedy`, hides baseline and
+experimental agents unless requested, and includes concise rule, agent, and
+benchmark status panels. It does not change rules, maps, or agent behaviour.
 
 ## Planned Rule Changes
 
