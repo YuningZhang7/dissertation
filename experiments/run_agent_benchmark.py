@@ -66,6 +66,22 @@ CSV_COLUMNS = [
     "empty_marker_count",
     "fallback_actions",
     "runtime_seconds",
+    "delivery_actions",
+    "build_actions",
+    "upgrade_actions",
+    "pass_actions",
+    "issue_bond_actions",
+    "next_turn_actions",
+    "failed_actions",
+    "total_actions",
+    "total_build_cost_estimate",
+    "bonds_issued_during_episode",
+    "score_delta",
+    "final_score_per_step",
+    "deliveries_per_bond",
+    "completed_routes_per_bond",
+    "major_line_claim_events",
+    "rail_baron_claim_events",
 ]
 
 
@@ -84,6 +100,23 @@ def run_benchmark_episode(
     fallback_actions = 0
     success = True
     error = ""
+    initial_bonds = state.player.bonds
+    initial_score = state.player.score
+    initial_major_claims = sum(line.claimed for line in state.major_lines.values())
+    initial_rail_claims = state.player.rail_baron_objectives_completed
+    action_counts = {
+        name: 0
+        for name in (
+            "delivery_actions",
+            "build_actions",
+            "upgrade_actions",
+            "pass_actions",
+            "issue_bond_actions",
+            "next_turn_actions",
+        )
+    }
+    failed_actions = 0
+    total_build_cost_estimate = 0
     started = time.perf_counter()
     try:
         while not is_terminal(state) and steps < max_steps:
@@ -99,8 +132,25 @@ def run_benchmark_episode(
             if action is None or action not in legal_actions:
                 fallback_actions += 1
                 action = Action.pass_action()
+            count_key = {
+                "deliver_good": "delivery_actions",
+                "build_track_segments": "build_actions",
+                "upgrade_engine": "upgrade_actions",
+                "pass": "pass_actions",
+                "issue_bond": "issue_bond_actions",
+                "next_turn": "next_turn_actions",
+            }.get(action.action_type)
+            if count_key:
+                action_counts[count_key] += 1
+            if action.action_type == "build_track_segments":
+                total_build_cost_estimate += sum(
+                    state.segments[item].cost
+                    for item in action.params.get("segment_ids", [])
+                    if item in state.segments
+                )
             _, applied, message = apply_action(state, action)
             if not applied:
+                failed_actions += 1
                 fallback_actions += 1
                 fallback = Action.pass_action()
                 if fallback not in get_legal_actions(state):
@@ -117,7 +167,9 @@ def run_benchmark_episode(
         success = False
         error = f"{type(exc).__name__}: {exc}"
     runtime_seconds = time.perf_counter() - started
-    return {
+    completed_routes = sum(route.completed for route in state.routes.values())
+    final_bonds = state.player.bonds
+    result = {
         "map_name": map_name,
         "agent_name": agent_name,
         "episode": episode,
@@ -138,9 +190,7 @@ def run_benchmark_episode(
         "claimed_major_lines_count": sum(
             line.claimed for line in state.major_lines.values()
         ),
-        "completed_routes_count": sum(
-            route.completed for route in state.routes.values()
-        ),
+        "completed_routes_count": completed_routes,
         "built_segments_count": sum(
             segment.built for segment in state.segments.values()
         ),
@@ -150,7 +200,24 @@ def run_benchmark_episode(
         "empty_marker_count": sum(city.empty_marker for city in state.cities.values()),
         "fallback_actions": fallback_actions,
         "runtime_seconds": runtime_seconds,
+        **action_counts,
+        "failed_actions": failed_actions,
+        "total_actions": sum(action_counts.values()),
+        "total_build_cost_estimate": total_build_cost_estimate,
+        "bonds_issued_during_episode": final_bonds - initial_bonds,
+        "score_delta": state.player.score - initial_score,
+        "final_score_per_step": state.final_score() / max(1, steps),
+        "deliveries_per_bond": state.player.delivered_goods_count / max(1, final_bonds),
+        "completed_routes_per_bond": completed_routes / max(1, final_bonds),
+        "major_line_claim_events": sum(
+            line.claimed for line in state.major_lines.values()
+        )
+        - initial_major_claims,
+        "rail_baron_claim_events": (
+            state.player.rail_baron_objectives_completed - initial_rail_claims
+        ),
     }
+    return result
 
 
 def summarise_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, Any]]]:
@@ -186,12 +253,46 @@ def summarise_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, 
                 "steps",
                 "fallback_actions",
                 "runtime_seconds",
+                "delivery_actions",
+                "build_actions",
+                "upgrade_actions",
+                "pass_actions",
+                "issue_bond_actions",
+                "failed_actions",
+                "total_actions",
+                "total_build_cost_estimate",
+                "bonds_issued_during_episode",
+                "score_delta",
+                "final_score_per_step",
+                "deliveries_per_bond",
+                "completed_routes_per_bond",
+                "major_line_claim_events",
+                "rail_baron_claim_events",
             ):
                 metrics[f"mean_{field}"] = statistics.fmean(
                     float(row[field]) for row in group
                 )
             summary[map_name][agent_name] = metrics
+        _add_ranks(summary[map_name])
     return summary
+
+
+def _add_ranks(groups: dict[str, dict[str, Any]]) -> None:
+    rank_specs = (
+        ("mean_final_score", "rank_by_mean_final_score", True),
+        ("mean_bonds", "rank_by_mean_bonds", False),
+        ("mean_delivered_goods_count", "rank_by_mean_delivered_goods_count", True),
+    )
+    for metric, rank_field, descending in rank_specs:
+        ordered = sorted(
+            groups,
+            key=lambda name: (
+                -groups[name][metric] if descending else groups[name][metric],
+                name,
+            ),
+        )
+        for rank, name in enumerate(ordered, 1):
+            groups[name][rank_field] = rank
 
 
 def write_outputs(
@@ -264,11 +365,66 @@ def _markdown_summary(
                 )
                 + " |"
             )
+        lines.extend(
+            [
+                "",
+                "### Behaviour diagnostics",
+                "",
+                "| Agent | Build Actions | Delivery Actions | Upgrade Actions | Pass Actions | Bonds Issued | Build Cost | Final / Step | Deliveries / Bond | Routes / Bond | Failed Actions |",
+                "|" + " --- |" * 11,
+            ]
+        )
+        for agent_name, item in agents.items():
+            lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        agent_name,
+                        f"{item['mean_build_actions']:.2f}",
+                        f"{item['mean_delivery_actions']:.2f}",
+                        f"{item['mean_upgrade_actions']:.2f}",
+                        f"{item['mean_pass_actions']:.2f}",
+                        f"{item['mean_bonds_issued_during_episode']:.2f}",
+                        f"{item['mean_total_build_cost_estimate']:.2f}",
+                        f"{item['mean_final_score_per_step']:.3f}",
+                        f"{item['mean_deliveries_per_bond']:.3f}",
+                        f"{item['mean_completed_routes_per_bond']:.3f}",
+                        f"{item['mean_failed_actions']:.2f}",
+                    ]
+                )
+                + " |"
+            )
+        best = min(agents, key=lambda name: agents[name]["rank_by_mean_final_score"])
+        lowest_bonds = min(agents, key=lambda name: agents[name]["rank_by_mean_bonds"])
+        most_deliveries = min(
+            agents,
+            key=lambda name: agents[name]["rank_by_mean_delivered_goods_count"],
+        )
+        lines.extend(
+            [
+                "",
+                "### Automatic observations",
+                "",
+                f"- Best mean final score: {best}.",
+                f"- Lowest mean bonds: {lowest_bonds}.",
+                f"- Most deliveries: {most_deliveries}.",
+            ]
+        )
+        adaptive = agents.get("adaptive_objective_greedy")
+        objective = agents.get("objective_aware_greedy")
+        if (
+            adaptive
+            and objective
+            and adaptive["mean_build_actions"] > objective["mean_build_actions"]
+            and adaptive["mean_final_score"] <= objective["mean_final_score"]
+        ):
+            lines.append(
+                "- adaptive_objective_greedy used more build actions without a higher mean final score."
+            )
         lines.append("")
     lines.extend(
         [
-            "These are benchmark outputs for development comparison only. They are not "
-            "final dissertation results.",
+            "These are development benchmark diagnostics, not final dissertation conclusions.",
             "",
         ]
     )

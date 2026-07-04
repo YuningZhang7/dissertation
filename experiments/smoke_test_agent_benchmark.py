@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from experiments.run_agent_benchmark import CSV_COLUMNS, run_benchmark
+from experiments.analyse_agent_benchmark import analyse_summary
 
 
 def test_quick_agent_benchmark_outputs() -> None:
@@ -37,6 +38,18 @@ def test_quick_agent_benchmark_outputs() -> None:
         saved_summary = json.loads(json_path.read_text(encoding="utf-8"))
         assert len(rows) == len(csv_rows) == 6
         assert set(CSV_COLUMNS).issubset(csv_rows[0])
+        for field in (
+            "delivery_actions",
+            "build_actions",
+            "upgrade_actions",
+            "pass_actions",
+            "failed_actions",
+            "total_build_cost_estimate",
+            "final_score_per_step",
+            "deliveries_per_bond",
+            "completed_routes_per_bond",
+        ):
+            assert field in csv_rows[0]
         assert "official_like" in saved_summary
         assert set(saved_summary["official_like"]) == set(agents)
         for agent in agents:
@@ -47,12 +60,20 @@ def test_quick_agent_benchmark_outputs() -> None:
                 "mean_final_score",
                 "mean_bonds",
                 "mean_runtime_seconds",
+                "mean_delivery_actions",
+                "mean_total_build_cost_estimate",
+                "mean_final_score_per_step",
+                "rank_by_mean_final_score",
             ):
                 assert field in group
         assert summary == saved_summary
-        assert "not final dissertation results" in markdown_path.read_text(
-            encoding="utf-8"
-        )
+        markdown = markdown_path.read_text(encoding="utf-8")
+        assert "Behaviour diagnostics" in markdown
+        assert "Best mean final score" in markdown
+        analysis = analyse_summary(json_path)
+        assert "Best agent" in analysis
+        assert "objective_aware_greedy" in analysis
+        assert "adaptive_objective_greedy" in analysis
 
 
 def run_all() -> None:
