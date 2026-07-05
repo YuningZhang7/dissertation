@@ -40,7 +40,8 @@ The interface defaults to:
 - seed: `42`
 - maximum steps: `60`
 
-Use **Show all agents** only when a baseline comparison is useful.
+The Agent dropdown directly provides the four presentation agents: `random`,
+`greedy_delivery`, `greedy_expansion`, and `objective_aware_greedy`.
 
 ## Static replay backup
 

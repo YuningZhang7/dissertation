@@ -114,8 +114,10 @@ assert success, message
 assert state.player.bonds > 0
 assert state.actions_remaining == starting_actions - 1
 assert any("automatically" in entry for entry in state.action_history)
+assert replay_interface.available_agent_names() == __EXPECTED_AGENTS__
+assert replay_interface.RECOMMENDED_AGENT == "objective_aware_greedy"
 print(json.dumps(list_agent_names()))
-"""
+""".replace("__EXPECTED_AGENTS__", repr(EXPECTED_AGENTS))
     completed = subprocess.run(
         [sys.executable, "-c", code],
         cwd=PACKAGE_ROOT,
@@ -125,6 +127,17 @@ print(json.dumps(list_agent_names()))
         text=True,
     )
     assert json.loads(completed.stdout.strip()) == EXPECTED_AGENTS
+
+    interface_source = (PACKAGE_ROOT / "replay" / "replay_interface.py").read_text(
+        encoding="utf-8"
+    )
+    for removed_label in (
+        "Simulator rule summary",
+        "Recommended agent: objective_aware_greedy",
+        "Benchmark status",
+        "Show all agents",
+    ):
+        assert removed_label not in interface_source
 
     actions_source = (PACKAGE_ROOT / "railways" / "actions.py").read_text(
         encoding="utf-8"
