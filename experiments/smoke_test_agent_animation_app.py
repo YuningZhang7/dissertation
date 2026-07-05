@@ -27,7 +27,10 @@ def test_demo_app_imports() -> None:
 
 
 def test_demo_options_are_discoverable() -> None:
-    assert demo_app.available_map_names() == ["official_like", "expanded"]
+    assert demo_app.available_map_names() == [
+        "official_like",
+        "expanded_official_style",
+    ]
     assert demo_app.available_agent_names(show_all=False) == [
         "objective_aware_greedy"
     ]
@@ -56,7 +59,7 @@ def test_demo_app_renders_run_configuration() -> None:
         "Benchmark status",
     ]
     selectors = {item.label: list(item.options) for item in rendered.selectbox}
-    assert selectors["Map"] == ["official_like", "expanded"]
+    assert selectors["Map"] == ["official_like", "expanded_official_style"]
     assert selectors["Agent"] == ["objective_aware_greedy"]
     assert selectors["Frame mode"] == ["all", "events"]
     assert rendered.selectbox[0].value == "official_like"

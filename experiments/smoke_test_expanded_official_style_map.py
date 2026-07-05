@@ -10,7 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from railways.actions import Action
 from railways.environment import apply_action, get_legal_actions, reset_game
-from railways.rules import get_route_segments, uses_route_segment_delivery
+from railways.rules import get_route_segments
 
 
 EXPANDED_MAP = (
@@ -41,7 +41,6 @@ def test_map_loads_with_expanded_structure() -> None:
     assert 90 <= len(state.segments) <= 130
     assert len(state.major_lines) >= 8
     assert state.edges == {}
-    assert uses_route_segment_delivery(state)
 
 
 def test_gray_cities_are_valid() -> None:

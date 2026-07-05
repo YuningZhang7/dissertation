@@ -9,13 +9,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from railways.actions import Action
 from railways.environment import apply_action, reset_game
-from railways.rules import check_major_lines, uses_route_segment_delivery
+from railways.rules import check_major_lines
 
 
 ROUTE_MAP = PROJECT_ROOT / "data" / "mini_route_segment_map.json"
 OFFICIAL_CONFIG = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
-LEGACY_MAP = PROJECT_ROOT / "data" / "toy_map.json"
-LEGACY_CONFIG = PROJECT_ROOT / "data" / "rules_config.json"
 
 
 def make_segment_state():
@@ -96,29 +94,12 @@ def test_incomplete_segments_do_not_claim_and_are_cleaned() -> None:
     assert state.player.major_line_bonus == 0
 
 
-def test_legacy_major_line_claiming_is_unchanged() -> None:
-    state = reset_game(map_path=LEGACY_MAP, config_path=LEGACY_CONFIG)
-    assert not uses_route_segment_delivery(state)
-
-    for edge_id in ["A-B", "B-C", "C-H"]:
-        _, success, message = apply_action(state, Action.build_track(edge_id))
-        assert success, message
-
-    assert state.major_lines["A-H"].claimed
-    assert state.player.major_line_bonus == 3
-    assert any("claimed major line A-H" in entry for entry in state.action_history)
-
-    check_major_lines(state)
-    assert state.player.major_line_bonus == 3
-
-
 def run_all() -> None:
     tests = [
         test_single_completed_route_does_not_claim_multi_route_line,
         test_completed_multi_route_path_claims_major_line,
         test_completed_route_major_line_is_awarded_once,
         test_incomplete_segments_do_not_claim_and_are_cleaned,
-        test_legacy_major_line_claiming_is_unchanged,
     ]
     for test in tests:
         test()

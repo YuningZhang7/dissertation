@@ -6,7 +6,7 @@ from railways.environment import apply_action, copy_state
 from railways.game_state import GameState
 from railways.rules import (
     get_legal_operation_card_actions,
-    get_legal_build_actions,
+    get_legal_build_segment_actions,
     get_legal_deliveries,
     get_legal_upgrade_action,
     get_legal_urbanize_actions,
@@ -51,8 +51,9 @@ def _ranked_expansion_build_actions(state: GameState) -> list[Action]:
     current_cities = set(_connected_player_cities(state))
     current_major_bonus = state.player.major_line_bonus
 
-    for action in get_legal_build_actions(state):
-        edge = state.edges[action.params["edge_id"]]
+    for action in get_legal_build_segment_actions(state):
+        segment_ids = list(action.params["segment_ids"])
+        total_cost = sum(state.segments[segment_id].cost for segment_id in segment_ids)
         simulated = copy_state(state)
         _, success, _ = apply_action(simulated, action)
         if not success:
@@ -74,9 +75,9 @@ def _ranked_expansion_build_actions(state: GameState) -> list[Action]:
             + 3 * delivery_count
             + 2 * best_delivery_score
             + new_city_count
-            - 0.2 * edge.cost
+            - 0.2 * total_cost
         )
-        candidates.append((heuristic_score, str(action.params["edge_id"]), action))
+        candidates.append((heuristic_score, ",".join(segment_ids), action))
 
     candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
     return [candidate[2] for candidate in candidates]
@@ -84,10 +85,10 @@ def _ranked_expansion_build_actions(state: GameState) -> list[Action]:
 
 def _connected_player_cities(state: GameState) -> set[str]:
     cities: set[str] = set()
-    for edge in state.edges.values():
-        if edge.built and edge.owner == "player":
-            cities.add(edge.source)
-            cities.add(edge.target)
+    for route in state.routes.values():
+        if route.completed:
+            cities.add(route.city_a)
+            cities.add(route.city_b)
     return cities
 
 

@@ -12,10 +12,18 @@ from agents.random_agent import RandomAgent
 from experiments.simulation_runner import run_episode
 from railways.actions import Action
 from railways.card_loader import load_cards
-from railways.cards import update_cards_after_build
+from railways.cards import compute_end_game_card_bonus, update_cards_after_build
 from railways.environment import apply_action, get_legal_actions, reset_game
 
 CARDS_PATH = PROJECT_ROOT / "data" / "cards_basic.json"
+
+
+def complete_route(state, route_id: str) -> None:
+    _, success, message = apply_action(
+        state,
+        Action.build_track_segments(state.routes[route_id].segment_ids),
+    )
+    assert success, message
 
 
 def test_card_file_loads_representative_types() -> None:
@@ -88,27 +96,30 @@ def test_selecting_immediate_cash_card_applies_effect() -> None:
 
 def test_objective_card_selection_consumes_one_action_only() -> None:
     state = reset_game(card_path=CARDS_PATH)
-    state.actions_remaining = 5
+    state.actions_remaining = 6
 
     assert apply_action(state, Action.select_operation_card("deliver_red_1"))[1]
-    assert state.actions_remaining == 4
-    assert apply_action(state, Action.build_track("A-B"))[1]
-    assert state.actions_remaining == 3
+    assert state.actions_remaining == 5
+    complete_route(state, "A-H")
+    complete_route(state, "H-B")
+    state.player.locomotive_level = 4
     assert apply_action(
-        state,
-        Action.deliver_good("B", "A", "red", path=["B", "A"]),
+        state, Action.deliver_good("B", "A", "red", path=["B", "H", "A"])
     )[1]
     assert state.actions_remaining == 2
 
 
 def test_delivery_objective_completes_after_matching_delivery() -> None:
     state = reset_game(card_path=CARDS_PATH)
+    state.actions_remaining = 6
     assert apply_action(state, Action.select_operation_card("deliver_red_1"))[1]
-    assert apply_action(state, Action.build_track("A-B"))[1]
+    complete_route(state, "A-H")
+    complete_route(state, "H-B")
+    state.player.locomotive_level = 4
 
     _, success, message = apply_action(
         state,
-        Action.deliver_good("B", "A", "red", path=["B", "A"]),
+        Action.deliver_good("B", "A", "red", path=["B", "H", "A"]),
     )
 
     assert success, message
@@ -124,18 +135,17 @@ def test_delivery_objective_does_not_award_twice() -> None:
     state.actions_remaining = 10
 
     assert apply_action(state, Action.select_operation_card("deliver_red_1"))[1]
-    assert apply_action(state, Action.build_track("A-B"))[1]
+    complete_route(state, "A-H")
+    complete_route(state, "H-B")
+    state.player.locomotive_level = 4
     assert apply_action(
-        state,
-        Action.deliver_good("B", "A", "red", path=["B", "A"]),
+        state, Action.deliver_good("B", "A", "red", path=["B", "H", "A"])
     )[1]
     bonus_after_first = state.player.operation_card_bonus
 
-    assert apply_action(state, Action.build_track("B-E"))[1]
-    assert apply_action(state, Action.build_track("E-G"))[1]
+    complete_route(state, "F-H")
     assert apply_action(
-        state,
-        Action.deliver_good("G", "E", "red", path=["G", "E"]),
+        state, Action.deliver_good("F", "A", "red", path=["F", "H", "A"])
     )[1]
 
     assert bonus_after_first == 3
@@ -145,9 +155,14 @@ def test_delivery_objective_does_not_award_twice() -> None:
 
 def test_network_objective_completes_after_connection() -> None:
     state = reset_game(card_path=CARDS_PATH)
+    state.actions_remaining = 5
     assert apply_action(state, Action.select_operation_card("connect_a_d_1"))[1]
 
-    _, success, message = apply_action(state, Action.build_track("A-D"))
+    complete_route(state, "A-H")
+    _, success, message = apply_action(
+        state,
+        Action.build_track_segments(state.routes["D-H"].segment_ids),
+    )
 
     assert success, message
     assert state.player.operation_card_bonus == 4
@@ -157,8 +172,10 @@ def test_network_objective_completes_after_connection() -> None:
 
 def test_network_objective_does_not_award_twice() -> None:
     state = reset_game(card_path=CARDS_PATH)
+    state.actions_remaining = 5
     assert apply_action(state, Action.select_operation_card("connect_a_d_1"))[1]
-    assert apply_action(state, Action.build_track("A-D"))[1]
+    complete_route(state, "A-H")
+    complete_route(state, "D-H")
     bonus_after_connection = state.player.operation_card_bonus
 
     update_cards_after_build(state)
@@ -171,12 +188,12 @@ def test_end_game_scoring_card_contributes_to_final_score() -> None:
     state = reset_game(card_path=CARDS_PATH)
     state.actions_remaining = 5
     assert apply_action(state, Action.select_operation_card("builder_bonus_1"))[1]
-    assert apply_action(state, Action.build_track("A-B"))[1]
-    assert apply_action(state, Action.build_track("B-C"))[1]
+    complete_route(state, "A-H")
+    complete_route(state, "H-B")
     actions_before_final_score = state.actions_remaining
 
     assert state.player.operation_card_bonus == 0
-    assert state.final_score() == 2
+    assert compute_end_game_card_bonus(state) == 2
     assert state.actions_remaining == actions_before_final_score
 
 
@@ -188,7 +205,8 @@ def test_final_score_combines_card_and_existing_bonuses() -> None:
     state.player.rail_baron_bonus = 1
     state.player.operation_card_bonus = 4
     state.player.owned_operation_cards.append("builder_bonus_1")
-    state.player.built_edges.update({"A-B", "B-C", "A-D"})
+    for route_id in ("A-H", "H-B", "D-H"):
+        state.routes[route_id].completed = True
 
     assert state.final_score() == 16
 

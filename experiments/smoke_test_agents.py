@@ -18,6 +18,7 @@ from agents.route_segment_greedy_agent import RouteSegmentGreedyAgent
 from agents.registry import AGENT_CLASSES, list_agent_names
 from experiments.run_experiments import run_batch
 from experiments.simulation_runner import run_episode
+from railways.actions import Action
 from railways.environment import apply_action, get_legal_actions, reset_game
 
 
@@ -30,7 +31,11 @@ def test_random_agent_returns_legal_action() -> None:
 
 def test_greedy_delivery_agent_returns_delivery_when_available() -> None:
     state = reset_game()
-    assert apply_action(state, get_legal_actions(state)[0])[1]
+    assert apply_action(
+        state,
+        Action.build_track_segments(["A-H-1", "A-H-2"]),
+    )[1]
+    state.player.locomotive_level = 2
     deliveries = [
         action
         for action in get_legal_actions(state)

@@ -14,7 +14,6 @@ from railways.environment import apply_action, get_legal_actions, reset_game
 ROUTE_MAP = PROJECT_ROOT / "data" / "mini_route_segment_map.json"
 OFFICIAL_CONFIG = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
 LEGACY_MAP = PROJECT_ROOT / "data" / "toy_map.json"
-LEGACY_CONFIG = PROJECT_ROOT / "data" / "rules_config.json"
 
 
 def make_segment_state():
@@ -247,12 +246,13 @@ def test_already_built_segment_is_rejected_without_another_action() -> None:
     assert state.player.money == money_after_first_build
 
 
-def test_legacy_map_has_only_legacy_build_actions() -> None:
-    state = reset_game(map_path=LEGACY_MAP, config_path=LEGACY_CONFIG)
-    actions = get_legal_actions(state)
-
-    assert any(action.action_type == "build_track" for action in actions)
-    assert all(action.action_type != "build_track_segments" for action in actions)
+def test_legacy_edge_map_is_rejected() -> None:
+    try:
+        reset_game(map_path=LEGACY_MAP, config_path=OFFICIAL_CONFIG)
+    except ValueError as exc:
+        assert "Route-segment runtime requires" in str(exc)
+    else:
+        raise AssertionError("Legacy edge-only map should be rejected.")
 
 
 def run_all() -> None:
@@ -274,7 +274,7 @@ def run_all() -> None:
         test_reverse_route_order_is_rejected,
         test_unknown_segment_is_rejected,
         test_already_built_segment_is_rejected_without_another_action,
-        test_legacy_map_has_only_legacy_build_actions,
+        test_legacy_edge_map_is_rejected,
     ]
     for test in tests:
         test()

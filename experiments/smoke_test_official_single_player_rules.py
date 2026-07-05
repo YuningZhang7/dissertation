@@ -10,12 +10,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from railways.actions import Action
 from railways.environment import apply_action, get_legal_actions, reset_game
-from railways.models import PHASE_ACTION, PHASE_INCOME
+from railways.models import PHASE_ACTION
 from railways.rules import deliver_good, get_legal_deliveries, run_income_phase, urbanize
 
 
-MAP_PATH = PROJECT_ROOT / "data" / "toy_map.json"
-ROUTE_MAP_PATH = PROJECT_ROOT / "data" / "official_like_route_segment_map.json"
+MAP_PATH = PROJECT_ROOT / "data" / "official_like_route_segment_map.json"
 CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
 
 
@@ -23,7 +22,15 @@ def make_official_state():
     return reset_game(map_path=MAP_PATH, config_path=CONFIG_PATH)
 
 
-def test_official_config_and_initial_state() -> None:
+def complete_a_h_route(state) -> None:
+    _, success, message = apply_action(
+        state,
+        Action.build_track_segments(["A-H-1", "A-H-2"]),
+    )
+    assert success, message
+
+
+def test_official_config_and_route_segment_state() -> None:
     state = make_official_state()
 
     assert state.player.money == 0
@@ -32,47 +39,43 @@ def test_official_config_and_initial_state() -> None:
     assert state.config.actions_per_turn == 3
     assert state.config.max_locomotive_level == 8
     assert state.config.end_condition == "empty_city_markers"
+    assert state.routes
+    assert state.segments
+    assert state.edges == {}
 
 
-def test_bonds_are_not_selectable_actions() -> None:
-    state = reset_game(map_path=ROUTE_MAP_PATH, config_path=CONFIG_PATH)
+def test_only_segment_build_actions_are_exposed() -> None:
+    state = make_official_state()
+    action_types = {action.action_type for action in get_legal_actions(state)}
 
+    assert "build_track_segments" in action_types
+    assert "build_track" not in action_types
+    assert "issue_bond" not in action_types
+    assert not hasattr(Action, "build_track")
     assert not hasattr(Action, "issue_bond")
-    assert state.phase == PHASE_ACTION
-    assert state.player.money == 0
-    assert state.config.allow_voluntary_bonds is False
-    assert state.config.auto_issue_bonds_when_needed is True
-    assert all(
-        action.action_type != "issue_bond" for action in get_legal_actions(state)
-    )
 
 
 def test_paid_action_automatically_issues_minimum_financing() -> None:
-    state = reset_game(map_path=ROUTE_MAP_PATH, config_path=CONFIG_PATH)
-    legal_actions = get_legal_actions(state)
+    state = make_official_state()
     build_action = next(
         action
-        for action in legal_actions
+        for action in get_legal_actions(state)
         if action.action_type == "build_track_segments"
     )
-    starting_actions = state.actions_remaining
-    starting_bonds = state.player.bonds
     total_cost = sum(
         state.segments[segment_id].cost
         for segment_id in build_action.params["segment_ids"]
     )
     expected_bonds = math.ceil(total_cost / state.config.bond_value)
+    starting_actions = state.actions_remaining
 
     _, success, message = apply_action(state, build_action)
 
     assert success, message
-    assert state.player.bonds == starting_bonds + expected_bonds
+    assert state.player.bonds == expected_bonds
     assert state.player.money == expected_bonds * state.config.bond_value - total_cost
     assert state.actions_remaining == starting_actions - 1
     assert any("automatically" in entry for entry in state.action_history)
-    assert all(
-        action.action_type != "issue_bond" for action in get_legal_actions(state)
-    )
 
 
 def test_income_interest_preserves_automatic_financing() -> None:
@@ -95,146 +98,82 @@ def test_final_score_subtracts_bond_penalty() -> None:
     assert state.final_score() == 7
 
 
-def test_urbanize_rejects_non_gray_city() -> None:
+def test_urbanize_uses_route_segment_map_cities() -> None:
     state = make_official_state()
-    starting_actions = state.actions_remaining
+    assert not urbanize(state, "A", "red")[0]
 
-    success, message = urbanize(state, "A", "red")
-
-    assert not success
-    assert "not a gray city" in message
-    assert state.actions_remaining == starting_actions
-
-
-def test_urbanize_gray_city_and_remove_empty_marker() -> None:
-    state = make_official_state()
-    city = state.cities["H"]
+    city = state.cities["J"]
     city.empty_marker = True
     starting_actions = state.actions_remaining
-    starting_goods = len(city.goods)
-
-    success, message = urbanize(state, "H", "purple")
+    success, message = urbanize(state, "J", "purple")
 
     assert success, message
-    assert state.actions_remaining == starting_actions - 1
-    assert not city.is_gray
     assert city.is_urbanized
     assert city.demand_color == "purple"
     assert not city.empty_marker
-    assert len(city.goods) == starting_goods + state.config.new_goods_on_urbanize
-
-
-def test_gray_city_delivery_is_rejected_and_not_generated() -> None:
-    state = make_official_state()
-    target = state.cities["H"]
-    target.demand_color = "green"
-    edge = state.edges["C-H"]
-    edge.built = True
-    edge.owner = "player"
-
-    legal_deliveries = get_legal_deliveries(state)
-    assert all(action.params["target"] != "H" for action in legal_deliveries)
-
-    success, message = deliver_good(
-        state,
-        "C",
-        "H",
-        "green",
-        path=["C", "H"],
-    )
-
-    assert not success
-    assert "gray city" in message
-    assert "green" in state.cities["C"].goods
-
-
-def test_delivery_rejects_unowned_first_link() -> None:
-    state = make_official_state()
-    state.cities["A"].goods = ["blue"]
-    state.cities["B"].demand_color = "blue"
-    state.cities["B"].is_gray = False
-    edge = state.edges["A-B"]
-    edge.built = True
-    edge.owner = None
-
-    success, message = deliver_good(
-        state,
-        "A",
-        "B",
-        "blue",
-        path=["A", "B"],
-    )
-
-    assert not success
-    assert "player-owned" in message
-    assert state.cities["A"].goods == ["blue"]
-
-
-def test_delivery_accepts_player_owned_first_link() -> None:
-    state = make_official_state()
-    state.cities["A"].goods = ["blue"]
-    state.cities["B"].demand_color = "blue"
-    state.cities["B"].is_gray = False
-    edge = state.edges["A-B"]
-    edge.built = True
-    edge.owner = "player"
-    starting_actions = state.actions_remaining
-
-    success, message = deliver_good(
-        state,
-        "A",
-        "B",
-        "blue",
-        path=["A", "B"],
-    )
-
-    assert success, message
-    assert "blue" not in state.cities["A"].goods
-    assert state.player.score >= 1
     assert state.actions_remaining == starting_actions - 1
 
 
-def test_legal_deliveries_require_player_owned_first_link() -> None:
+def test_delivery_requires_completed_route() -> None:
     state = make_official_state()
-    state.cities["A"].goods = ["blue"]
-    state.cities["B"].demand_color = "blue"
-    state.cities["B"].is_gray = False
-    edge = state.edges["A-B"]
-    edge.built = True
-    edge.owner = None
+    state.player.locomotive_level = 2
 
-    legal_deliveries = get_legal_deliveries(state)
-    assert all(
-        not (
-            action.params["source"] == "A"
-            and action.params["target"] == "B"
-        )
-        for action in legal_deliveries
+    success, message = deliver_good(
+        state,
+        "A",
+        "H",
+        "blue",
+        path=["A", "H"],
     )
 
-    edge.owner = "player"
-    legal_deliveries = get_legal_deliveries(state)
-    assert any(
-        action.params["source"] == "A"
-        and action.params["target"] == "B"
+    assert not success
+    assert "completed route" in message
+    assert get_legal_deliveries(state) == []
+
+
+def test_completed_route_enables_delivery() -> None:
+    state = make_official_state()
+    complete_a_h_route(state)
+    state.player.locomotive_level = 2
+    matching = [
+        action
+        for action in get_legal_deliveries(state)
+        if action.params["source"] == "A"
+        and action.params["target"] == "H"
         and action.params["good_color"] == "blue"
-        for action in legal_deliveries
-    )
+    ]
+
+    assert matching
+    starting_actions = state.actions_remaining
+    _, success, message = apply_action(state, matching[0])
+
+    assert success, message
+    assert "blue" not in state.cities["A"].goods
+    assert state.player.delivered_goods_count == 1
+    assert state.actions_remaining == starting_actions - 1
+
+
+def test_gray_city_delivery_is_rejected() -> None:
+    state = make_official_state()
+    state.cities["J"].demand_color = "blue"
+
+    success, message = deliver_good(state, "A", "J", "blue")
+
+    assert not success
+    assert "gray city" in message
 
 
 def run_all() -> None:
     tests = [
-        test_official_config_and_initial_state,
-        test_bonds_are_not_selectable_actions,
+        test_official_config_and_route_segment_state,
+        test_only_segment_build_actions_are_exposed,
         test_paid_action_automatically_issues_minimum_financing,
         test_income_interest_preserves_automatic_financing,
         test_final_score_subtracts_bond_penalty,
-        test_urbanize_rejects_non_gray_city,
-        test_urbanize_gray_city_and_remove_empty_marker,
-        test_gray_city_delivery_is_rejected_and_not_generated,
-        test_delivery_rejects_unowned_first_link,
-        test_delivery_accepts_player_owned_first_link,
-        test_legal_deliveries_require_player_owned_first_link,
+        test_urbanize_uses_route_segment_map_cities,
+        test_delivery_requires_completed_route,
+        test_completed_route_enables_delivery,
+        test_gray_city_delivery_is_rejected,
     ]
     for test in tests:
         test()

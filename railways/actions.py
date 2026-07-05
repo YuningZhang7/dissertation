@@ -10,10 +10,6 @@ class Action:
     params: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def build_track(cls, edge_id: str) -> "Action":
-        return cls("build_track", {"edge_id": edge_id})
-
-    @classmethod
     def build_track_segments(cls, segment_ids: list[str]) -> "Action":
         return cls("build_track_segments", {"segment_ids": list(segment_ids)})
 

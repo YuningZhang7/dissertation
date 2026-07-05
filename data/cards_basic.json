@@ -74,9 +74,9 @@
       "id": "builder_bonus_1",
       "name": "Railway Builder",
       "card_type": "end_game_scoring",
-      "description": "Gain 1 point per built railway link at the end of the game, up to 5 points.",
+      "description": "Gain 1 point per completed route at the end of the game, up to 5 points.",
       "condition": {
-        "metric": "built_edges"
+        "metric": "completed_routes"
       },
       "reward": {
         "points_per_item": 1,
@@ -87,9 +87,9 @@
       "id": "builder_bonus_2",
       "name": "Route Planner",
       "card_type": "end_game_scoring",
-      "description": "Gain 1 point per built railway link at the end of the game, up to 3 points.",
+      "description": "Gain 1 point per completed route at the end of the game, up to 3 points.",
       "condition": {
-        "metric": "built_edges"
+        "metric": "completed_routes"
       },
       "reward": {
         "points_per_item": 1,

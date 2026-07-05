@@ -117,10 +117,11 @@ def compute_end_game_card_bonus(state: GameState) -> int:
         card = state.operation_cards.get(card_id)
         if card is None or card.card_type != "end_game_scoring":
             continue
-        if card.condition.get("metric") == "built_edges":
+        if card.condition.get("metric") == "completed_routes":
             points_per_item = int(card.reward.get("points_per_item", 0))
             max_points = int(card.reward.get("max_points", 0))
-            earned = len(state.player.built_edges) * points_per_item
+            earned = sum(route.completed for route in state.routes.values())
+            earned *= points_per_item
             if max_points > 0:
                 earned = min(earned, max_points)
             bonus += earned
@@ -147,9 +148,15 @@ def _has_built_path(state: GameState, source: str, target: str) -> bool:
     graph = nx.Graph()
     for city_id in state.cities:
         graph.add_node(city_id)
-    for edge in state.edges.values():
-        if edge.built:
-            graph.add_edge(edge.source, edge.target)
+    for route in state.routes.values():
+        if not route.completed:
+            continue
+        segments = [state.segments[segment_id] for segment_id in route.segment_ids]
+        if segments and all(
+            segment.built and segment.completed and segment.owner == "player"
+            for segment in segments
+        ):
+            graph.add_edge(route.city_a, route.city_b)
     try:
         return nx.has_path(graph, source, target)
     except (nx.NetworkXError, nx.NodeNotFound):

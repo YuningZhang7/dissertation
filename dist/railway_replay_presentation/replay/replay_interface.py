@@ -23,15 +23,17 @@ MAP_OPTIONS = tuple(MAP_PATHS)
 FRAME_MODE_OPTIONS = ("all", "events")
 APP_TITLE = "Agent Replay Interface"
 APP_DESCRIPTION = (
-    "Choose a map and agent, then generate an automatic replay with rendered "
-    "frames, summary metrics, and action history."
+    "This interface uses the route-segment official-style simulator. Track "
+    "construction is performed at segment level, deliveries require completed "
+    "routes, and Major Line / Rail Baron objectives are evaluated on the "
+    "completed-route network."
 )
 RECOMMENDED_AGENT = "objective_aware_greedy"
 DEFAULT_MAP = "official_like"
 DEFAULT_FRAME_MODE = "events"
 MAP_SELECTION_CAPTION = (
-    "official_like is compact and easier to inspect; expanded provides a larger "
-    "route-segment network with more objectives."
+    "official_like is compact and easier to inspect; expanded_official_style "
+    "provides a larger route-segment network with more objectives."
 )
 AGENT_SELECTION_CAPTION = (
     "objective_aware_greedy is the current recommended heuristic based on "
@@ -53,7 +55,7 @@ RULE_SUMMARY_BULLETS = (
     "Major Line bonus",
     "Rail Baron objective",
     "bonds and final score",
-    "official_like and expanded route-segment maps",
+    "official_like and expanded_official_style route-segment maps",
 )
 RECOMMENDED_AGENT_EXPLANATION = (
     "objective_aware_greedy is a deterministic heuristic agent. It evaluates "

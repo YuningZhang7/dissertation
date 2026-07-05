@@ -69,6 +69,15 @@ def validate_layout() -> None:
     assert not (PACKAGE_ROOT / "experiments").exists()
     assert not (PACKAGE_ROOT / "exact").exists()
     assert ZIP_PATH.is_file()
+    packaged_data = {
+        path.name for path in (PACKAGE_ROOT / "data").glob("*.json")
+    }
+    assert packaged_data == {
+        "cards_basic.json",
+        "official_single_player_rules_config.json",
+        "official_like_route_segment_map.json",
+        "expanded_official_style_route_segment_map.json",
+    }
     for source_path in PACKAGE_ROOT.rglob("*.py"):
         source = source_path.read_text(encoding="utf-8")
         assert not any(name in source for name in FORBIDDEN_AGENT_NAMES), source_path
@@ -88,8 +97,13 @@ state = reset_game(
     config_path=Path("data/official_single_player_rules_config.json"),
 )
 legal_actions = get_legal_actions(state)
+action_types = {action.action_type for action in legal_actions}
+assert state.edges == {}
+assert "build_track_segments" in action_types
+assert "build_track" not in action_types
+assert "issue_bond" not in action_types
+assert not hasattr(Action, "build_track")
 assert not hasattr(Action, "issue_bond")
-assert all(action.action_type != "issue_bond" for action in legal_actions)
 build_action = next(
     action for action in legal_actions
     if action.action_type == "build_track_segments"
@@ -117,6 +131,17 @@ print(json.dumps(list_agent_names()))
     )
     assert "def issue_bond" not in actions_source
     assert "Action.issue_bond" not in actions_source
+    assert "def build_track(" not in actions_source
+    assert "Action.build_track" not in actions_source
+
+    rules_source = (PACKAGE_ROOT / "railways" / "rules.py").read_text(
+        encoding="utf-8"
+    )
+    assert "def build_track(" not in rules_source
+    assert 'action.action_type == "build_track"' not in rules_source
+    assert "get_legal_legacy_deliveries" not in rules_source
+    assert "check_legacy_major_lines" not in rules_source
+    assert "state.edges" not in rules_source
 
 
 def validate_static_replay() -> None:

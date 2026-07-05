@@ -43,15 +43,21 @@ def load_map(
         dict[str, RailBaronObjective],
     ]
 ):
-    """Load a legacy edge map or a route-segment map.
-
-    The default three-item return preserves the original public API. Callers
-    can opt into route data, Rail Baron objectives, or both without changing
-    the existing three-item and five-item result shapes.
-    """
+    """Load a route-segment map for the official-style runtime."""
     map_path = Path(path)
     with map_path.open("r", encoding="utf-8") as file:
         data = json.load(file)
+
+    route_data_items = data.get("routes")
+    if not isinstance(route_data_items, list) or not route_data_items:
+        raise ValueError(
+            "Route-segment runtime requires routes and track_segments. "
+            "Legacy edge-only maps are not supported."
+        )
+    if any(not route_data.get("segments") for route_data in route_data_items):
+        raise ValueError(
+            "Route-segment runtime requires every route to contain track segments."
+        )
 
     cities = {
         city_data["id"]: City(
@@ -68,29 +74,27 @@ def load_map(
         for city_data in data["cities"]
     }
 
-    edges = {
-        edge_data["id"]: RailwayEdge(
-            id=edge_data["id"],
-            source=edge_data["source"],
-            target=edge_data["target"],
-            cost=int(edge_data["cost"]),
-            built=bool(edge_data.get("built", False)),
-            owner=edge_data.get("owner") or ("player" if edge_data.get("built") else None),
-        )
-        for edge_data in data.get("edges", [])
-    }
+    # RailwayEdge remains in the state model for serialized compatibility, but
+    # edge data never drives construction or delivery in this runtime.
+    edges: dict[str, RailwayEdge] = {}
 
     routes: dict[str, Route] = {}
     segments: dict[str, TrackSegment] = {}
-    for route_data in data.get("routes", []):
+    for route_data in route_data_items:
         route_id = str(route_data["id"])
         city_a = str(route_data["city_a"])
         city_b = str(route_data["city_b"])
+        if route_id in routes:
+            raise ValueError(f"Duplicate route ID: {route_id}")
+        if city_a not in cities or city_b not in cities:
+            raise ValueError(f"Route {route_id} references an unknown city.")
         segment_data_items = list(route_data.get("segments", []))
         segment_ids: list[str] = []
 
         for index, segment_data in enumerate(segment_data_items):
             segment_id = str(segment_data["id"])
+            if segment_id in segments:
+                raise ValueError(f"Duplicate track segment ID: {segment_id}")
             generated_source = city_a if index == 0 else f"{route_id}:n{index}"
             generated_target = (
                 city_b

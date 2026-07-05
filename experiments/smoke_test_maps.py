@@ -12,44 +12,40 @@ from agents.random_agent import RandomAgent
 from experiments.simulation_runner import run_episode
 from railways.environment import reset_game
 from railways.map_loader import load_config, load_map
-from railways.rules import get_legal_build_actions
+from railways.rules import get_legal_build_segment_actions
 
 MAP_PATHS = [
-    PROJECT_ROOT / "data" / "toy_map.json",
-    PROJECT_ROOT / "data" / "toy_medium_map.json",
-    PROJECT_ROOT / "data" / "semi_realistic_map.json",
-    PROJECT_ROOT / "data" / "micro_map.json",
+    PROJECT_ROOT / "data" / "official_like_route_segment_map.json",
+    PROJECT_ROOT / "data" / "expanded_official_style_route_segment_map.json",
 ]
-CONFIG_PATH = PROJECT_ROOT / "data" / "rules_config.json"
-MICRO_CONFIG_PATH = PROJECT_ROOT / "data" / "micro_rules_config.json"
-MAP_CONFIG_PAIRS = [
-    (PROJECT_ROOT / "data" / "toy_map.json", CONFIG_PATH),
-    (PROJECT_ROOT / "data" / "toy_medium_map.json", CONFIG_PATH),
-    (PROJECT_ROOT / "data" / "semi_realistic_map.json", CONFIG_PATH),
-    (PROJECT_ROOT / "data" / "micro_map.json", MICRO_CONFIG_PATH),
-]
+CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
+MAP_CONFIG_PAIRS = [(map_path, CONFIG_PATH) for map_path in MAP_PATHS]
 
 
 def test_maps_load_successfully() -> None:
     for map_path in MAP_PATHS:
-        cities, edges, _ = load_map(map_path)
+        cities, edges, _, routes, segments = load_map(map_path, include_routes=True)
         assert cities, f"{map_path.name} has no cities"
-        assert edges, f"{map_path.name} has no edges"
+        assert edges == {}
+        assert routes, f"{map_path.name} has no routes"
+        assert segments, f"{map_path.name} has no track segments"
 
 
 def test_maps_have_legal_initial_builds() -> None:
     for map_path, config_path in MAP_CONFIG_PAIRS:
         state = reset_game(map_path=map_path, config_path=config_path)
-        assert get_legal_build_actions(state), f"{map_path.name} has no legal builds"
+        assert get_legal_build_segment_actions(
+            state
+        ), f"{map_path.name} has no legal segment builds"
 
 
-def test_edge_endpoints_reference_valid_cities() -> None:
+def test_route_endpoints_reference_valid_cities() -> None:
     for map_path in MAP_PATHS:
-        cities, edges, _ = load_map(map_path)
+        cities, _, _, routes, _ = load_map(map_path, include_routes=True)
         city_ids = set(cities)
-        for edge in edges.values():
-            assert edge.source in city_ids, f"{edge.id} has invalid source {edge.source}"
-            assert edge.target in city_ids, f"{edge.id} has invalid target {edge.target}"
+        for route in routes.values():
+            assert route.city_a in city_ids, f"{route.id} has invalid city_a"
+            assert route.city_b in city_ids, f"{route.id} has invalid city_b"
 
 
 def test_major_lines_reference_valid_cities() -> None:
@@ -103,7 +99,7 @@ def run_all() -> None:
     tests = [
         test_maps_load_successfully,
         test_maps_have_legal_initial_builds,
-        test_edge_endpoints_reference_valid_cities,
+        test_route_endpoints_reference_valid_cities,
         test_major_lines_reference_valid_cities,
         test_goods_colours_are_valid,
         test_random_agent_short_episode_does_not_crash,

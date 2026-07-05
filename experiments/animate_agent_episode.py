@@ -29,7 +29,7 @@ MAP_PATHS = {
     "official_like": (
         PROJECT_ROOT / "data" / "official_like_route_segment_map.json"
     ),
-    "expanded": (
+    "expanded_official_style": (
         PROJECT_ROOT / "data" / "expanded_official_style_route_segment_map.json"
     ),
 }

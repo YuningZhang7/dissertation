@@ -10,6 +10,10 @@ route-segment construction, route completion, completed-route delivery, Major Li
 scoring, Rail Baron objectives, bonds, and final-score calculation. It does not
 claim to reproduce every official multiplayer rule.
 
+This presentation runtime is route-segment-only. Construction uses
+`build_track_segments`, deliveries require completed routes, and Major Line and
+Rail Baron connectivity is evaluated on the completed-route network.
+
 Bonds are not selectable actions. Financing certificates are issued automatically
 only when a payment shortfall occurs, and they continue to affect interest and the
 final score.
@@ -53,7 +57,7 @@ The command generates PNG frames, `index.html`, `episode_log.txt`,
 For custom settings:
 
 ```bash
-.venv/bin/python replay/animate_agent_episode.py   --map expanded   --agent objective_aware_greedy   --seed 42   --max-steps 60   --frame-mode events
+.venv/bin/python replay/animate_agent_episode.py   --map expanded_official_style   --agent objective_aware_greedy   --seed 42   --max-steps 60   --frame-mode events
 ```
 
 ## Included source

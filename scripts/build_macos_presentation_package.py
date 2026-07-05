@@ -71,7 +71,6 @@ def list_agent_names() -> list[str]:
 
 REQUIREMENTS = """streamlit>=1.35
 networkx>=3.2
-plotly>=5.20
 matplotlib>=3.8
 Pillow>=10.0
 """
@@ -94,6 +93,10 @@ The simulator is an official-compatible single-player abstraction. It focuses on
 route-segment construction, route completion, completed-route delivery, Major Line
 scoring, Rail Baron objectives, bonds, and final-score calculation. It does not
 claim to reproduce every official multiplayer rule.
+
+This presentation runtime is route-segment-only. Construction uses
+`build_track_segments`, deliveries require completed routes, and Major Line and
+Rail Baron connectivity is evaluated on the completed-route network.
 
 Bonds are not selectable actions. Financing certificates are issued automatically
 only when a payment shortfall occurs, and they continue to affect interest and the
@@ -139,7 +142,7 @@ For custom settings:
 
 ```bash
 .venv/bin/python replay/animate_agent_episode.py \
-  --map expanded \
+  --map expanded_official_style \
   --agent objective_aware_greedy \
   --seed 42 \
   --max-steps 60 \

@@ -123,6 +123,11 @@ class GameState:
             include_routes=True,
             include_rail_baron_objectives=True,
         )
+        if not routes or not segments:
+            raise ValueError(
+                "Route-segment runtime requires routes and track_segments. "
+                "Legacy edge-only maps are not supported."
+            )
         config = load_config(config_path)
         operation_cards = load_cards(card_path) if card_path is not None else {}
         return cls(

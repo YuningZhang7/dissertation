@@ -29,7 +29,7 @@ The current implementation deliberately simplifies several rules:
 - the default game can end after a fixed number of turns.
 
 These assumptions remain valid for the existing scenarios and archived
-experiments. Phase 6 introduces separate data and compatibility paths so old
+experiments. Phase 6 originally introduced separate data and compatibility paths so old
 experiments can still be reproduced.
 
 ## Target Scope
@@ -189,7 +189,12 @@ heuristic while `adaptive_objective_greedy` remains experimental.
 Phase 6F-11 polished the Streamlit replay interface as a formal project component.
 The interface now defaults to `objective_aware_greedy`, hides baseline and
 experimental agents unless requested, and includes concise rule, agent, and
-benchmark status panels. It does not change rules, maps, or agent behaviour.
+benchmark status panels. Follow-up corrections made financing automatic-only and
+made the normal runtime route-segment-only. Construction now uses
+`build_track_segments`, delivery requires completed routes, and Major Line and Rail
+Baron connectivity use the completed-route graph. Historical edge-map data remains
+in the research repository but is rejected by the normal runtime and excluded from
+the presentation package.
 
 ## Planned Rule Changes
 
@@ -234,9 +239,9 @@ can be calibrated later without changing rule-engine code.
 ## Compatibility Strategy
 
 - Do not change `data/rules_config.json` or the legacy artificial maps in place.
-- Add new models and actions alongside compatibility wrappers where practical.
-- Keep `build_track(edge_id)` for legacy maps while official-like route maps use
-  `build_track_segments(segment_ids)`.
+- Historical edge-map files remain available only as research artifacts; the normal
+  runtime rejects maps without routes and track segments.
+- Use `build_track_segments(segment_ids)` as the only construction action.
 - Preserve existing smoke tests and add focused Phase 6 tests.
 - Keep archived experiment outputs labelled with the rules/configuration that
   produced them; results from old and Phase 6 rulesets are not directly pooled.
@@ -255,9 +260,9 @@ During implementation:
 - run `experiments/smoke_test_rules.py` to detect legacy-rule regressions;
 - run map, agent, card, and experiment smoke tests after data-model changes;
 - use deterministic seeds when testing random goods placement; and
-- run short episodes on both a legacy edge map and the official-like route map
-  before larger experiments.
+- run short episodes on both the official-like and expanded official-style
+  route-segment maps before larger experiments.
 
-Phase 6 is complete only when the official smoke test passes, legacy scenarios
-still load, and a short experiment can finish using the official-like map and
-official single-player configuration.
+Phase 6 is complete only when the official smoke test passes, legacy edge-only maps
+are rejected clearly, and short experiments finish on both route-segment maps with
+the official single-player configuration.

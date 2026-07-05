@@ -9,13 +9,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from railways.actions import Action
 from railways.environment import apply_action, get_legal_actions, reset_game
-from railways.rules import get_legal_deliveries, uses_route_segment_delivery
+from railways.rules import get_legal_deliveries
 
 
 ROUTE_MAP = PROJECT_ROOT / "data" / "mini_route_segment_map.json"
 OFFICIAL_CONFIG = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
-LEGACY_MAP = PROJECT_ROOT / "data" / "toy_map.json"
-LEGACY_CONFIG = PROJECT_ROOT / "data" / "rules_config.json"
 
 
 def make_segment_state():
@@ -32,14 +30,6 @@ def complete_route(state, segment_ids: list[str]) -> None:
 
 def complete_a_b_route(state) -> None:
     complete_route(state, ["A-B-1", "A-B-2"])
-
-
-def test_delivery_mode_matches_map_format() -> None:
-    segment_state = make_segment_state()
-    legacy_state = reset_game(map_path=LEGACY_MAP, config_path=LEGACY_CONFIG)
-
-    assert uses_route_segment_delivery(segment_state)
-    assert not uses_route_segment_delivery(legacy_state)
 
 
 def test_no_segment_delivery_before_route_completion() -> None:
@@ -184,27 +174,8 @@ def test_gray_target_remains_illegal_in_segment_mode() -> None:
     assert state.cities["B"].goods == ["red"]
 
 
-def test_legacy_delivery_execution_is_unchanged() -> None:
-    state = reset_game(map_path=LEGACY_MAP, config_path=LEGACY_CONFIG)
-    _, success, message = apply_action(state, Action.build_track("A-B"))
-    assert success, message
-    starting_score = state.player.score
-    starting_actions = state.actions_remaining
-
-    _, success, message = apply_action(
-        state,
-        Action.deliver_good("A", "B", "blue", path=["A", "B"]),
-    )
-
-    assert success, message
-    assert state.player.score == starting_score + 1
-    assert state.player.delivered_goods_count == 1
-    assert state.actions_remaining == starting_actions - 1
-
-
 def run_all() -> None:
     tests = [
-        test_delivery_mode_matches_map_format,
         test_no_segment_delivery_before_route_completion,
         test_completed_route_generates_legal_delivery,
         test_segment_delivery_removes_good_scores_and_places_ecm,
@@ -213,7 +184,6 @@ def run_all() -> None:
         test_incomplete_route_cannot_execute_delivery,
         test_multi_route_delivery_scores_total_segment_distance,
         test_gray_target_remains_illegal_in_segment_mode,
-        test_legacy_delivery_execution_is_unchanged,
     ]
     for test in tests:
         test()

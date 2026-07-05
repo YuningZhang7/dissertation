@@ -5,7 +5,7 @@ from railways.actions import Action
 from railways.game_state import GameState
 from railways.rules import (
     get_legal_operation_card_actions,
-    get_legal_build_actions,
+    get_legal_build_segment_actions,
     get_legal_deliveries,
     get_legal_upgrade_action,
     get_legal_urbanize_actions,
@@ -61,11 +61,14 @@ def _delivery_rank(action: Action) -> tuple[int, int, str, str, str]:
 
 
 def _ranked_simple_build_actions(state: GameState) -> list[Action]:
-    actions = get_legal_build_actions(state)
+    actions = get_legal_build_segment_actions(state)
     return sorted(
         actions,
         key=lambda action: (
-            state.edges[action.params["edge_id"]].cost,
-            str(action.params["edge_id"]),
+            sum(
+                state.segments[segment_id].cost
+                for segment_id in action.params["segment_ids"]
+            ),
+            tuple(action.params["segment_ids"]),
         ),
     )

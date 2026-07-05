@@ -5,7 +5,6 @@ from pathlib import Path
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-import plotly.graph_objects as go
 
 from railways.game_state import GameState
 from railways.rules import get_active_rail_baron_objective, get_route_segments
@@ -25,98 +24,6 @@ TRACK_STYLES = {
     "incomplete": {"color": "#f28e2b", "linewidth": 3.0, "linestyle": "-"},
     "completed": {"color": "#174a7e", "linewidth": 3.8, "linestyle": "-"},
 }
-
-
-def draw_map(state: GameState) -> go.Figure:
-    fig = go.Figure()
-
-    for edge in state.edges.values():
-        source = state.cities[edge.source]
-        target = state.cities[edge.target]
-        line_color = "#1f77b4" if edge.built else "#c7c7c7"
-        line_width = 5 if edge.built else 2
-        line_dash = "solid" if edge.built else "dash"
-        status = "built" if edge.built else "available"
-        owner = edge.owner or "none"
-
-        fig.add_trace(
-            go.Scatter(
-                x=[source.x, target.x],
-                y=[source.y, target.y],
-                mode="lines",
-                line=dict(color=line_color, width=line_width, dash=line_dash),
-                hoverinfo="text",
-                text=(
-                    f"{edge.id}<br>Cost: {edge.cost}<br>"
-                    f"Status: {status}<br>Owner: {owner}"
-                ),
-                showlegend=False,
-            )
-        )
-
-        fig.add_annotation(
-            x=(source.x + target.x) / 2,
-            y=(source.y + target.y) / 2,
-            text=str(edge.cost),
-            showarrow=False,
-            font=dict(size=11, color="#4a4a4a"),
-            bgcolor="rgba(255,255,255,0.75)",
-            borderpad=2,
-        )
-
-    city_ids = list(state.cities.keys())
-    cities = [state.cities[city_id] for city_id in city_ids]
-    hover_text = [
-        (
-            f"{city.name} ({city.id})<br>"
-            f"Demand: {city.demand_color or 'none'}<br>"
-            f"Urbanized: {'yes' if city.is_urbanized else 'no'}<br>"
-            f"Empty marker: {'yes' if city.empty_marker else 'no'}<br>"
-            f"Goods: {', '.join(city.goods) if city.goods else 'none'}"
-        )
-        for city in cities
-    ]
-    node_text = [
-        (
-            f"{city.id}<br>"
-            f"{'/'.join(city.goods) if city.goods else '-'}"
-            f"{' *' if city.empty_marker else ''}"
-        )
-        for city in cities
-    ]
-
-    fig.add_trace(
-        go.Scatter(
-            x=[city.x for city in cities],
-            y=[city.y for city in cities],
-            mode="markers+text",
-            text=node_text,
-            textposition="top center",
-            hovertext=hover_text,
-            hoverinfo="text",
-            marker=dict(
-                size=[38 if city.is_gray else 34 for city in cities],
-                color=[
-                    DEMAND_COLORS.get(city.demand_color, "#888888") for city in cities
-                ],
-                symbol=["square" if city.is_gray else "circle" for city in cities],
-                line=dict(color="#242424", width=2),
-            ),
-            showlegend=False,
-        )
-    )
-
-    fig.update_layout(
-        margin=dict(l=20, r=20, t=20, b=20),
-        height=620,
-        plot_bgcolor="#fbfbfb",
-        paper_bgcolor="#fbfbfb",
-        xaxis=dict(visible=False, range=[0.0, 0.82]),
-        yaxis=dict(visible=False, range=[0.08, 0.92]),
-        hovermode="closest",
-    )
-
-    return fig
 
 
 def render_game_state(
@@ -155,69 +62,55 @@ def render_game_state(
 
 
 def _draw_routes(axis, state: GameState, *, show_segments: bool) -> None:
-    if state.routes:
-        label_routes = len(state.routes) <= 20
-        for route in state.routes.values():
-            segments = get_route_segments(state, route.id)
-            if not segments:
-                continue
-            points = _interpolated_route_points(
-                state,
-                route.city_a,
-                route.city_b,
-                len(segments),
-            )
-            if show_segments:
-                for index, segment in enumerate(segments):
-                    status = _segment_status(segment)
-                    axis.plot(
-                        [points[index][0], points[index + 1][0]],
-                        [points[index][1], points[index + 1][1]],
-                        zorder=2,
-                        solid_capstyle="round",
-                        **TRACK_STYLES[status],
-                    )
-            else:
-                status = _route_status(route, segments)
+    label_routes = len(state.routes) <= 20
+    for route in state.routes.values():
+        segments = get_route_segments(state, route.id)
+        if not segments:
+            continue
+        points = _interpolated_route_points(
+            state,
+            route.city_a,
+            route.city_b,
+            len(segments),
+        )
+        if show_segments:
+            for index, segment in enumerate(segments):
+                status = _segment_status(segment)
                 axis.plot(
-                    [points[0][0], points[-1][0]],
-                    [points[0][1], points[-1][1]],
+                    [points[index][0], points[index + 1][0]],
+                    [points[index][1], points[index + 1][1]],
                     zorder=2,
                     solid_capstyle="round",
                     **TRACK_STYLES[status],
                 )
+        else:
+            status = _route_status(route, segments)
+            axis.plot(
+                [points[0][0], points[-1][0]],
+                [points[0][1], points[-1][1]],
+                zorder=2,
+                solid_capstyle="round",
+                **TRACK_STYLES[status],
+            )
 
-            if label_routes:
-                midpoint = points[len(points) // 2]
-                axis.text(
-                    midpoint[0],
-                    midpoint[1],
-                    route.id,
-                    fontsize=6,
-                    color="#5f6368",
-                    ha="center",
-                    va="center",
-                    zorder=3,
-                    bbox={
-                        "boxstyle": "round,pad=0.15",
-                        "facecolor": "#f7f8fa",
-                        "edgecolor": "none",
-                        "alpha": 0.82,
-                    },
-                )
-        return
-
-    for edge in state.edges.values():
-        source = state.cities[edge.source]
-        target = state.cities[edge.target]
-        status = "completed" if edge.built else "unbuilt"
-        axis.plot(
-            [source.x, target.x],
-            [source.y, target.y],
-            zorder=2,
-            solid_capstyle="round",
-            **TRACK_STYLES[status],
-        )
+        if label_routes:
+            midpoint = points[len(points) // 2]
+            axis.text(
+                midpoint[0],
+                midpoint[1],
+                route.id,
+                fontsize=6,
+                color="#5f6368",
+                ha="center",
+                va="center",
+                zorder=3,
+                bbox={
+                    "boxstyle": "round,pad=0.15",
+                    "facecolor": "#f7f8fa",
+                    "edgecolor": "none",
+                    "alpha": 0.82,
+                },
+            )
 
 
 def _draw_major_lines(axis, state: GameState) -> None:

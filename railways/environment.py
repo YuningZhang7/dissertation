@@ -7,7 +7,6 @@ from railways.game_state import GameState
 from railways.rules import (
     apply_action as apply_rule_action,
     get_legal_operation_card_actions,
-    get_legal_build_actions,
     get_legal_build_segment_actions,
     get_legal_deliveries,
     get_legal_upgrade_action,
@@ -16,8 +15,8 @@ from railways.rules import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_MAP_PATH = PROJECT_ROOT / "data" / "toy_map.json"
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "data" / "rules_config.json"
+DEFAULT_MAP_PATH = PROJECT_ROOT / "data" / "official_like_route_segment_map.json"
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
 DEFAULT_CARDS_PATH = PROJECT_ROOT / "data" / "cards_basic.json"
 
 
@@ -40,7 +39,6 @@ def get_legal_actions(state: GameState) -> list[Action]:
         return []
 
     actions: list[Action] = []
-    actions.extend(get_legal_build_actions(state))
     actions.extend(get_legal_build_segment_actions(state))
     actions.extend(get_legal_deliveries(state))
 

@@ -12,8 +12,6 @@ from railways.environment import apply_action, reset_game
 from railways.rules import (
     completed_route_path_segment_length,
     find_all_completed_route_delivery_paths,
-    find_all_legal_delivery_paths,
-    get_built_graph,
     get_completed_route_graph,
     validate_completed_route_delivery_path,
 )
@@ -21,8 +19,6 @@ from railways.rules import (
 
 ROUTE_MAP = PROJECT_ROOT / "data" / "mini_route_segment_map.json"
 OFFICIAL_CONFIG = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
-LEGACY_MAP = PROJECT_ROOT / "data" / "toy_map.json"
-LEGACY_CONFIG = PROJECT_ROOT / "data" / "rules_config.json"
 
 
 def make_segment_state():
@@ -127,19 +123,6 @@ def test_cleanup_keeps_incomplete_route_out_of_delivery_graph() -> None:
     assert not get_completed_route_graph(state).has_edge("B", "C")
 
 
-def test_legacy_edge_delivery_helpers_still_work() -> None:
-    state = reset_game(map_path=LEGACY_MAP, config_path=LEGACY_CONFIG)
-    _, success, message = apply_action(state, Action.build_track("A-B"))
-    assert success, message
-
-    graph = get_built_graph(state)
-    paths = find_all_legal_delivery_paths(state, "A", "B", "blue")
-
-    assert graph.has_edge("A", "B")
-    assert ["A", "B"] in paths
-    assert not get_completed_route_graph(state).has_edge("A", "B")
-
-
 def run_all() -> None:
     tests = [
         test_incomplete_segments_are_not_in_completed_route_graph,
@@ -149,7 +132,6 @@ def run_all() -> None:
         test_completed_route_validation_respects_locomotive_level,
         test_path_search_finds_completed_route_after_engine_upgrade,
         test_cleanup_keeps_incomplete_route_out_of_delivery_graph,
-        test_legacy_edge_delivery_helpers_still_work,
     ]
     for test in tests:
         test()
