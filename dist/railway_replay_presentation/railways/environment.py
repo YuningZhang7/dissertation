@@ -4,7 +4,6 @@ from pathlib import Path
 
 from railways.actions import Action
 from railways.game_state import GameState
-from railways.models import PHASE_ACTION
 from railways.rules import (
     apply_action as apply_rule_action,
     get_legal_operation_card_actions,
@@ -51,9 +50,6 @@ def get_legal_actions(state: GameState) -> list[Action]:
 
     actions.extend(get_legal_urbanize_actions(state))
     actions.extend(get_legal_operation_card_actions(state))
-
-    if state.phase == PHASE_ACTION and state.config.allow_voluntary_bonds:
-        actions.append(Action.issue_bond())
 
     actions.append(Action.pass_action())
     actions.append(Action.next_turn())

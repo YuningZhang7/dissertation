@@ -885,25 +885,6 @@ def get_legal_upgrade_action(state: GameState) -> Action | None:
     return None
 
 
-def issue_bond(state: GameState) -> tuple[bool, str]:
-    """Voluntarily issue one bond without consuming a player action."""
-    ok, message = _ensure_action_phase(state)
-    if not ok:
-        return False, message
-    if not state.config.allow_voluntary_bonds:
-        return (
-            False,
-            "Voluntary bond issue is not a legal player action when disabled.",
-        )
-
-    state.player.money += state.config.bond_value
-    state.player.bonds += 1
-    state.record(
-        f"Turn {state.turn}: issued one bond (+${state.config.bond_value})."
-    )
-    return True, "Issued one bond."
-
-
 def can_pay(state: GameState, amount: int) -> bool:
     return state.player.money >= amount
 
@@ -1189,8 +1170,6 @@ def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
             str(action.params["city_id"]),
             action.params.get("demand_color"),
         )
-    if action.action_type == "issue_bond":
-        return issue_bond(state)
     if action.action_type == "select_operation_card":
         return select_operation_card(state, str(action.params["card_id"]))
     if action.action_type == "pass":
@@ -1216,8 +1195,6 @@ def describe_action(action: Action | None) -> str:
         return "Upgrade engine"
     if action.action_type == "urbanize":
         return f"Urbanize city {action.params['city_id']}"
-    if action.action_type == "issue_bond":
-        return "Issue one bond"
     if action.action_type == "select_operation_card":
         return f"Select operation card {action.params.get('card_id', '')}"
     if action.action_type == "pass":

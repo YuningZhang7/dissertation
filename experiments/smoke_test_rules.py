@@ -71,6 +71,7 @@ def test_build_unaffordable_edge_fails_without_auto_bonds() -> None:
 
 def test_no_issue_bond_in_legal_actions() -> None:
     state = reset_game()
+    state.config = replace(state.config, allow_voluntary_bonds=True)
     actions = get_legal_actions(state)
     assert actions
     assert all(action.action_type != "issue_bond" for action in actions)
@@ -108,10 +109,7 @@ def test_apply_action_rejects_issue_bond_external_action() -> None:
     _, success, message = apply_action(state, Action("issue_bond"))
 
     assert not success
-    assert (
-        "not a legal player action" in message
-        or "financing is handled internally" in message
-    )
+    assert "Unknown action type" in message
     assert state.player.money == before_money
     assert state.player.bonds == before_bonds
     assert state.actions_remaining == before_actions

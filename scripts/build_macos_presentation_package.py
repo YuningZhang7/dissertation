@@ -95,6 +95,10 @@ route-segment construction, route completion, completed-route delivery, Major Li
 scoring, Rail Baron objectives, bonds, and final-score calculation. It does not
 claim to reproduce every official multiplayer rule.
 
+Bonds are not selectable actions. Financing certificates are issued automatically
+only when a payment shortfall occurs, and they continue to affect interest and the
+final score.
+
 ## Quick start on macOS
 
 1. Copy or unzip this directory onto the Mac.
@@ -195,8 +199,15 @@ def _reset_package_directory() -> None:
     if package.parent != expected_parent or package.name != "railway_replay_presentation":
         raise RuntimeError(f"Refusing to replace unexpected directory: {package}")
     if package.exists():
-        shutil.rmtree(package)
-    package.mkdir(parents=True)
+        try:
+            shutil.rmtree(package)
+        except PermissionError:
+            if any(package.iterdir()):
+                raise
+            # Windows may keep an empty working directory locked briefly after
+            # the presentation launcher exits. Reusing that verified empty
+            # directory is safe and keeps the build deterministic.
+    package.mkdir(parents=True, exist_ok=True)
 
 
 def _copy_runtime_source() -> None:

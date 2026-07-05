@@ -198,10 +198,11 @@ Implementation will proceed in small, testable increments:
 1. Add a separate official single-player configuration. It starts with zero
    money, permits voluntary and automatic bonds, uses three actions, supports
    locomotive levels through eight, and uses the empty-city-marker end rule.
-2. Restore `issue_bond` as a legal zero-action-cost decision. Each bond adds
-   five money, costs one interest at income, cannot be repaid, and subtracts one
-   final victory point. Automatic financing remains available for required
-   payments.
+2. Keep bond issuance internal to payment handling. When cash is insufficient and
+   automatic financing is enabled, issue only the financing certificates needed to
+   cover the shortfall. Financing is not a selectable player action; certificates
+   still cost one interest at income, cannot be repaid, and subtract one final
+   victory point.
 3. Restrict urbanisation to grey cities, charge the configured cost, assign a
    valid city colour, add two goods, and remove an existing empty-city marker.
 4. Tighten delivery validation before the map refactor: reject grey

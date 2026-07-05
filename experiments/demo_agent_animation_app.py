@@ -43,6 +43,8 @@ RULE_SUMMARY_TEXT = (
     "It focuses on route-segment construction, route completion, completed-route "
     "delivery, Major Line scoring, Rail Baron objectives, bonds, and final-score "
     "calculation. It is not intended to reproduce every official multiplayer rule."
+    " Bonds are issued automatically as financing certificates when a payment "
+    "shortfall occurs."
 )
 RULE_SUMMARY_BULLETS = (
     "route-segment construction",

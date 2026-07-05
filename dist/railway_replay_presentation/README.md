@@ -10,6 +10,10 @@ route-segment construction, route completion, completed-route delivery, Major Li
 scoring, Rail Baron objectives, bonds, and final-score calculation. It does not
 claim to reproduce every official multiplayer rule.
 
+Bonds are not selectable actions. Financing certificates are issued automatically
+only when a payment shortfall occurs, and they continue to affect interest and the
+final score.
+
 ## Quick start on macOS
 
 1. Copy or unzip this directory onto the Mac.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
 import sys
 
@@ -14,6 +15,7 @@ from railways.rules import deliver_good, get_legal_deliveries, run_income_phase,
 
 
 MAP_PATH = PROJECT_ROOT / "data" / "toy_map.json"
+ROUTE_MAP_PATH = PROJECT_ROOT / "data" / "official_like_route_segment_map.json"
 CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
 
 
@@ -32,34 +34,45 @@ def test_official_config_and_initial_state() -> None:
     assert state.config.end_condition == "empty_city_markers"
 
 
-def test_voluntary_bond_is_legal_and_does_not_consume_action() -> None:
-    state = make_official_state()
-    bond_action = Action.issue_bond()
+def test_bonds_are_not_selectable_actions() -> None:
+    state = reset_game(map_path=ROUTE_MAP_PATH, config_path=CONFIG_PATH)
+
+    assert not hasattr(Action, "issue_bond")
+    assert state.phase == PHASE_ACTION
+    assert state.player.money == 0
+    assert state.config.allow_voluntary_bonds is False
+    assert state.config.auto_issue_bonds_when_needed is True
+    assert all(
+        action.action_type != "issue_bond" for action in get_legal_actions(state)
+    )
+
+
+def test_paid_action_automatically_issues_minimum_financing() -> None:
+    state = reset_game(map_path=ROUTE_MAP_PATH, config_path=CONFIG_PATH)
+    legal_actions = get_legal_actions(state)
+    build_action = next(
+        action
+        for action in legal_actions
+        if action.action_type == "build_track_segments"
+    )
     starting_actions = state.actions_remaining
+    starting_bonds = state.player.bonds
+    total_cost = sum(
+        state.segments[segment_id].cost
+        for segment_id in build_action.params["segment_ids"]
+    )
+    expected_bonds = math.ceil(total_cost / state.config.bond_value)
 
-    assert bond_action.action_type == "issue_bond"
-    assert bond_action in get_legal_actions(state)
-
-    _, success, message = apply_action(state, bond_action)
+    _, success, message = apply_action(state, build_action)
 
     assert success, message
-    assert state.player.money == state.config.bond_value
-    assert state.player.bonds == 1
-    assert state.actions_remaining == starting_actions
-    assert state.phase == PHASE_ACTION
-    assert any("issued one bond" in entry for entry in state.action_history)
-
-
-def test_voluntary_bond_is_rejected_outside_action_phase() -> None:
-    state = make_official_state()
-    state.phase = PHASE_INCOME
-
-    _, success, message = apply_action(state, Action.issue_bond())
-
-    assert not success
-    assert "not action" in message
-    assert state.player.money == 0
-    assert state.player.bonds == 0
+    assert state.player.bonds == starting_bonds + expected_bonds
+    assert state.player.money == expected_bonds * state.config.bond_value - total_cost
+    assert state.actions_remaining == starting_actions - 1
+    assert any("automatically" in entry for entry in state.action_history)
+    assert all(
+        action.action_type != "issue_bond" for action in get_legal_actions(state)
+    )
 
 
 def test_income_interest_preserves_automatic_financing() -> None:
@@ -212,8 +225,8 @@ def test_legal_deliveries_require_player_owned_first_link() -> None:
 def run_all() -> None:
     tests = [
         test_official_config_and_initial_state,
-        test_voluntary_bond_is_legal_and_does_not_consume_action,
-        test_voluntary_bond_is_rejected_outside_action_phase,
+        test_bonds_are_not_selectable_actions,
+        test_paid_action_automatically_issues_minimum_financing,
         test_income_interest_preserves_automatic_financing,
         test_final_score_subtracts_bond_penalty,
         test_urbanize_rejects_non_gray_city,

@@ -87,13 +87,13 @@ class AdaptiveObjectiveGreedyAgent(BaseAgent):
         pass_action = _first_action(legal_actions, "pass")
         if pass_action is not None:
             return pass_action
-        non_bond = [
+        fallback_actions = [
             action
             for action in legal_actions
-            if action.action_type not in {"issue_bond", "next_turn"}
+            if action.action_type != "next_turn"
         ]
-        if non_bond:
-            return min(non_bond, key=_action_sort_key)
+        if fallback_actions:
+            return min(fallback_actions, key=_action_sort_key)
         next_turn = _first_action(legal_actions, "next_turn")
         return next_turn or min(legal_actions, key=_action_sort_key)
 

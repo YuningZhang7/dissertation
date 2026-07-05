@@ -75,12 +75,33 @@ def validate_layout() -> None:
 
 
 def validate_imports_and_registry() -> None:
-    code = (
-        "import json; "
-        "from agents.registry import list_agent_names; "
-        "from replay import replay_interface; "
-        "print(json.dumps(list_agent_names()))"
-    )
+    code = """
+import json
+from pathlib import Path
+from agents.registry import list_agent_names
+from railways.actions import Action
+from railways.environment import apply_action, get_legal_actions, reset_game
+from replay import replay_interface
+
+state = reset_game(
+    map_path=Path("data/official_like_route_segment_map.json"),
+    config_path=Path("data/official_single_player_rules_config.json"),
+)
+legal_actions = get_legal_actions(state)
+assert not hasattr(Action, "issue_bond")
+assert all(action.action_type != "issue_bond" for action in legal_actions)
+build_action = next(
+    action for action in legal_actions
+    if action.action_type == "build_track_segments"
+)
+starting_actions = state.actions_remaining
+_, success, message = apply_action(state, build_action)
+assert success, message
+assert state.player.bonds > 0
+assert state.actions_remaining == starting_actions - 1
+assert any("automatically" in entry for entry in state.action_history)
+print(json.dumps(list_agent_names()))
+"""
     completed = subprocess.run(
         [sys.executable, "-c", code],
         cwd=PACKAGE_ROOT,
@@ -90,6 +111,12 @@ def validate_imports_and_registry() -> None:
         text=True,
     )
     assert json.loads(completed.stdout.strip()) == EXPECTED_AGENTS
+
+    actions_source = (PACKAGE_ROOT / "railways" / "actions.py").read_text(
+        encoding="utf-8"
+    )
+    assert "def issue_bond" not in actions_source
+    assert "Action.issue_bond" not in actions_source
 
 
 def validate_static_replay() -> None:
