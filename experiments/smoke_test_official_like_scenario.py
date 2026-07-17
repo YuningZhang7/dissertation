@@ -9,7 +9,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from railways.actions import Action
 from railways.environment import apply_action, get_legal_actions, reset_game
-from railways.rules import get_route_segments, uses_route_segment_delivery
+from railways.rules import get_route_segments
 
 
 OFFICIAL_LIKE_MAP = PROJECT_ROOT / "data" / "official_like_route_segment_map.json"
@@ -36,7 +36,6 @@ def test_map_loads_with_medium_route_segment_structure() -> None:
     assert len(state.segments) == 38
     assert len(state.major_lines) == 4
     assert state.edges == {}
-    assert uses_route_segment_delivery(state)
 
 
 def test_city_palette_goods_and_gray_cities_are_valid() -> None:

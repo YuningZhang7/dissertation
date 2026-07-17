@@ -1,0 +1,901 @@
+from __future__ import annotations
+
+import math
+import random
+
+import networkx as nx
+
+from railways.actions import Action
+from railways.cards import (
+    apply_card_on_select,
+    get_legal_operation_card_actions,
+    update_cards_after_build,
+    update_cards_after_delivery,
+)
+from railways.game_state import GameState
+from railways.models import (
+    PHASE_ACTION,
+    PHASE_GAME_OVER,
+    PHASE_INCOME,
+    RailBaronObjective,
+    TrackSegment,
+)
+from railways.scoring import compute_delivery_score, compute_income
+
+
+PLAYER_ID = "player"
+
+
+def start_turn(state: GameState) -> None:
+    if state.phase == PHASE_GAME_OVER:
+        return
+    state.phase = PHASE_ACTION
+    state.actions_remaining = state.config.actions_per_turn
+    state.record(f"Turn {state.turn}: action phase started.")
+
+
+def consume_action(state: GameState) -> None:
+    if state.phase != PHASE_ACTION:
+        return
+    state.actions_remaining = max(0, state.actions_remaining - 1)
+    if state.actions_remaining == 0:
+        run_income_phase(state)
+
+
+def run_income_phase(state: GameState) -> None:
+    if state.phase == PHASE_GAME_OVER:
+        return
+
+    state.phase = PHASE_INCOME
+    income = compute_income(state)
+    interest_due = state.player.bonds * state.config.bond_interest
+    state.player.money += income
+
+    if interest_due:
+        paid, payment_message = pay_money(
+            state,
+            interest_due,
+            allow_auto_bonds=state.config.auto_issue_bonds_when_needed,
+        )
+        if not paid:
+            state.player.money -= interest_due
+            payment_message = (
+                f"Bond interest ${interest_due} exceeded cash; "
+                f"cash balance is now ${state.player.money}."
+            )
+    else:
+        payment_message = "No bond interest due."
+
+    state.record(
+        (
+            f"Turn {state.turn}: income phase, income +${income}, "
+            f"interest -${interest_due}. {payment_message}"
+        )
+    )
+    cleanup_incomplete_track_segments(state)
+    check_end_condition(state)
+    advance_turn(state)
+
+
+def advance_turn(state: GameState) -> None:
+    if state.phase == PHASE_GAME_OVER:
+        return
+
+    if state.end_triggered:
+        if state.extra_turns_remaining <= 0:
+            state.phase = PHASE_GAME_OVER
+            state.actions_remaining = 0
+            state.record(f"Game over after turn {state.turn}.")
+            return
+        state.extra_turns_remaining -= 1
+
+    state.turn += 1
+    start_turn(state)
+
+
+def next_turn(state: GameState) -> tuple[bool, str]:
+    if state.phase == PHASE_GAME_OVER:
+        return False, "Game is already over."
+    if state.phase == PHASE_ACTION:
+        state.record(f"Turn {state.turn}: ended turn early.")
+        state.actions_remaining = 0
+        run_income_phase(state)
+        return True, "Ended the current turn and ran income."
+    if state.phase == PHASE_INCOME:
+        advance_turn(state)
+        return True, "Advanced from income phase."
+    return False, f"Cannot advance from phase {state.phase}."
+
+
+def get_segments_for_ids(
+    state: GameState,
+    segment_ids: list[str],
+) -> list[TrackSegment] | None:
+    segments: list[TrackSegment] = []
+    for segment_id in segment_ids:
+        segment = state.segments.get(segment_id)
+        if segment is None:
+            return None
+        segments.append(segment)
+    return segments
+
+
+def get_route_segments(state: GameState, route_id: str) -> list[TrackSegment]:
+    route = state.routes.get(route_id)
+    if route is None:
+        return []
+    segments = [
+        state.segments[segment_id]
+        for segment_id in route.segment_ids
+        if segment_id in state.segments
+    ]
+    return sorted(segments, key=lambda segment: segment.index)
+
+
+def is_route_completed(state: GameState, route_id: str) -> bool:
+    route_segments = get_route_segments(state, route_id)
+    return bool(route_segments) and all(segment.built for segment in route_segments)
+
+
+def update_route_completion(state: GameState, route_id: str) -> None:
+    route = state.routes.get(route_id)
+    if route is None or route.completed or not is_route_completed(state, route_id):
+        return
+
+    route.completed = True
+    for segment in get_route_segments(state, route_id):
+        segment.completed = True
+    state.record(f"Turn {state.turn}: completed route {route_id}.")
+
+
+def get_built_segment_endpoints_for_route(
+    state: GameState,
+    route_id: str,
+) -> set[str]:
+    endpoints: set[str] = set()
+    for segment in get_route_segments(state, route_id):
+        if segment.built and not segment.completed and segment.owner == PLAYER_ID:
+            endpoints.add(segment.source_node)
+            endpoints.add(segment.target_node)
+    return endpoints
+
+
+def build_segment_chain_touches_valid_endpoint(
+    state: GameState,
+    segments: list[TrackSegment],
+) -> bool:
+    if not segments:
+        return False
+
+    route = state.routes.get(segments[0].route_id)
+    if route is None:
+        return False
+
+    chain_endpoints = {
+        segments[0].source_node,
+        segments[-1].target_node,
+    }
+    valid_endpoints = {route.city_a, route.city_b}
+    valid_endpoints.update(get_built_segment_endpoints_for_route(state, route.id))
+    return bool(chain_endpoints & valid_endpoints)
+
+
+def validate_build_segment_chain(
+    state: GameState,
+    segment_ids: list[str],
+) -> tuple[bool, str]:
+    if not segment_ids:
+        return False, "Build segment action requires at least one segment."
+    if len(segment_ids) > 4:
+        return False, "A build action can place at most 4 track segments."
+
+    segments = get_segments_for_ids(state, segment_ids)
+    if segments is None:
+        return False, "One or more track segments do not exist."
+    if any(segment.built for segment in segments):
+        return False, "Cannot build an already built track segment."
+
+    route_ids = {segment.route_id for segment in segments}
+    if len(route_ids) != 1:
+        return (
+            False,
+            "All track segments in one build action must belong to the same route.",
+        )
+
+    indices = [segment.index for segment in segments]
+    if indices != sorted(indices):
+        return False, "Track segments must be selected in increasing route order."
+    expected_indices = list(range(indices[0], indices[0] + len(indices)))
+    if indices != expected_indices:
+        return False, "Track segments must be consecutive."
+    if not build_segment_chain_touches_valid_endpoint(state, segments):
+        return (
+            False,
+            (
+                "Track segment chain must start from a city or an existing "
+                "incomplete track endpoint."
+            ),
+        )
+
+    return True, "Track segment chain is valid."
+
+
+def build_track_segments(
+    state: GameState,
+    segment_ids: list[str],
+) -> tuple[bool, str]:
+    ok, message = _ensure_action_phase(state)
+    if not ok:
+        return False, message
+
+    valid, message = validate_build_segment_chain(state, segment_ids)
+    if not valid:
+        return False, message
+
+    segments = [state.segments[segment_id] for segment_id in segment_ids]
+    total_cost = sum(segment.cost for segment in segments)
+    paid, payment_message = pay_money(
+        state,
+        total_cost,
+        allow_auto_bonds=state.config.auto_issue_bonds_when_needed,
+    )
+    if not paid:
+        return False, f"Cannot build track segments: {payment_message}"
+
+    for segment in segments:
+        segment.built = True
+        segment.owner = PLAYER_ID
+
+    state.record(
+        (
+            f"Turn {state.turn}: built track segments "
+            f"{','.join(segment_ids)} for ${total_cost}. {payment_message}"
+        )
+    )
+    update_route_completion(state, segments[0].route_id)
+    check_major_lines(state)
+    check_rail_baron_objective(state)
+    update_cards_after_build(state)
+    consume_action(state)
+    return True, f"Built {len(segment_ids)} track segment(s)."
+
+
+def cleanup_incomplete_track_segments(state: GameState) -> int:
+    removed = 0
+    for segment in state.segments.values():
+        if segment.built and not segment.completed:
+            segment.built = False
+            segment.owner = None
+            removed += 1
+    if removed:
+        state.record(
+            (
+                f"Turn {state.turn}: removed {removed} incomplete track "
+                "segment(s) during income."
+            )
+        )
+    return removed
+
+
+def get_legal_build_segment_actions(state: GameState) -> list[Action]:
+    if state.phase != PHASE_ACTION or not state.segments:
+        return []
+
+    actions: list[Action] = []
+    for route in state.routes.values():
+        ordered_segments = [
+            state.segments[segment_id]
+            for segment_id in route.segment_ids
+            if segment_id in state.segments
+        ]
+        ordered_segments.sort(key=lambda segment: segment.index)
+
+        for start in range(len(ordered_segments)):
+            for length in range(1, 5):
+                chain = ordered_segments[start : start + length]
+                if len(chain) != length:
+                    continue
+                segment_ids = [segment.id for segment in chain]
+                valid, _ = validate_build_segment_chain(state, segment_ids)
+                if not valid:
+                    continue
+                total_cost = sum(segment.cost for segment in chain)
+                if (
+                    can_pay(state, total_cost)
+                    or state.config.auto_issue_bonds_when_needed
+                ):
+                    actions.append(Action.build_track_segments(segment_ids))
+    return actions
+
+
+def deliver_good(
+    state: GameState,
+    source_city_id: str,
+    target_city_id: str,
+    good_color: str,
+    path: list[str] | None = None,
+) -> tuple[bool, str]:
+    ok, message = _ensure_action_phase(state)
+    if not ok:
+        return False, message
+
+    if source_city_id == target_city_id:
+        return False, "Source and target cities must be different."
+
+    source_city = state.get_city(source_city_id)
+    target_city = state.get_city(target_city_id)
+    if source_city is None or target_city is None:
+        return False, "Source or target city does not exist."
+    if target_city.is_gray:
+        return False, "Goods cannot be delivered to a gray city."
+    if good_color not in source_city.goods:
+        return False, f"{source_city.name} does not contain a {good_color} good."
+    if target_city.demand_color != good_color:
+        return False, f"{target_city.name} does not demand {good_color}."
+
+    selected_path = path
+    if selected_path is None:
+        paths = find_all_completed_route_delivery_paths(
+            state,
+            source_city_id,
+            target_city_id,
+            good_color,
+        )
+        selected_path = paths[0] if paths else None
+    if selected_path is None:
+        return False, "No completed route connects the source and target."
+
+    valid_path, path_message = validate_completed_route_delivery_path(
+        state,
+        selected_path,
+        source_city_id,
+        target_city_id,
+        good_color,
+    )
+    if not valid_path:
+        return False, path_message
+    distance = completed_route_path_segment_length(state, selected_path)
+
+    delivery_score = compute_delivery_score(distance, state.config)
+    source_city.goods.remove(good_color)
+    update_empty_city_marker(state, source_city_id)
+    check_end_condition(state)
+    state.player.score += delivery_score
+    state.player.delivered_goods_count += 1
+    state.record(
+        (
+            f"Turn {state.turn}: delivered {good_color} from {source_city_id} "
+            f"to {target_city_id} via {'-'.join(selected_path)} (+{delivery_score})."
+        )
+    )
+    update_cards_after_delivery(
+        state,
+        source_city_id,
+        target_city_id,
+        good_color,
+    )
+    consume_action(state)
+    return True, f"Delivered {good_color} from {source_city_id} to {target_city_id}."
+
+
+def get_completed_route_graph(state: GameState) -> nx.Graph:
+    graph = nx.Graph()
+    for city_id, city in state.cities.items():
+        graph.add_node(city_id, city=city)
+
+    for route in state.routes.values():
+        if not route.completed:
+            continue
+
+        route_segments = get_route_segments(state, route.id)
+        if not route_segments:
+            continue
+        if not all(segment.completed and segment.built for segment in route_segments):
+            continue
+        if not all(segment.owner == PLAYER_ID for segment in route_segments):
+            continue
+
+        graph.add_edge(
+            route.city_a,
+            route.city_b,
+            route_id=route.id,
+            segment_ids=[segment.id for segment in route_segments],
+            segment_count=len(route_segments),
+        )
+
+    return graph
+
+
+def completed_route_path_segment_length(
+    state: GameState,
+    path: list[str],
+) -> int:
+    graph = get_completed_route_graph(state)
+    total = 0
+    for first, second in zip(path, path[1:]):
+        if not graph.has_edge(first, second):
+            return 10**9
+        total += int(graph[first][second].get("segment_count", 1))
+    return total
+
+
+def validate_completed_route_delivery_path(
+    state: GameState,
+    path: list[str],
+    source: str,
+    target: str,
+    good_color: str,
+) -> tuple[bool, str]:
+    if not path:
+        return False, "Delivery path is empty."
+    if path[0] != source or path[-1] != target:
+        return False, "Delivery path must start at source and end at target."
+
+    length = completed_route_path_segment_length(state, path)
+    if length <= 0 or length >= 10**9:
+        return False, "Delivery path must use completed route segments."
+    if length > state.player.locomotive_level:
+        return (
+            False,
+            (
+                f"Route segment length {length} exceeds locomotive level "
+                f"{state.player.locomotive_level}."
+            ),
+        )
+
+    graph = get_completed_route_graph(state)
+    for first, second in zip(path, path[1:]):
+        if not graph.has_edge(first, second):
+            return False, f"Completed route {first}-{second} does not exist."
+
+    if path_skips_matching_city(state, path, good_color):
+        return False, "Delivery path skips an intermediate city demanding that color."
+
+    return True, "Completed route delivery path is valid."
+
+
+def find_all_completed_route_delivery_paths(
+    state: GameState,
+    source: str,
+    target: str,
+    good_color: str,
+) -> list[list[str]]:
+    if source == target:
+        return []
+
+    graph = get_completed_route_graph(state)
+    if source not in graph or target not in graph:
+        return []
+
+    paths: list[list[str]] = []
+    # Every completed-route hop uses at least one track segment. Paths with
+    # more hops than the locomotive level can never pass delivery validation,
+    # so pruning them here preserves behaviour and avoids exponential work on
+    # larger route graphs.
+    route_hop_cutoff = max(1, state.player.locomotive_level)
+    try:
+        candidate_paths = nx.all_simple_paths(
+            graph,
+            source=source,
+            target=target,
+            cutoff=route_hop_cutoff,
+        )
+    except (nx.NetworkXNoPath, nx.NodeNotFound):
+        return []
+
+    for candidate_path in candidate_paths:
+        candidate_path = list(candidate_path)
+        valid, _ = validate_completed_route_delivery_path(
+            state,
+            candidate_path,
+            source,
+            target,
+            good_color,
+        )
+        if valid:
+            paths.append(candidate_path)
+
+    paths.sort(
+        key=lambda route: (
+            completed_route_path_segment_length(state, route),
+            route,
+        )
+    )
+    return paths
+
+
+def path_skips_matching_city(
+    state: GameState,
+    path: list[str],
+    good_color: str,
+) -> bool:
+    for city_id in path[1:-1]:
+        city = state.cities[city_id]
+        if city.demand_color == good_color:
+            return True
+    return False
+
+
+def get_legal_completed_route_deliveries(state: GameState) -> list[Action]:
+    if state.phase != PHASE_ACTION:
+        return []
+
+    actions: list[Action] = []
+    for source_id, source_city in state.cities.items():
+        for good_color in sorted(set(source_city.goods)):
+            for target_id, target_city in state.cities.items():
+                if source_id == target_id:
+                    continue
+                if target_city.is_gray:
+                    continue
+                if target_city.demand_color != good_color:
+                    continue
+
+                paths = find_all_completed_route_delivery_paths(
+                    state,
+                    source_id,
+                    target_id,
+                    good_color,
+                )
+                for path in paths:
+                    distance = completed_route_path_segment_length(state, path)
+                    actions.append(
+                        Action(
+                            "deliver_good",
+                            {
+                                "source": source_id,
+                                "target": target_id,
+                                "good_color": good_color,
+                                "path": path,
+                                "path_length": distance,
+                                "score": compute_delivery_score(
+                                    distance,
+                                    state.config,
+                                ),
+                            },
+                        )
+                    )
+    return actions
+
+
+def get_legal_deliveries(state: GameState) -> list[Action]:
+    return get_legal_completed_route_deliveries(state)
+
+
+def upgrade_engine(state: GameState) -> tuple[bool, str]:
+    ok, message = _ensure_action_phase(state)
+    if not ok:
+        return False, message
+
+    next_level = state.player.locomotive_level + 1
+    if next_level > state.config.max_locomotive_level:
+        return False, "Locomotive is already at maximum level."
+
+    cost = get_engine_upgrade_cost(state, next_level)
+    paid, payment_message = pay_money(
+        state,
+        cost,
+        allow_auto_bonds=state.config.auto_issue_bonds_when_needed,
+    )
+    if not paid:
+        return False, f"Cannot upgrade engine: {payment_message}"
+
+    state.player.locomotive_level = next_level
+    state.record(
+        f"Turn {state.turn}: upgraded engine to level {next_level} for ${cost}."
+    )
+    consume_action(state)
+    return True, f"Upgraded engine to level {next_level}."
+
+
+def get_engine_upgrade_cost(state: GameState, next_level: int) -> int:
+    return int(
+        state.config.engine_upgrade_costs.get(
+            str(next_level),
+            next_level * 5,
+        )
+    )
+
+
+def get_legal_upgrade_action(state: GameState) -> Action | None:
+    if state.phase != PHASE_ACTION:
+        return None
+    next_level = state.player.locomotive_level + 1
+    if next_level > state.config.max_locomotive_level:
+        return None
+    cost = get_engine_upgrade_cost(state, next_level)
+    if can_pay(state, cost) or state.config.auto_issue_bonds_when_needed:
+        return Action("upgrade_engine", {"next_level": next_level, "cost": cost})
+    return None
+
+
+def can_pay(state: GameState, amount: int) -> bool:
+    return state.player.money >= amount
+
+
+def pay_money(
+    state: GameState,
+    amount: int,
+    allow_auto_bonds: bool = False,
+) -> tuple[bool, str]:
+    if amount <= 0:
+        return True, "No payment required."
+
+    issued_certificates = 0
+    if state.player.money < amount and allow_auto_bonds:
+        shortfall = amount - state.player.money
+        bonds_needed = math.ceil(shortfall / state.config.bond_value)
+        financing_value = bonds_needed * state.config.bond_value
+        state.player.money += financing_value
+        state.player.bonds += bonds_needed
+        issued_certificates = bonds_needed
+        state.record(
+            (
+                f"Turn {state.turn}: issued {bonds_needed} financing "
+                f"certificate(s) automatically to cover payment shortfall "
+                f"(+${financing_value})."
+            )
+        )
+
+    if state.player.money < amount:
+        return False, f"Need ${amount}, but only ${state.player.money} is available."
+
+    state.player.money -= amount
+    if issued_certificates:
+        return (
+            True,
+            (
+                f"Issued {issued_certificates} financing certificate(s) "
+                f"automatically. Paid ${amount}."
+            ),
+        )
+    return True, f"Paid ${amount}."
+
+
+def urbanize(
+    state: GameState,
+    city_id: str,
+    demand_color: str | None = None,
+) -> tuple[bool, str]:
+    ok, message = _ensure_action_phase(state)
+    if not ok:
+        return False, message
+
+    city = state.get_city(city_id)
+    if city is None:
+        return False, f"City {city_id} does not exist."
+    if not city.is_gray:
+        return False, f"{city.name} is not a gray city."
+
+    chosen_color = demand_color or random.choice(state.config.allowed_good_colors)
+    if chosen_color not in state.config.allowed_good_colors:
+        return False, f"{chosen_color} is not an allowed goods color."
+
+    paid, payment_message = pay_money(
+        state,
+        state.config.urbanize_cost,
+        allow_auto_bonds=state.config.auto_issue_bonds_when_needed,
+    )
+    if not paid:
+        return False, f"Cannot urbanize {city.name}: {payment_message}"
+
+    city.demand_color = chosen_color
+    city.is_gray = False
+    city.is_urbanized = True
+    city.empty_marker = False
+    for _ in range(state.config.new_goods_on_urbanize):
+        city.goods.append(random.choice(state.config.allowed_good_colors))
+
+    state.record(
+        (
+            f"Turn {state.turn}: urbanized {city.name} with {chosen_color} demand "
+            f"for ${state.config.urbanize_cost}. {payment_message}"
+        )
+    )
+    consume_action(state)
+    return True, f"Urbanized {city.name}."
+
+
+def get_legal_urbanize_actions(state: GameState) -> list[Action]:
+    if state.phase != PHASE_ACTION:
+        return []
+    if not (
+        can_pay(state, state.config.urbanize_cost)
+        or state.config.auto_issue_bonds_when_needed
+    ):
+        return []
+    return [
+        Action.urbanize(city.id)
+        for city in state.cities.values()
+        if city.is_gray
+    ]
+
+
+def pass_action(state: GameState) -> tuple[bool, str]:
+    ok, message = _ensure_action_phase(state)
+    if not ok:
+        return False, message
+    state.record(f"Turn {state.turn}: passed one action.")
+    consume_action(state)
+    return True, "Passed one action."
+
+
+def select_operation_card(state: GameState, card_id: str) -> tuple[bool, str]:
+    ok, message = _ensure_action_phase(state)
+    if not ok:
+        return False, message
+    selected, select_message = apply_card_on_select(state, card_id)
+    if not selected:
+        return False, select_message
+    consume_action(state)
+    return True, select_message
+
+
+def update_empty_city_marker(state: GameState, city_id: str) -> None:
+    city = state.get_city(city_id)
+    if city is None:
+        return
+    if not city.goods and not city.empty_marker:
+        city.empty_marker = True
+        state.record(f"Turn {state.turn}: {city.name} received an empty city marker.")
+
+
+def count_empty_city_markers(state: GameState) -> int:
+    return sum(1 for city in state.cities.values() if city.empty_marker)
+
+
+def check_end_condition(state: GameState) -> None:
+    if state.end_triggered:
+        return
+
+    triggered = False
+    if state.config.end_condition == "fixed_turns":
+        triggered = state.turn >= state.config.max_turns
+    elif state.config.end_condition == "empty_city_markers":
+        triggered = count_empty_city_markers(state) >= state.config.empty_city_marker_limit
+
+    if not triggered:
+        return
+
+    state.end_triggered = True
+    state.extra_turns_remaining = (
+        1 if state.config.extra_turn_after_end_trigger else 0
+    )
+    state.record(
+        (
+            f"Turn {state.turn}: end condition triggered "
+            f"({state.config.end_condition})."
+        )
+    )
+
+
+def is_terminal(state: GameState) -> bool:
+    return state.phase == PHASE_GAME_OVER
+
+
+def check_completed_route_major_lines(state: GameState) -> None:
+    graph = get_completed_route_graph(state)
+
+    for line in state.major_lines.values():
+        if line.claimed:
+            continue
+        if line.source not in graph or line.target not in graph:
+            continue
+
+        try:
+            nx.shortest_path(graph, source=line.source, target=line.target)
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            continue
+
+        line.claimed = True
+        state.player.major_line_bonus += line.bonus_points
+        state.record(
+            (
+                f"Turn {state.turn}: claimed major line {line.id} "
+                f"(+{line.bonus_points})."
+            )
+        )
+
+
+def check_major_lines(state: GameState) -> None:
+    check_completed_route_major_lines(state)
+
+
+def get_active_rail_baron_objective(
+    state: GameState,
+) -> RailBaronObjective | None:
+    objective_id = state.active_rail_baron_objective_id
+    if objective_id is None:
+        return None
+    return state.rail_baron_objectives.get(objective_id)
+
+
+def check_rail_baron_objective(state: GameState) -> bool:
+    objective = get_active_rail_baron_objective(state)
+    if objective is None or objective.claimed:
+        return False
+
+    graph = get_completed_route_graph(state)
+    if objective.source not in graph or objective.target not in graph:
+        return False
+    try:
+        connected = nx.has_path(graph, objective.source, objective.target)
+    except (nx.NetworkXError, nx.NodeNotFound):
+        return False
+    if not connected:
+        return False
+
+    objective.claimed = True
+    state.player.rail_baron_bonus += objective.bonus_points
+    state.player.rail_baron_objectives_completed += 1
+    state.record(
+        (
+            f"Turn {state.turn}: claimed Rail Baron objective {objective.id} "
+            f"(+{objective.bonus_points})."
+        )
+    )
+    return True
+
+
+def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
+    if action.action_type == "build_track_segments":
+        return build_track_segments(
+            state,
+            list(action.params["segment_ids"]),
+        )
+    if action.action_type == "deliver_good":
+        return deliver_good(
+            state,
+            str(action.params["source"]),
+            str(action.params["target"]),
+            str(action.params["good_color"]),
+            action.params.get("path"),
+        )
+    if action.action_type == "upgrade_engine":
+        return upgrade_engine(state)
+    if action.action_type == "urbanize":
+        return urbanize(
+            state,
+            str(action.params["city_id"]),
+            action.params.get("demand_color"),
+        )
+    if action.action_type == "select_operation_card":
+        return select_operation_card(state, str(action.params["card_id"]))
+    if action.action_type == "pass":
+        return pass_action(state)
+    if action.action_type == "next_turn":
+        return next_turn(state)
+    return False, f"Unknown action type: {action.action_type}."
+
+
+def describe_action(action: Action | None) -> str:
+    if action is None:
+        return "No action."
+    if action.action_type == "build_track_segments":
+        return f"Build track segments {action.params['segment_ids']}"
+    if action.action_type == "deliver_good":
+        return (
+            f"Deliver {action.params['good_color']} from "
+            f"{action.params['source']} to {action.params['target']}"
+        )
+    if action.action_type == "upgrade_engine":
+        return "Upgrade engine"
+    if action.action_type == "urbanize":
+        return f"Urbanize city {action.params['city_id']}"
+    if action.action_type == "select_operation_card":
+        return f"Select operation card {action.params.get('card_id', '')}"
+    if action.action_type == "pass":
+        return "Pass"
+    if action.action_type == "next_turn":
+        return "End turn"
+    return str(action)
+
+
+def _ensure_action_phase(state: GameState) -> tuple[bool, str]:
+    if state.phase == PHASE_GAME_OVER:
+        return False, "Game is over."
+    if state.phase != PHASE_ACTION:
+        return False, f"Current phase is {state.phase}, not action."
+    if state.actions_remaining <= 0:
+        return False, "No actions remaining this turn."
+    return True, "Action phase is active."

@@ -21,6 +21,33 @@ from experiments.animate_agent_episode import (
 
 MAP_OPTIONS = tuple(MAP_PATHS)
 FRAME_MODE_OPTIONS = ("all", "events")
+APP_TITLE = "Agent Replay Interface"
+APP_DESCRIPTION = (
+    "This interface uses the route-segment official-style simulator. Track "
+    "construction is performed at segment level, deliveries require completed "
+    "routes, and Major Line / Rail Baron objectives are evaluated on the "
+    "completed-route network."
+)
+RECOMMENDED_AGENT = "objective_aware_greedy"
+PRESENTATION_AGENT_OPTIONS = (
+    "random",
+    "greedy_delivery",
+    "greedy_expansion",
+    "objective_aware_greedy",
+    "urbanization_aware_lookahead_greedy",
+)
+DEFAULT_MAP = "official_like"
+DEFAULT_FRAME_MODE = "events"
+MAP_SELECTION_CAPTION = (
+    "official_like is compact and easier to inspect; expanded_official_style "
+    "provides a larger route-segment network with more objectives."
+)
+AGENT_SELECTION_CAPTION = (
+    "Select one of the presentation agents. objective_aware_greedy is the "
+    "recommended heuristic; random, greedy_delivery, and greedy_expansion are "
+    "included as simple baselines. urbanization_aware_lookahead_greedy is "
+    "available for delayed-reward urbanization experiments."
+)
 
 
 def available_map_names() -> list[str]:
@@ -28,7 +55,12 @@ def available_map_names() -> list[str]:
 
 
 def available_agent_names() -> list[str]:
-    return list_agent_names()
+    registered_agents = set(list_agent_names())
+    return [
+        agent_name
+        for agent_name in PRESENTATION_AGENT_OPTIONS
+        if agent_name in registered_agents
+    ]
 
 
 def _resolve_custom_map_path(value: str) -> Path | None:
@@ -101,38 +133,39 @@ def _render_result(run_dir: Path, summary: dict[str, Any]) -> None:
 
 def main() -> None:
     st.set_page_config(
-        page_title="Agent Animation Meeting Demo",
+        page_title=APP_TITLE,
         layout="wide",
     )
-    st.title("Agent Animation Meeting Demo")
-    st.caption(
-        "Choose a map and registered agent, then generate an automatic episode "
-        "replay. This launcher has no manual gameplay controls."
-    )
+    st.title(APP_TITLE)
+    st.caption(APP_DESCRIPTION)
 
     selector_col, agent_col = st.columns(2)
     with selector_col:
-        map_name = st.selectbox("Map", options=available_map_names())
+        map_options = available_map_names()
+        map_name = st.selectbox(
+            "Map", options=map_options, index=map_options.index(DEFAULT_MAP)
+        )
+        st.caption(MAP_SELECTION_CAPTION)
         custom_map_value = st.text_input(
             "Custom map path (optional)",
             help="When supplied, this JSON map overrides the selected built-in map.",
         )
     with agent_col:
         agent_options = available_agent_names()
-        recommended_agent = "objective_aware_greedy"
-        recommended_index = (
-            agent_options.index(recommended_agent)
-            if recommended_agent in agent_options
+        default_agent_index = (
+            agent_options.index(RECOMMENDED_AGENT)
+            if RECOMMENDED_AGENT in agent_options
             else 0
         )
         agent_name = st.selectbox(
-            "Agent", options=agent_options, index=recommended_index
+            "Agent", options=agent_options, index=default_agent_index
         )
-        st.caption(
-            "objective_aware_greedy is currently recommended from development "
-            "benchmarks; adaptive_objective_greedy remains experimental."
+        st.caption(AGENT_SELECTION_CAPTION)
+        frame_mode = st.selectbox(
+            "Frame mode",
+            options=FRAME_MODE_OPTIONS,
+            index=FRAME_MODE_OPTIONS.index(DEFAULT_FRAME_MODE),
         )
-        frame_mode = st.selectbox("Frame mode", options=FRAME_MODE_OPTIONS)
 
     settings = st.columns(3)
     seed = int(settings[0].number_input("Seed", value=42, step=1))

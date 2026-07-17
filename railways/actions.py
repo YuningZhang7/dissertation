@@ -9,9 +9,8 @@ class Action:
     action_type: str
     params: dict[str, Any] = field(default_factory=dict)
 
-    @classmethod
-    def build_track(cls, edge_id: str) -> "Action":
-        return cls("build_track", {"edge_id": edge_id})
+    def __hash__(self) -> int:
+        return hash((self.action_type, _hashable_value(self.params)))
 
     @classmethod
     def build_track_segments(cls, segment_ids: list[str]) -> "Action":
@@ -43,10 +42,6 @@ class Action:
         return cls("urbanize", {"city_id": city_id, "demand_color": demand_color})
 
     @classmethod
-    def issue_bond(cls) -> "Action":
-        return cls("issue_bond")
-
-    @classmethod
     def select_operation_card(cls, card_id: str) -> "Action":
         return cls("select_operation_card", {"card_id": card_id})
 
@@ -57,3 +52,16 @@ class Action:
     @classmethod
     def next_turn(cls) -> "Action":
         return cls("next_turn")
+
+
+def _hashable_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return tuple(
+            (key, _hashable_value(item))
+            for key, item in sorted(value.items(), key=lambda item: str(item[0]))
+        )
+    if isinstance(value, list | tuple):
+        return tuple(_hashable_value(item) for item in value)
+    if isinstance(value, set):
+        return tuple(sorted(_hashable_value(item) for item in value))
+    return value

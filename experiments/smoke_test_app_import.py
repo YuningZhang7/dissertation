@@ -18,9 +18,12 @@ def test_app_imports() -> None:
 
 
 def test_create_game_state_loads_cards() -> None:
-    state = app.create_game_state("toy_map")
+    state = app.create_game_state("official_like")
     assert state.operation_cards
     assert state.available_operation_cards
+    assert state.routes
+    assert state.segments
+    assert state.edges == {}
 
 
 def test_app_exposes_registered_agents() -> None:
@@ -31,6 +34,7 @@ def test_app_exposes_registered_agents() -> None:
         "route_segment_greedy",
         "objective_aware_greedy",
         "adaptive_objective_greedy",
+        "urbanization_aware_lookahead_greedy",
     ]
 
 
@@ -43,9 +47,8 @@ def test_app_renders_registered_agent_options() -> None:
         "random",
         "greedy_delivery",
         "greedy_expansion",
-        "route_segment_greedy",
         "objective_aware_greedy",
-        "adaptive_objective_greedy",
+        "urbanization_aware_lookahead_greedy",
     ]
 
 

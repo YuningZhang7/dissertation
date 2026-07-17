@@ -7,6 +7,9 @@ from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
 from agents.random_agent import RandomAgent
 from agents.route_segment_greedy_agent import RouteSegmentGreedyAgent
+from agents.urbanization_aware_lookahead_greedy_agent import (
+    UrbanizationAwareLookaheadGreedyAgent,
+)
 
 __all__ = [
     "BaseAgent",
@@ -16,4 +19,5 @@ __all__ = [
     "RouteSegmentGreedyAgent",
     "ObjectiveAwareGreedyAgent",
     "AdaptiveObjectiveGreedyAgent",
+    "UrbanizationAwareLookaheadGreedyAgent",
 ]

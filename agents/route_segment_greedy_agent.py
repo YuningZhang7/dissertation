@@ -65,13 +65,13 @@ class RouteSegmentGreedyAgent(BaseAgent):
         if pass_action is not None:
             return pass_action
 
-        non_bond_actions = [
+        fallback_actions = [
             action
             for action in legal_actions
-            if action.action_type not in {"issue_bond", "next_turn"}
+            if action.action_type != "next_turn"
         ]
-        if non_bond_actions:
-            return sorted(non_bond_actions, key=_action_sort_key)[0]
+        if fallback_actions:
+            return sorted(fallback_actions, key=_action_sort_key)[0]
 
         next_turn = _first_action(legal_actions, "next_turn")
         if next_turn is not None:

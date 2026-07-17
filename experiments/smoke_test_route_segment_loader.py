@@ -16,20 +16,14 @@ ROUTE_MAP = PROJECT_ROOT / "data" / "mini_route_segment_map.json"
 CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
 
 
-def test_legacy_map_keeps_edges_and_empty_route_data() -> None:
-    cities, edges, major_lines, routes, segments = load_map(
-        LEGACY_MAP,
-        include_routes=True,
-    )
-
-    assert cities
-    assert edges
-    assert major_lines
-    assert routes == {}
-    assert segments == {}
-
-    legacy_result = load_map(LEGACY_MAP)
-    assert len(legacy_result) == 3
+def test_legacy_edge_map_is_rejected_with_clear_error() -> None:
+    try:
+        load_map(LEGACY_MAP, include_routes=True)
+    except ValueError as exc:
+        assert "Route-segment runtime requires" in str(exc)
+        assert "Legacy edge-only maps are not supported" in str(exc)
+    else:
+        raise AssertionError("Legacy edge-only map should be rejected.")
 
 
 def test_route_segment_map_loads_models_and_generated_nodes() -> None:
@@ -92,7 +86,7 @@ def test_game_state_copy_and_reset_preserve_route_data() -> None:
 
 def run_all() -> None:
     tests = [
-        test_legacy_map_keeps_edges_and_empty_route_data,
+        test_legacy_edge_map_is_rejected_with_clear_error,
         test_route_segment_map_loads_models_and_generated_nodes,
         test_route_segment_major_line_loads,
         test_game_state_copy_and_reset_preserve_route_data,

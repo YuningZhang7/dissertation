@@ -18,7 +18,6 @@ from railways.models import (
     PHASE_GAME_OVER,
     PHASE_INCOME,
     RailBaronObjective,
-    RailwayEdge,
     TrackSegment,
 )
 from railways.scoring import compute_delivery_score, compute_income
@@ -106,46 +105,6 @@ def next_turn(state: GameState) -> tuple[bool, str]:
         advance_turn(state)
         return True, "Advanced from income phase."
     return False, f"Cannot advance from phase {state.phase}."
-
-
-def build_track(state: GameState, edge_id: str) -> tuple[bool, str]:
-    ok, message = _ensure_action_phase(state)
-    if not ok:
-        return False, message
-
-    edge = state.get_edge(edge_id)
-    if edge is None:
-        return False, f"Edge {edge_id} does not exist."
-    if edge.built:
-        return False, f"Edge {edge_id} is already built."
-    if not is_build_connected_to_player_network(state, edge_id):
-        return (
-            False,
-            (
-                f"Edge {edge_id} is not connected to the player's existing "
-                "rail network."
-            ),
-        )
-
-    paid, payment_message = pay_money(
-        state,
-        edge.cost,
-        allow_auto_bonds=state.config.auto_issue_bonds_when_needed,
-    )
-    if not paid:
-        return False, f"Cannot build {edge_id}: {payment_message}"
-
-    edge.built = True
-    edge.owner = PLAYER_ID
-    state.player.built_edges.add(edge.id)
-    state.record(
-        f"Turn {state.turn}: built {edge.id} for ${edge.cost}. {payment_message}"
-    )
-    check_major_lines(state)
-    check_rail_baron_objective(state)
-    update_cards_after_build(state)
-    consume_action(state)
-    return True, f"Built track {edge_id}."
 
 
 def get_segments_for_ids(
@@ -296,6 +255,7 @@ def build_track_segments(
     update_route_completion(state, segments[0].route_id)
     check_major_lines(state)
     check_rail_baron_objective(state)
+    update_cards_after_build(state)
     consume_action(state)
     return True, f"Built {len(segment_ids)} track segment(s)."
 
@@ -348,52 +308,6 @@ def get_legal_build_segment_actions(state: GameState) -> list[Action]:
     return actions
 
 
-def get_legal_build_actions(state: GameState) -> list[Action]:
-    if state.phase != PHASE_ACTION:
-        return []
-
-    actions: list[Action] = []
-    for edge in state.edges.values():
-        if edge.built:
-            continue
-        if not is_build_connected_to_player_network(state, edge.id):
-            continue
-        if can_pay(state, edge.cost) or state.config.auto_issue_bonds_when_needed:
-            actions.append(Action.build_track(edge.id))
-    return actions
-
-
-def get_player_network_city_ids(state: GameState) -> set[str]:
-    city_ids: set[str] = set()
-    for edge in state.edges.values():
-        if edge.built and edge.owner == PLAYER_ID:
-            city_ids.add(edge.source)
-            city_ids.add(edge.target)
-    return city_ids
-
-
-def is_build_connected_to_player_network(
-    state: GameState,
-    edge_id: str,
-) -> bool:
-    if not state.config.require_connected_track_building:
-        return True
-
-    edge = state.get_edge(edge_id)
-    if edge is None:
-        return False
-
-    network_cities = get_player_network_city_ids(state)
-    if not network_cities:
-        return True
-
-    return edge.source in network_cities or edge.target in network_cities
-
-
-def uses_route_segment_delivery(state: GameState) -> bool:
-    return bool(state.routes and state.segments)
-
-
 def deliver_good(
     state: GameState,
     source_city_id: str,
@@ -419,48 +333,28 @@ def deliver_good(
     if target_city.demand_color != good_color:
         return False, f"{target_city.name} does not demand {good_color}."
 
-    if uses_route_segment_delivery(state):
-        selected_path = path
-        if selected_path is None:
-            paths = find_all_completed_route_delivery_paths(
-                state,
-                source_city_id,
-                target_city_id,
-                good_color,
-            )
-            selected_path = paths[0] if paths else None
-        if selected_path is None:
-            return False, "No completed route connects the source and target."
-
-        valid_path, path_message = validate_completed_route_delivery_path(
+    selected_path = path
+    if selected_path is None:
+        paths = find_all_completed_route_delivery_paths(
             state,
-            selected_path,
             source_city_id,
             target_city_id,
             good_color,
         )
-        if not valid_path:
-            return False, path_message
-        distance = completed_route_path_segment_length(state, selected_path)
-    else:
-        selected_path = path or find_shortest_built_path(
-            state,
-            source_city_id,
-            target_city_id,
-        )
-        if selected_path is None:
-            return False, "No built route connects the source and target."
+        selected_path = paths[0] if paths else None
+    if selected_path is None:
+        return False, "No completed route connects the source and target."
 
-        valid_path, path_message = validate_delivery_path(
-            state,
-            selected_path,
-            source_city_id,
-            target_city_id,
-            good_color,
-        )
-        if not valid_path:
-            return False, path_message
-        distance = path_length(selected_path)
+    valid_path, path_message = validate_completed_route_delivery_path(
+        state,
+        selected_path,
+        source_city_id,
+        target_city_id,
+        good_color,
+    )
+    if not valid_path:
+        return False, path_message
+    distance = completed_route_path_segment_length(state, selected_path)
 
     delivery_score = compute_delivery_score(distance, state.config)
     source_city.goods.remove(good_color)
@@ -482,18 +376,6 @@ def deliver_good(
     )
     consume_action(state)
     return True, f"Delivered {good_color} from {source_city_id} to {target_city_id}."
-
-
-def get_built_graph(state: GameState) -> nx.Graph:
-    graph = nx.Graph()
-    for city_id, city in state.cities.items():
-        graph.add_node(city_id, city=city)
-
-    for edge in state.edges.values():
-        if edge.built:
-            graph.add_edge(edge.source, edge.target, edge_id=edge.id, cost=edge.cost)
-
-    return graph
 
 
 def get_completed_route_graph(state: GameState) -> nx.Graph:
@@ -622,62 +504,6 @@ def find_all_completed_route_delivery_paths(
     return paths
 
 
-def find_shortest_built_path(
-    state: GameState,
-    source: str,
-    target: str,
-) -> list[str] | None:
-    graph = get_built_graph(state)
-    try:
-        return nx.shortest_path(graph, source=source, target=target)
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
-
-
-def find_all_legal_delivery_paths(
-    state: GameState,
-    source: str,
-    target: str,
-    good_color: str,
-) -> list[list[str]]:
-    if source == target:
-        return []
-
-    graph = get_built_graph(state)
-    if source not in graph or target not in graph:
-        return []
-
-    paths: list[list[str]] = []
-    cutoff = state.player.locomotive_level
-    try:
-        candidate_paths = nx.all_simple_paths(
-            graph,
-            source=source,
-            target=target,
-            cutoff=cutoff,
-        )
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return []
-
-    for candidate_path in candidate_paths:
-        valid, _ = validate_delivery_path(
-            state,
-            list(candidate_path),
-            source,
-            target,
-            good_color,
-        )
-        if valid:
-            paths.append(list(candidate_path))
-
-    paths.sort(key=lambda route: (path_length(route), route))
-    return paths
-
-
-def path_length(path: list[str]) -> int:
-    return max(0, len(path) - 1)
-
-
 def path_skips_matching_city(
     state: GameState,
     path: list[str],
@@ -688,68 +514,6 @@ def path_skips_matching_city(
         if city.demand_color == good_color:
             return True
     return False
-
-
-def get_edge_between_cities(
-    state: GameState,
-    first_city: str,
-    second_city: str,
-) -> RailwayEdge | None:
-    """Return the undirected legacy edge connecting two cities, if present."""
-    for edge in state.edges.values():
-        if {edge.source, edge.target} == {first_city, second_city}:
-            return edge
-    return None
-
-
-def validate_delivery_path(
-    state: GameState,
-    path: list[str],
-    source: str,
-    target: str,
-    good_color: str,
-) -> tuple[bool, str]:
-    if not path:
-        return False, "Delivery path is empty."
-    if path[0] != source or path[-1] != target:
-        return False, "Delivery path must start at source and end at target."
-
-    length = path_length(path)
-    if length <= 0:
-        return False, "Delivery path must use at least one link."
-    if length > state.player.locomotive_level:
-        return (
-            False,
-            (
-                f"Route length {length} exceeds locomotive level "
-                f"{state.player.locomotive_level}."
-            ),
-        )
-
-    graph = get_built_graph(state)
-    for city_id in path:
-        if city_id not in state.cities:
-            return False, f"City {city_id} in the delivery path does not exist."
-    for first, second in zip(path, path[1:]):
-        if not graph.has_edge(first, second):
-            return False, f"Path segment {first}-{second} is not built."
-
-    first_edge = get_edge_between_cities(state, path[0], path[1])
-    if first_edge is None:
-        return False, f"First delivery link {path[0]}-{path[1]} does not exist."
-    if first_edge.owner != PLAYER_ID:
-        return (
-            False,
-            (
-                "Delivery must start on a player-owned link; "
-                f"{first_edge.id} is owned by {first_edge.owner!r}."
-            ),
-        )
-
-    if path_skips_matching_city(state, path, good_color):
-        return False, "Delivery path skips an intermediate city demanding that color."
-
-    return True, "Delivery path is valid."
 
 
 def get_legal_completed_route_deliveries(state: GameState) -> list[Action]:
@@ -794,48 +558,8 @@ def get_legal_completed_route_deliveries(state: GameState) -> list[Action]:
     return actions
 
 
-def get_legal_legacy_deliveries(state: GameState) -> list[Action]:
-    if state.phase != PHASE_ACTION:
-        return []
-
-    deliveries: list[Action] = []
-    for source_city in state.cities.values():
-        for good_color in sorted(set(source_city.goods)):
-            for target_city in state.cities.values():
-                if source_city.id == target_city.id:
-                    continue
-                if target_city.is_gray:
-                    continue
-                if target_city.demand_color != good_color:
-                    continue
-
-                for path in find_all_legal_delivery_paths(
-                    state,
-                    source_city.id,
-                    target_city.id,
-                    good_color,
-                ):
-                    length = path_length(path)
-                    deliveries.append(
-                        Action(
-                            "deliver_good",
-                            {
-                                "source": source_city.id,
-                                "target": target_city.id,
-                                "good_color": good_color,
-                                "path": path,
-                                "path_length": length,
-                                "score": compute_delivery_score(length, state.config),
-                            },
-                        )
-                    )
-    return deliveries
-
-
 def get_legal_deliveries(state: GameState) -> list[Action]:
-    if uses_route_segment_delivery(state):
-        return get_legal_completed_route_deliveries(state)
-    return get_legal_legacy_deliveries(state)
+    return get_legal_completed_route_deliveries(state)
 
 
 def upgrade_engine(state: GameState) -> tuple[bool, str]:
@@ -883,25 +607,6 @@ def get_legal_upgrade_action(state: GameState) -> Action | None:
     if can_pay(state, cost) or state.config.auto_issue_bonds_when_needed:
         return Action("upgrade_engine", {"next_level": next_level, "cost": cost})
     return None
-
-
-def issue_bond(state: GameState) -> tuple[bool, str]:
-    """Voluntarily issue one bond without consuming a player action."""
-    ok, message = _ensure_action_phase(state)
-    if not ok:
-        return False, message
-    if not state.config.allow_voluntary_bonds:
-        return (
-            False,
-            "Voluntary bond issue is not a legal player action when disabled.",
-        )
-
-    state.player.money += state.config.bond_value
-    state.player.bonds += 1
-    state.record(
-        f"Turn {state.turn}: issued one bond (+${state.config.bond_value})."
-    )
-    return True, "Issued one bond."
 
 
 def can_pay(state: GameState, amount: int) -> bool:
@@ -1000,9 +705,10 @@ def get_legal_urbanize_actions(state: GameState) -> list[Action]:
     ):
         return []
     return [
-        Action.urbanize(city.id)
+        Action.urbanize(city.id, demand_color=color)
         for city in state.cities.values()
         if city.is_gray
+        for color in state.config.allowed_good_colors
     ]
 
 
@@ -1068,23 +774,6 @@ def is_terminal(state: GameState) -> bool:
     return state.phase == PHASE_GAME_OVER
 
 
-def check_legacy_major_lines(state: GameState) -> None:
-    for line in state.major_lines.values():
-        if line.claimed:
-            continue
-        path = find_shortest_built_path(state, line.source, line.target)
-        if path is None:
-            continue
-        line.claimed = True
-        state.player.major_line_bonus += line.bonus_points
-        state.record(
-            (
-                f"Turn {state.turn}: claimed major line {line.id} "
-                f"(+{line.bonus_points})."
-            )
-        )
-
-
 def check_completed_route_major_lines(state: GameState) -> None:
     graph = get_completed_route_graph(state)
 
@@ -1110,10 +799,7 @@ def check_completed_route_major_lines(state: GameState) -> None:
 
 
 def check_major_lines(state: GameState) -> None:
-    if uses_route_segment_delivery(state):
-        check_completed_route_major_lines(state)
-    else:
-        check_legacy_major_lines(state)
+    check_completed_route_major_lines(state)
 
 
 def get_active_rail_baron_objective(
@@ -1125,25 +811,12 @@ def get_active_rail_baron_objective(
     return state.rail_baron_objectives.get(objective_id)
 
 
-def get_player_owned_legacy_graph(state: GameState) -> nx.Graph:
-    graph = nx.Graph()
-    graph.add_nodes_from(state.cities)
-    for edge in state.edges.values():
-        if edge.built and edge.owner == PLAYER_ID:
-            graph.add_edge(edge.source, edge.target)
-    return graph
-
-
 def check_rail_baron_objective(state: GameState) -> bool:
     objective = get_active_rail_baron_objective(state)
     if objective is None or objective.claimed:
         return False
 
-    graph = (
-        get_completed_route_graph(state)
-        if uses_route_segment_delivery(state)
-        else get_player_owned_legacy_graph(state)
-    )
+    graph = get_completed_route_graph(state)
     if objective.source not in graph or objective.target not in graph:
         return False
     try:
@@ -1166,8 +839,6 @@ def check_rail_baron_objective(state: GameState) -> bool:
 
 
 def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
-    if action.action_type == "build_track":
-        return build_track(state, str(action.params["edge_id"]))
     if action.action_type == "build_track_segments":
         return build_track_segments(
             state,
@@ -1189,8 +860,6 @@ def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
             str(action.params["city_id"]),
             action.params.get("demand_color"),
         )
-    if action.action_type == "issue_bond":
-        return issue_bond(state)
     if action.action_type == "select_operation_card":
         return select_operation_card(state, str(action.params["card_id"]))
     if action.action_type == "pass":
@@ -1203,8 +872,6 @@ def apply_action(state: GameState, action: Action) -> tuple[bool, str]:
 def describe_action(action: Action | None) -> str:
     if action is None:
         return "No action."
-    if action.action_type == "build_track":
-        return f"Build track {action.params['edge_id']}"
     if action.action_type == "build_track_segments":
         return f"Build track segments {action.params['segment_ids']}"
     if action.action_type == "deliver_good":
@@ -1216,8 +883,6 @@ def describe_action(action: Action | None) -> str:
         return "Upgrade engine"
     if action.action_type == "urbanize":
         return f"Urbanize city {action.params['city_id']}"
-    if action.action_type == "issue_bond":
-        return "Issue one bond"
     if action.action_type == "select_operation_card":
         return f"Select operation card {action.params.get('card_id', '')}"
     if action.action_type == "pass":

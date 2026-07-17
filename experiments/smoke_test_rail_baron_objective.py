@@ -18,7 +18,6 @@ OFFICIAL_LIKE_MAP = (
 EXPANDED_MAP = (
     PROJECT_ROOT / "data" / "expanded_official_style_route_segment_map.json"
 )
-LEGACY_MAP = PROJECT_ROOT / "data" / "toy_map.json"
 OFFICIAL_CONFIG = (
     PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
 )
@@ -103,12 +102,6 @@ def test_expanded_map_objectives_load() -> None:
     assert state.active_rail_baron_objective_id == "RB-A-N"
 
 
-def test_legacy_map_without_objectives_remains_compatible() -> None:
-    state = reset_game(map_path=LEGACY_MAP)
-    assert state.rail_baron_objectives == {}
-    assert state.active_rail_baron_objective_id is None
-
-
 def test_copy_and_reset_preserve_independent_objective_state() -> None:
     state = make_state("RB-A-F")
     copied = state.copy()
@@ -131,7 +124,6 @@ def run_all() -> None:
         test_bonus_is_awarded_only_once,
         test_unrelated_connection_does_not_claim_objective,
         test_expanded_map_objectives_load,
-        test_legacy_map_without_objectives_remains_compatible,
         test_copy_and_reset_preserve_independent_objective_state,
     ]
     for test in tests:

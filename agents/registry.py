@@ -7,6 +7,9 @@ from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
 from agents.random_agent import RandomAgent
 from agents.route_segment_greedy_agent import RouteSegmentGreedyAgent
+from agents.urbanization_aware_lookahead_greedy_agent import (
+    UrbanizationAwareLookaheadGreedyAgent,
+)
 
 
 AGENT_CLASSES: dict[str, type[BaseAgent]] = {
@@ -16,6 +19,7 @@ AGENT_CLASSES: dict[str, type[BaseAgent]] = {
     "route_segment_greedy": RouteSegmentGreedyAgent,
     "objective_aware_greedy": ObjectiveAwareGreedyAgent,
     "adaptive_objective_greedy": AdaptiveObjectiveGreedyAgent,
+    "urbanization_aware_lookahead_greedy": UrbanizationAwareLookaheadGreedyAgent,
 }
 
 
