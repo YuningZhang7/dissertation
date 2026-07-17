@@ -14,8 +14,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from agents.greedy_expansion_agent import GreedyExpansionAgent
-from agents.mcts_agent import MCTSAgent
+from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
 from agents.random_agent import RandomAgent
+from agents.urbanization_aware_lookahead_greedy_agent import (
+    UrbanizationAwareLookaheadGreedyAgent,
+)
 from exact.run_exact_benchmark import DEFAULT_CONFIG, DEFAULT_MAP, DEFAULT_OUTPUT, run_exact_benchmark
 from experiments.simulation_runner import run_episode
 
@@ -46,10 +49,8 @@ def compare_agents_to_exact(
     output_csv: str | Path = DEFAULT_COMPARISON_CSV,
     output_md: str | Path = DEFAULT_COMPARISON_MD,
     random_episodes: int = 30,
-    mcts_episodes: int = 20,
+    deterministic_episodes: int = 1,
     seed: int = 0,
-    mcts_small_iterations: int = 25,
-    mcts_large_iterations: int = 100,
     use_existing_exact: bool = False,
 ) -> list[dict[str, Any]]:
     exact_payload = _load_or_run_exact(
@@ -74,7 +75,7 @@ def compare_agents_to_exact(
         _evaluate_agent(
             "greedy_delivery",
             lambda episode_seed: GreedyDeliveryAgent(seed=episode_seed),
-            1,
+            deterministic_episodes,
             seed,
             map_path,
             config_path,
@@ -83,65 +84,27 @@ def compare_agents_to_exact(
         _evaluate_agent(
             "greedy_expansion",
             lambda episode_seed: GreedyExpansionAgent(seed=episode_seed),
-            1,
+            deterministic_episodes,
             seed,
             map_path,
             config_path,
             exact_optimum,
         ),
         _evaluate_agent(
-            f"mcts_{mcts_small_iterations}",
-            lambda episode_seed: MCTSAgent(
-                seed=episode_seed,
-                iterations=mcts_small_iterations,
-                rollout_depth_limit=40,
-                action_generation="full",
-            ),
-            mcts_episodes,
+            "objective_aware_greedy",
+            lambda episode_seed: ObjectiveAwareGreedyAgent(seed=episode_seed),
+            deterministic_episodes,
             seed,
             map_path,
             config_path,
             exact_optimum,
         ),
         _evaluate_agent(
-            f"mcts_{mcts_large_iterations}",
-            lambda episode_seed: MCTSAgent(
+            "urbanization_aware_lookahead_greedy",
+            lambda episode_seed: UrbanizationAwareLookaheadGreedyAgent(
                 seed=episode_seed,
-                iterations=mcts_large_iterations,
-                rollout_depth_limit=40,
-                action_generation="full",
             ),
-            mcts_episodes,
-            seed,
-            map_path,
-            config_path,
-            exact_optimum,
-        ),
-        _evaluate_agent(
-            f"mcts_{mcts_small_iterations}_majorline",
-            lambda episode_seed: MCTSAgent(
-                seed=episode_seed,
-                iterations=mcts_small_iterations,
-                rollout_depth_limit=40,
-                action_generation="full",
-                evaluation_mode="major_line_aware",
-            ),
-            mcts_episodes,
-            seed,
-            map_path,
-            config_path,
-            exact_optimum,
-        ),
-        _evaluate_agent(
-            f"mcts_{mcts_large_iterations}_majorline",
-            lambda episode_seed: MCTSAgent(
-                seed=episode_seed,
-                iterations=mcts_large_iterations,
-                rollout_depth_limit=40,
-                action_generation="full",
-                evaluation_mode="major_line_aware",
-            ),
-            mcts_episodes,
+            deterministic_episodes,
             seed,
             map_path,
             config_path,
@@ -287,10 +250,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-csv", default=str(DEFAULT_COMPARISON_CSV))
     parser.add_argument("--output-md", default=str(DEFAULT_COMPARISON_MD))
     parser.add_argument("--random-episodes", type=int, default=30)
-    parser.add_argument("--mcts-episodes", type=int, default=20)
+    parser.add_argument("--deterministic-episodes", type=int, default=1)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--mcts-small-iterations", type=int, default=25)
-    parser.add_argument("--mcts-large-iterations", type=int, default=100)
     parser.add_argument(
         "--use-existing-exact",
         action="store_true",
@@ -308,10 +269,8 @@ def main() -> None:
         output_csv=args.output_csv,
         output_md=args.output_md,
         random_episodes=args.random_episodes,
-        mcts_episodes=args.mcts_episodes,
+        deterministic_episodes=args.deterministic_episodes,
         seed=args.seed,
-        mcts_small_iterations=args.mcts_small_iterations,
-        mcts_large_iterations=args.mcts_large_iterations,
         use_existing_exact=args.use_existing_exact,
     )
     print_comparison(rows)

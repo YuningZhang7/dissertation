@@ -2,33 +2,23 @@
 
 ## Overview
 
-This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for interpretable AI and optimisation strategies.
+This project is a local visual simulator for a simplified single-player version
+of Railways of the World. It is intended as a dissertation testbed for
+interpretable AI and optimisation strategies.
 
-The current mainline version focuses on the route-segment simulator, replay demo,
-benchmark tooling, and the dissertation-facing public agents.
+The current mainline version focuses on the route-segment simulator, replay
+demo, benchmark tooling, automatic financing, colored urbanization, and the
+dissertation-facing public agents.
 
-## Current Development Stage
+## Meeting/Demo Scope
 
-The main evaluated and demo-facing agents are `RandomAgent`, `GreedyDeliveryAgent`,
-`GreedyExpansionAgent`, `ObjectiveAwareGreedyAgent`, and
-`UrbanizationAwareLookaheadGreedyAgent`. The corrected simulator, exact-search
-micro benchmark, and representative card framework remain available.
+The meeting/demo version exposes and retains five agents:
+random, greedy_delivery, greedy_expansion, objective_aware_greedy, and
+urbanization_aware_lookahead_greedy.
 
-## Mainline Demo Scope
-
-The main registry, Streamlit selector, and benchmark defaults expose:
-
-- `random`
-- `greedy_delivery`
-- `greedy_expansion`
-- `objective_aware_greedy`
-- `urbanization_aware_lookahead_greedy`
-
-`MCTSAgent` and `CardAwareGreedyAgent` are retained in the full repository as
-exploratory implementations, but are excluded from the mainline demo and its
-main evaluation path. This keeps the presentation focused, interpretable, and
-easy to validate. It is a scope-control decision, not a claim that those
-components never existed.
+The main registry, Streamlit selector, replay demo, and benchmark defaults are
+kept aligned to those five agents so the presentation version is focused,
+interpretable, and easy to validate.
 
 See [notes/MEETING_DEMO_SCOPE.md](notes/MEETING_DEMO_SCOPE.md).
 
@@ -44,24 +34,25 @@ The basic-rule action model has been corrected after supervisor feedback:
 
 ## Current Rule Coverage
 
-This version is a single-player rule-development prototype. It is not yet a full official implementation of Railways of the World. The current goal is to preserve the core local rules needed for optimisation experiments, while excluding player-vs-player interaction for now.
+This version is a single-player rule-development prototype. It is not yet a
+full official implementation of Railways of the World. The current goal is to
+preserve the core local rules needed for optimisation experiments, while
+excluding player-vs-player interaction for now.
 
-See [notes/RULES_COVERAGE.md](notes/RULES_COVERAGE.md).
-
-## Model Validity
-
-The simulator is a defined single-player optimisation abstraction, not a claim to fully reproduce the official board game.
-
-See [notes/MODEL_VALIDITY.md](notes/MODEL_VALIDITY.md).
+See [notes/RULES_COVERAGE.md](notes/RULES_COVERAGE.md) and
+[notes/MODEL_VALIDITY.md](notes/MODEL_VALIDITY.md).
 
 ## Scenario Design
 
-The project now includes four self-created scenarios:
+The project includes self-created scenarios for smoke tests, demo runs, and
+benchmark comparisons:
 
 - `toy_map`
 - `toy_medium_map`
 - `semi_realistic_map`
 - `micro_map`
+- `official_like_route_segment_map`
+- `expanded_official_style_route_segment_map`
 
 See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
 
@@ -78,13 +69,10 @@ See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
 - Basic final scoring
 - Empty city markers
 - Fixed-turn and empty-city-marker end condition modes
-- Simplified urbanize action
+- Colored urbanize actions for each gray city and allowed good color
 - Major-line loading, claiming, and final-score bonus support
-- Minimal representative operation-card framework:
-  - immediate cash cards
-  - delivery objective cards
-  - network objective cards
-  - end-game scoring cards
+- Rail Baron objective loading, claiming, and final-score bonus support
+- Minimal representative operation-card framework
 - AI-ready environment interface
 
 ## Not Yet Implemented
@@ -92,7 +80,6 @@ See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
 - Full official map
 - Full individual track tile placement
 - Full official operation-card deck
-- Full Rail Baron / Tycoon objective-card system
 - Multiplayer auction and interaction
 - Opponent-owned track scoring
 - Genetic Algorithm and Reinforcement Learning agents
@@ -111,13 +98,8 @@ or:
 python run_app.py
 ```
 
-The app entry point is always `app.py`. Do not run markdown files such as prompt notes or Codex task instructions.
-
-If the page shows a markdown prompt beginning with `Codex Task`, you are not running the simulator app. Stop Streamlit with `Ctrl+C` and run:
-
-```bash
-python -m streamlit run app.py
-```
+The app entry point is always `app.py`. Do not run markdown files such as
+prompt notes or Codex task instructions.
 
 Install dependencies first if needed:
 
@@ -131,494 +113,129 @@ Then open the local URL shown by Streamlit, usually:
 http://localhost:8501
 ```
 
+## Replay Demo
+
+The current replay/presentation path is route-segment focused:
+
+```bash
+python experiments/demo_agent_animation_app.py
+```
+
+Replay generation and animation support live in:
+
+```text
+experiments/animate_agent_episode.py
+experiments/agent_animation.py
+```
+
 ## Smoke Tests
 
-Run the rule-engine smoke tests:
+Run the core rule-engine smoke tests:
 
 ```bash
 python experiments/smoke_test_rules.py
 ```
 
-Run the agent and experiment smoke tests:
+Run the current agent and benchmark smoke tests:
 
 ```bash
 python experiments/smoke_test_agents.py
+python experiments/smoke_test_agent_benchmark.py
+python experiments/smoke_test_app_import.py
+python experiments/smoke_test_agent_animation_app.py
+python experiments/smoke_test_agent_animation.py
+python experiments/smoke_test_urbanization_aware_lookahead_greedy_agent.py
+python experiments/smoke_test_meeting_demo.py
+python experiments/smoke_test_official_like_baselines.py
+python experiments/smoke_test_expanded_official_style_baselines.py
 ```
 
-Run the exact benchmark smoke tests:
+Optional focused smoke tests remain for maps and the representative card
+framework:
 
 ```bash
-python experiments/smoke_test_exact.py
-```
-
-Run the minimal card-framework smoke tests:
-
-```bash
+python experiments/smoke_test_maps.py
 python experiments/smoke_test_cards.py
 ```
 
-Run the Streamlit import smoke test:
+The smoke tests cover connected track building, explicit delivery paths,
+corrected financing action space, automatic financing during payment,
+empty-city-marker end conditions, major-line bonuses, Rail Baron bonuses,
+income, colored urbanization, action hashing, replay compatibility, and final
+scoring.
+
+## Benchmarking
+
+Run a small current-agent benchmark:
 
 ```bash
-python experiments/smoke_test_app_import.py
+python experiments/run_agent_benchmark.py --maps official_like --episodes 5 --max-steps 50
 ```
 
-Run the Phase 4 experiment-pipeline smoke test:
+Run selected agents explicitly:
 
 ```bash
-python experiments/smoke_test_phase4_experiments.py
+python experiments/run_agent_benchmark.py --maps official_like --agents objective_aware_greedy urbanization_aware_lookahead_greedy --episodes 5 --max-steps 50
 ```
 
-Run the registered-agent/demo scope smoke test:
-
-```bash
-python experiments/smoke_test_meeting_demo.py
-```
-
-Run the dissertation figure smoke test:
-
-```bash
-python experiments/smoke_test_dissertation_figures.py
-```
-
-The smoke tests cover connected track building, explicit delivery paths, corrected financing action space, automatic financing during payment, empty-city-marker end conditions, major-line bonuses, income, card loading, representative card effects, and final scoring.
-
-## Dissertation Evidence Package
-
-Phase 5 consolidates the completed experiments into dissertation-ready validation, figures, tables, and writing notes.
-
-Validate that the expected result artefacts are present and structurally consistent:
-
-```bash
-python experiments/validate_all_results.py
-```
-
-Generate dissertation-ready figures:
-
-```bash
-python experiments/generate_dissertation_figures.py
-```
-
-Export summary tables in Markdown and simple LaTeX:
-
-```bash
-python experiments/export_dissertation_tables.py
-```
-
-Main evidence locations:
+Benchmark outputs are written under:
 
 ```text
-results/raw/
-results/summary/
-results/figures/
-results/tables/
-notes/EXPERIMENT_MANIFEST.md
-notes/DISSERTATION_RESULTS_OUTLINE.md
-notes/PROJECT_STATUS_FINAL.md
+experiments/results/agent_benchmark/
 ```
 
-The raw and summary result folders contain experiment outputs from earlier phases. The dissertation figure and table folders contain compact presentation artefacts generated from those summaries.
+The benchmark records score, bonds, deliveries, completed routes, major-line
+and Rail Baron bonuses, fallback actions, runtime, and urbanization diagnostics
+such as `urbanize_actions` and `urbanized_city_count`.
 
-## Phase 4 Card Experiments (Exploratory Archive)
+## Baseline Experiments
 
-Card-disabled baseline using the original card-free simulator:
-
-```bash
-python experiments/run_experiments.py --agent all --episodes 50 --map data/toy_map.json --cards none --output results/raw/toy_card_disabled.csv
-```
-
-Card-enabled baseline using `data/cards_basic.json`:
-
-```bash
-python experiments/run_experiments.py --agent all --episodes 50 --map data/toy_map.json --cards basic --output results/raw/toy_card_enabled.csv
-```
-
-Run a quick pipeline verification:
-
-```bash
-python experiments/run_phase4_card_experiments.py --profile quick
-```
-
-Run the dissertation-scale baseline card comparison:
-
-```bash
-python experiments/run_phase4_card_experiments.py --profile standard
-```
-
-Run the stronger MCTS comparison when runtime permits:
-
-```bash
-python experiments/run_phase4_card_experiments.py --profile mcts100
-```
-
-### MCTS Budget Comparison (Exploratory)
-
-Run and validate the stronger MCTS budget profile:
-
-```bash
-python experiments/run_phase4_card_experiments.py --profile mcts100
-python experiments/validate_phase4_card_results.py --profile mcts100
-```
-
-Compare the standard and mcts100 summaries:
-
-```bash
-python experiments/compare_phase4_mcts_budget.py
-```
-
-Run the fast budget-comparison smoke test:
-
-```bash
-python experiments/smoke_test_phase4_budget_comparison.py
-```
-
-This comparison helps determine whether card-enabled MCTS performance is limited mainly by search budget or by the absence of card-aware evaluation and rollout behaviour. The mcts100 experiment may use fewer episodes than the standard profile when runtime is prohibitive; any override must be recorded in the result note.
-
-Explicit arguments such as `--episodes`, `--mcts-iterations`, `--mcts-rollout-depth`, and `--max-steps` override the selected profile. Output filenames include the profile name so quick and preliminary results do not overwrite standard results.
-
-Validate the standard result files:
-
-```bash
-python experiments/validate_phase4_card_results.py --profile standard
-```
-
-Each profile writes card-disabled and card-enabled raw CSV files, a full summary, a card-effect comparison table, and a card-usage table under `results/`. `--cards none` in the general experiment runner preserves the card-free model, while `--cards basic` enables `data/cards_basic.json`. The exact `micro_map` benchmark remains card-free by default.
-
-The standard Phase 4 results are used to discuss how the representative cards affect existing agent behaviour, score composition, and search difficulty. No agent is made card-aware during this evidence-collection phase.
-
-### Phase 4D Card-Aware Baselines (Exploratory)
-
-Phase 4D adds a lightweight card-aware greedy baseline and a card-aware MCTS rollout policy:
-
-- `card_aware_greedy`
-- `rollout_policy="card_aware"`
-
-Run the Phase 4D card-enabled comparison:
-
-```bash
-python experiments/run_phase4_card_aware_experiments.py
-```
-
-Compare Phase 4D against the Phase 4C standard card-enabled baselines:
-
-```bash
-python experiments/compare_phase4d_to_phase4c.py
-```
-
-The default Phase 4D run writes:
-
-```text
-results/raw/phase4d_card_aware_results.csv
-results/summary/phase4d_card_aware_summary.csv
-results/summary/phase4d_card_aware_summary.md
-results/summary/phase4d_vs_phase4c_comparison.csv
-results/summary/phase4d_vs_phase4c_comparison.md
-```
-
-The design note is stored in:
-
-```text
-notes/PHASE4D_CARD_AWARE_AGENT_PLAN.md
-```
-
-The standard Phase 4D result note is stored in:
-
-```text
-notes/PHASE4D_CARD_AWARE_RESULTS.md
-```
-
-Run the simple greedy baseline from the command line:
-
-```bash
-python experiments/run_greedy.py
-```
-
-## Baseline Agents and Experiments
-
-Implemented baseline agents:
-
-- `RandomAgent`
-- `GreedyDeliveryAgent`
-- `GreedyExpansionAgent`
-
-Run experiments:
+The older baseline runner remains available for the lightweight toy-map
+experiments:
 
 ```bash
 python experiments/run_experiments.py --agent all --episodes 100
+python experiments/run_greedy.py
 ```
 
-Run experiments on specific maps:
-
-```bash
-python experiments/run_experiments.py --agent all --episodes 100 --map data/toy_map.json
-python experiments/run_experiments.py --agent all --episodes 100 --map data/toy_medium_map.json
-python experiments/run_experiments.py --agent all --episodes 50 --map data/semi_realistic_map.json --output results/raw/semi_realistic_baseline_results.csv
-```
-
-Run all baseline agents on all configured maps:
-
-```bash
-python experiments/run_experiments.py --agent all --episodes 100 --map all --output results/raw/map_comparison_results.csv
-```
-
-Run one agent:
-
-```bash
-python experiments/run_experiments.py --agent greedy_delivery --episodes 100
-```
-
-Analyse results:
-
-```bash
-python experiments/analyse_results.py --input results/raw/experiment_results.csv
-```
-
-Generate plots:
-
-```bash
-python experiments/plot_results.py --input results/raw/experiment_results.csv
-```
-
-Results are saved under:
-
-```text
-results/raw/
-results/processed/
-results/plots/
-```
-
-## Exploratory Archive: MCTS Agent
-
-The repository retains a Monte Carlo Tree Search implementation for research history and possible later tuning. It is not registered, shown in the Streamlit demo, or included in the main baseline comparison.
-
-Run MCTS experiments:
-
-```bash
-python experiments/run_mcts_experiments.py --map data/toy_medium_map.json --episodes 30 --iterations-list 50,100,250 --seed 0
-```
-
-Analyse and plot MCTS results:
-
-```bash
-python experiments/analyse_results.py --input results/raw/mcts_experiment_results.csv
-python experiments/plot_results.py --input results/raw/mcts_experiment_results.csv
-```
-
-## Exploratory Archive: MCTS Validation
-
-Run the MCTS smoke tests:
-
-```bash
-python experiments/smoke_test_mcts.py
-```
-
-Run the MCTS validation pipeline:
-
-```bash
-python experiments/run_mcts_pipeline.py --map data/toy_medium_map.json --episodes 30 --iterations-list 50,100,250 --seed 0
-```
-
-Validate MCTS results:
-
-```bash
-python experiments/validate_mcts_results.py --input results/raw/mcts_experiment_results.csv --episodes 30
-```
-
-Compare rollout policies:
-
-```bash
-python experiments/run_mcts_experiments.py --map data/toy_medium_map.json --episodes 5 --iterations-list 50,100 --rollout-policy-list random,greedy_delivery --output results/raw/mcts_rollout_comparison_results.csv
-```
-
-MCTS result notes are stored in:
-
-```text
-notes/MCTS_RESULTS_SUMMARY.md
-```
-
-## Exploratory Archive: MCTS Tuning
-
-Run MCTS tuning:
-
-```bash
-python experiments/run_mcts_tuning.py --map data/toy_medium_map.json --episodes 10 --iterations-list 50,100 --rollout-depth-list 40,80 --rollout-policy-list random --seed 0
-```
-
-Analyse and plot:
-
-```bash
-python experiments/analyse_mcts_tuning.py --input results/raw/mcts_tuning_results.csv
-python experiments/plot_mcts_tuning.py --input results/raw/mcts_tuning_results.csv
-```
-
-Run the full tuning pipeline:
-
-```bash
-python experiments/run_mcts_tuning_pipeline.py --map data/toy_medium_map.json --episodes 10 --iterations-list 50,100 --rollout-depth-list 40,80 --rollout-policy-list random --seed 0
-```
-
-Fast-vs-full candidate action check:
-
-```bash
-python experiments/run_mcts_tuning.py --map data/toy_map.json --episodes 5 --iterations-list 20 --rollout-depth-list 30 --rollout-policy-list random --action-generation-list fast,full --seed 0 --output results/raw/mcts_fast_vs_full_results.csv
-```
-
-## Semi-realistic Map
-
-Run baseline experiments:
-
-```bash
-python experiments/run_experiments.py --agent all --episodes 50 --map data/semi_realistic_map.json --output results/raw/semi_realistic_baseline_results.csv
-```
-
-Analyse and plot baseline results:
-
-```bash
-python experiments/analyse_results.py --input results/raw/semi_realistic_baseline_results.csv --output results/processed/semi_realistic_baseline_summary.csv
-python experiments/plot_results.py --input results/raw/semi_realistic_baseline_results.csv --output-dir results/plots/semi_realistic_baseline
-```
-
-Run MCTS experiments:
-
-```bash
-python experiments/run_mcts_experiments.py --map data/semi_realistic_map.json --episodes 10 --iterations-list 50,100 --rollout-depth 60 --rollout-policy random --seed 0 --output results/raw/semi_realistic_mcts_results.csv
-```
-
-Analyse and plot MCTS results:
-
-```bash
-python experiments/analyse_results.py --input results/raw/semi_realistic_mcts_results.csv --output results/processed/semi_realistic_mcts_summary.csv
-python experiments/plot_results.py --input results/raw/semi_realistic_mcts_results.csv --output-dir results/plots/semi_realistic_mcts
-```
-
-## Semi-realistic Experiment Pipeline (Research Archive)
-
-Run the full semi-realistic reporting workflow:
-
-```bash
-python experiments/run_semi_realistic_pipeline.py --baseline-episodes 50 --mcts-episodes 10 --mcts-iterations-list 50,100 --seed 0
-```
-
-This runs smoke tests, the project readiness check, baseline experiments, MCTS experiments, analysis, plotting, and validation for `semi_realistic_map`.
-
-Results are summarised in:
-
-```text
-notes/SEMI_REALISTIC_RESULTS_SUMMARY.md
-```
-
-## Semi-realistic Diagnosis and Major-line-aware MCTS (Exploratory)
-
-Run major-line sensitivity experiments:
-
-```bash
-python experiments/run_major_line_sensitivity.py --map data/semi_realistic_map.json --episodes 20 --mcts-episodes 5 --mcts-iterations-list 50,100 --multipliers 0,0.5,0.75,1.0 --seed 0
-```
-
-Analyse and plot sensitivity results:
-
-```bash
-python experiments/analyse_major_line_sensitivity.py --input results/raw/major_line_sensitivity_results.csv
-python experiments/plot_major_line_sensitivity.py --input results/raw/major_line_sensitivity_results.csv
-```
-
-Run major-line-aware MCTS experiments:
-
-```bash
-python experiments/run_mcts_major_line_experiments.py --map data/semi_realistic_map.json --episodes 10 --iterations-list 50,100 --rollout-depth 60 --seed 0
-```
-
-Validate major-line-aware MCTS results:
-
-```bash
-python experiments/validate_major_line_experiments.py --input results/raw/mcts_major_line_results.csv --episodes 10
-```
-
-Run the combined diagnosis pipeline:
-
-```bash
-python experiments/run_semi_realistic_diagnosis_pipeline.py --episodes 20 --mcts-episodes 5 --mcts-iterations-list 50,100 --multipliers 0,0.5,0.75,1.0 --seed 0
-```
-
-Diagnosis notes are stored in:
-
-```text
-notes/SEMI_REALISTIC_DIAGNOSIS.md
-```
-
-## Exact Benchmark
-
-Phase 3D adds a small exact-search benchmark on `micro_map`. The exact solver uses the same legal-action and transition interface as the simulator, but searches the full action tree with memoisation.
-
-Run the exact solver:
-
-```bash
-python exact/run_exact_benchmark.py
-```
-
-Compare agents to the exact optimum:
-
-```bash
-python exact/compare_agents_to_exact.py
-```
-
-Run exact smoke tests:
-
-```bash
-python experiments/smoke_test_exact.py
-```
-
-Exact benchmark notes are stored in:
-
-```text
-notes/EXACT_BENCHMARK_RESULTS.md
-```
-
-## Baseline Experiment Validation
-
-After running experiments, validate the outputs with:
+After running baseline experiments, validate their output with:
 
 ```bash
 python experiments/validate_baselines.py --input results/raw/experiment_results.csv --episodes 100
 ```
 
-For map comparison results:
+For current dissertation comparisons, prefer `experiments/run_agent_benchmark.py`.
 
-```bash
-python experiments/validate_baselines.py --input results/raw/map_comparison_results.csv --episodes 100 --maps toy_map,toy_medium_map,semi_realistic_map
-```
+## Historical Results
 
-To run tests, experiments, analysis, plotting, and validation in one command:
+Historical notes and generated outputs from earlier exploratory phases are
+retained for provenance. They are not part of the current five-agent
+meeting/demo runtime.
 
-```bash
-python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0
-```
-
-Run the full pipeline across all configured maps:
-
-```bash
-python experiments/run_full_baseline_pipeline.py --episodes 100 --seed 0 --map all --output results/raw/map_comparison_results.csv
-```
-
-Experiment planning and baseline result notes are stored in:
+Main evidence locations include:
 
 ```text
-notes/EXPERIMENT_PLAN.md
-notes/BASELINE_RESULTS_SUMMARY.md
+notes/
+results/
+experiments/results/
+experiments/outputs/
 ```
 
 ## Project Direction
 
-The simulator will later be extended with additional automated strategy methods such as Genetic Algorithms, reinforcement learning, or other optimisation approaches.
+The simulator may later be extended with additional automated strategy methods
+such as Genetic Algorithms, reinforcement learning, or other optimisation
+approaches.
 
-The current code separates map data, game state, rules, environment interface, agents, and visualisation:
+The current code separates map data, game state, rules, environment interface,
+agents, and visualisation:
 
 ```text
 data JSON
     -> GameState
     -> rules.py / scoring.py
     -> environment.py
-    -> baseline and MCTS agents
+    -> current public agents
     -> visualization / Streamlit UI
 ```
 
@@ -630,19 +247,7 @@ railways-world-ai/
 |-- README.md
 |-- requirements.txt
 |-- data/
-|   |-- toy_map.json
-|   |-- toy_medium_map.json
-|   |-- semi_realistic_map.json
-|   |-- micro_map.json
-|   |-- micro_rules_config.json
-|   `-- rules_config.json
-|-- exact/
-|   |-- __init__.py
-|   |-- exact_solver.py
-|   |-- run_exact_benchmark.py
-|   `-- compare_agents_to_exact.py
 |-- railways/
-|   |-- __init__.py
 |   |-- actions.py
 |   |-- environment.py
 |   |-- game_state.py
@@ -656,49 +261,23 @@ railways-world-ai/
 |   |-- base_agent.py
 |   |-- greedy_delivery_agent.py
 |   |-- greedy_expansion_agent.py
-|   |-- mcts_agent.py
+|   |-- objective_aware_greedy_agent.py
 |   |-- random_agent.py
 |   |-- registry.py
-|   `-- greedy_agent.py
+|   `-- urbanization_aware_lookahead_greedy_agent.py
 |-- experiments/
-|   |-- analyse_results.py
-|   |-- analyse_major_line_sensitivity.py
-|   |-- analyse_mcts_tuning.py
-|   |-- check_project_readiness.py
-|   |-- plot_results.py
-|   |-- plot_major_line_sensitivity.py
-|   |-- plot_mcts_tuning.py
-|   |-- run_major_line_sensitivity.py
-|   |-- run_full_baseline_pipeline.py
-|   |-- run_mcts_major_line_experiments.py
-|   |-- run_mcts_experiments.py
-|   |-- run_mcts_pipeline.py
-|   |-- run_mcts_tuning.py
-|   |-- run_mcts_tuning_pipeline.py
-|   |-- run_semi_realistic_diagnosis_pipeline.py
-|   |-- run_semi_realistic_pipeline.py
-|   |-- run_greedy.py
+|   |-- animate_agent_episode.py
+|   |-- demo_agent_animation_app.py
+|   |-- run_agent_benchmark.py
 |   |-- run_experiments.py
 |   |-- simulation_runner.py
 |   |-- smoke_test_agents.py
-|   |-- smoke_test_exact.py
-|   |-- smoke_test_maps.py
-|   |-- smoke_test_mcts.py
-|   |-- smoke_test_rules.py
-|   |-- validate_mcts_tuning.py
-|   |-- validate_mcts_results.py
-|   |-- validate_major_line_experiments.py
+|   |-- smoke_test_agent_benchmark.py
+|   |-- smoke_test_agent_animation.py
+|   |-- smoke_test_agent_animation_app.py
+|   |-- smoke_test_app_import.py
+|   |-- smoke_test_meeting_demo.py
+|   |-- smoke_test_urbanization_aware_lookahead_greedy_agent.py
 |   `-- validate_baselines.py
 `-- notes/
-    |-- BASELINE_RESULTS_SUMMARY.md
-    |-- EXACT_BENCHMARK_RESULTS.md
-    |-- EXPERIMENT_PLAN.md
-    |-- MCTS_RESULTS_SUMMARY.md
-    |-- MODEL_VALIDITY.md
-    |-- RULE_FIDELITY_ROADMAP.md
-    |-- RULES_COVERAGE.md
-    |-- SCENARIO_DESIGN.md
-    |-- SEMI_REALISTIC_DIAGNOSIS.md
-    |-- SEMI_REALISTIC_RESULTS_SUMMARY.md
-    `-- meeting_1_summary.md
 ```
