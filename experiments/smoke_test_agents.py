@@ -79,6 +79,7 @@ def test_main_registry_exposes_registered_agents() -> None:
         "route_segment_greedy",
         "objective_aware_greedy",
         "adaptive_objective_greedy",
+        "urbanization_aware_lookahead_greedy",
     ]
     assert list(AGENT_CLASSES) == expected
     assert list_agent_names() == expected

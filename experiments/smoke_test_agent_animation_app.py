@@ -17,6 +17,7 @@ EXPECTED_PRESENTATION_AGENTS = [
     "greedy_delivery",
     "greedy_expansion",
     "objective_aware_greedy",
+    "urbanization_aware_lookahead_greedy",
 ]
 NON_PRESENTATION_AGENTS = ("route_segment_greedy", "adaptive_objective_greedy")
 

@@ -705,9 +705,10 @@ def get_legal_urbanize_actions(state: GameState) -> list[Action]:
     ):
         return []
     return [
-        Action.urbanize(city.id)
+        Action.urbanize(city.id, demand_color=color)
         for city in state.cities.values()
         if city.is_gray
+        for color in state.config.allowed_good_colors
     ]
 
 

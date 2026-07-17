@@ -39,8 +39,15 @@ DEFAULT_AGENTS = (
     "route_segment_greedy",
     "objective_aware_greedy",
     "adaptive_objective_greedy",
+    "urbanization_aware_lookahead_greedy",
 )
-QUICK_AGENTS = DEFAULT_AGENTS[-3:]
+# Keep --quick lightweight; the depth-2 urbanization-aware agent is covered by
+# its focused smoke test and can be selected explicitly for benchmark runs.
+QUICK_AGENTS = (
+    "route_segment_greedy",
+    "objective_aware_greedy",
+    "adaptive_objective_greedy",
+)
 CSV_COLUMNS = [
     "map_name",
     "agent_name",
@@ -69,6 +76,7 @@ CSV_COLUMNS = [
     "delivery_actions",
     "build_actions",
     "upgrade_actions",
+    "urbanize_actions",
     "pass_actions",
     "issue_bond_actions",
     "next_turn_actions",
@@ -82,6 +90,7 @@ CSV_COLUMNS = [
     "completed_routes_per_bond",
     "major_line_claim_events",
     "rail_baron_claim_events",
+    "urbanized_city_count",
 ]
 
 
@@ -104,12 +113,16 @@ def run_benchmark_episode(
     initial_score = state.player.score
     initial_major_claims = sum(line.claimed for line in state.major_lines.values())
     initial_rail_claims = state.player.rail_baron_objectives_completed
+    initial_gray_city_ids = {
+        city_id for city_id, city in state.cities.items() if city.is_gray
+    }
     action_counts = {
         name: 0
         for name in (
             "delivery_actions",
             "build_actions",
             "upgrade_actions",
+            "urbanize_actions",
             "pass_actions",
             "issue_bond_actions",
             "next_turn_actions",
@@ -136,6 +149,7 @@ def run_benchmark_episode(
                 "deliver_good": "delivery_actions",
                 "build_track_segments": "build_actions",
                 "upgrade_engine": "upgrade_actions",
+                "urbanize": "urbanize_actions",
                 "pass": "pass_actions",
                 "issue_bond": "issue_bond_actions",
                 "next_turn": "next_turn_actions",
@@ -216,6 +230,12 @@ def run_benchmark_episode(
         "rail_baron_claim_events": (
             state.player.rail_baron_objectives_completed - initial_rail_claims
         ),
+        "urbanized_city_count": sum(
+            not state.cities[city_id].is_gray
+            and state.cities[city_id].is_urbanized
+            for city_id in initial_gray_city_ids
+            if city_id in state.cities
+        ),
     }
     return result
 
@@ -256,6 +276,7 @@ def summarise_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, 
                 "delivery_actions",
                 "build_actions",
                 "upgrade_actions",
+                "urbanize_actions",
                 "pass_actions",
                 "issue_bond_actions",
                 "failed_actions",
@@ -268,6 +289,7 @@ def summarise_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, 
                 "completed_routes_per_bond",
                 "major_line_claim_events",
                 "rail_baron_claim_events",
+                "urbanized_city_count",
             ):
                 metrics[f"mean_{field}"] = statistics.fmean(
                     float(row[field]) for row in group
@@ -370,8 +392,8 @@ def _markdown_summary(
                 "",
                 "### Behaviour diagnostics",
                 "",
-                "| Agent | Build Actions | Delivery Actions | Upgrade Actions | Pass Actions | Bonds Issued | Build Cost | Final / Step | Deliveries / Bond | Routes / Bond | Failed Actions |",
-                "|" + " --- |" * 11,
+                "| Agent | Build Actions | Delivery Actions | Upgrade Actions | Urbanize Actions | Urbanized Cities | Pass Actions | Bonds Issued | Build Cost | Final / Step | Deliveries / Bond | Routes / Bond | Failed Actions |",
+                "|" + " --- |" * 13,
             ]
         )
         for agent_name, item in agents.items():
@@ -383,6 +405,8 @@ def _markdown_summary(
                         f"{item['mean_build_actions']:.2f}",
                         f"{item['mean_delivery_actions']:.2f}",
                         f"{item['mean_upgrade_actions']:.2f}",
+                        f"{item['mean_urbanize_actions']:.2f}",
+                        f"{item['mean_urbanized_city_count']:.2f}",
                         f"{item['mean_pass_actions']:.2f}",
                         f"{item['mean_bonds_issued_during_episode']:.2f}",
                         f"{item['mean_total_build_cost_estimate']:.2f}",

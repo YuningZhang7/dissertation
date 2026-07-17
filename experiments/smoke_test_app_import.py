@@ -34,6 +34,7 @@ def test_app_exposes_registered_agents() -> None:
         "route_segment_greedy",
         "objective_aware_greedy",
         "adaptive_objective_greedy",
+        "urbanization_aware_lookahead_greedy",
     ]
 
 
@@ -42,7 +43,13 @@ def test_app_renders_registered_agent_options() -> None:
     assert not rendered.exception
     agent_selectors = [item for item in rendered.selectbox if item.label == "Agent"]
     assert len(agent_selectors) == 1
-    assert list(agent_selectors[0].options) == ["objective_aware_greedy"]
+    assert list(agent_selectors[0].options) == [
+        "random",
+        "greedy_delivery",
+        "greedy_expansion",
+        "objective_aware_greedy",
+        "urbanization_aware_lookahead_greedy",
+    ]
 
 
 def run_all() -> None:
