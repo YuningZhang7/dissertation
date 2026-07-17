@@ -4,21 +4,31 @@
 
 This project is a local visual simulator for a simplified single-player version of Railways of the World. It is intended as a testbed for interpretable AI and optimisation strategies.
 
-The current meeting/demo version focuses on simulator correctness and three interpretable baseline agents.
+The current mainline version focuses on the route-segment simulator, replay demo,
+benchmark tooling, and the dissertation-facing public agents.
 
 ## Current Development Stage
 
-The main evaluated and demo-facing agents are `RandomAgent`, `GreedyDeliveryAgent`, and `GreedyExpansionAgent`. The corrected simulator, exact-search micro benchmark, and representative card framework remain available.
+The main evaluated and demo-facing agents are `RandomAgent`, `GreedyDeliveryAgent`,
+`GreedyExpansionAgent`, `ObjectiveAwareGreedyAgent`, and
+`UrbanizationAwareLookaheadGreedyAgent`. The corrected simulator, exact-search
+micro benchmark, and representative card framework remain available.
 
-## Meeting Demo Scope
+## Mainline Demo Scope
 
-The main registry, Streamlit selector, and baseline experiment command expose only:
+The main registry, Streamlit selector, and benchmark defaults expose:
 
 - `random`
 - `greedy_delivery`
 - `greedy_expansion`
+- `objective_aware_greedy`
+- `urbanization_aware_lookahead_greedy`
 
-`MCTSAgent` and `CardAwareGreedyAgent` are retained in the full repository as exploratory implementations, but are excluded from the meeting demo and its main evaluation path. This keeps the presentation focused, interpretable, and easy to validate. It is a scope-control decision, not a claim that those components never existed.
+`MCTSAgent` and `CardAwareGreedyAgent` are retained in the full repository as
+exploratory implementations, but are excluded from the mainline demo and its
+main evaluation path. This keeps the presentation focused, interpretable, and
+easy to validate. It is a scope-control decision, not a claim that those
+components never existed.
 
 See [notes/MEETING_DEMO_SCOPE.md](notes/MEETING_DEMO_SCOPE.md).
 
@@ -121,14 +131,6 @@ Then open the local URL shown by Streamlit, usually:
 http://localhost:8501
 ```
 
-Build the clean meeting package with:
-
-```bash
-python scripts/create_meeting_demo_package.py
-```
-
-This creates `railways_meeting_demo_pack/` and `railways_meeting_demo_pack.zip`.
-
 ## Smoke Tests
 
 Run the rule-engine smoke tests:
@@ -167,7 +169,7 @@ Run the Phase 4 experiment-pipeline smoke test:
 python experiments/smoke_test_phase4_experiments.py
 ```
 
-Run the meeting-demo scope smoke test:
+Run the registered-agent/demo scope smoke test:
 
 ```bash
 python experiments/smoke_test_meeting_demo.py
@@ -387,7 +389,7 @@ results/plots/
 
 ## Exploratory Archive: MCTS Agent
 
-The repository retains a Monte Carlo Tree Search implementation for research history and possible later tuning. It is not registered, shown in the Streamlit meeting demo, or included in the main baseline comparison.
+The repository retains a Monte Carlo Tree Search implementation for research history and possible later tuning. It is not registered, shown in the Streamlit demo, or included in the main baseline comparison.
 
 Run MCTS experiments:
 

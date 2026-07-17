@@ -36,17 +36,16 @@ DEFAULT_AGENTS = (
     "random",
     "greedy_delivery",
     "greedy_expansion",
-    "route_segment_greedy",
     "objective_aware_greedy",
-    "adaptive_objective_greedy",
     "urbanization_aware_lookahead_greedy",
 )
 # Keep --quick lightweight; the depth-2 urbanization-aware agent is covered by
 # its focused smoke test and can be selected explicitly for benchmark runs.
 QUICK_AGENTS = (
-    "route_segment_greedy",
+    "random",
+    "greedy_delivery",
+    "greedy_expansion",
     "objective_aware_greedy",
-    "adaptive_objective_greedy",
 )
 CSV_COLUMNS = [
     "map_name",
@@ -434,16 +433,11 @@ def _markdown_summary(
                 f"- Most deliveries: {most_deliveries}.",
             ]
         )
-        adaptive = agents.get("adaptive_objective_greedy")
         objective = agents.get("objective_aware_greedy")
-        if (
-            adaptive
-            and objective
-            and adaptive["mean_build_actions"] > objective["mean_build_actions"]
-            and adaptive["mean_final_score"] <= objective["mean_final_score"]
-        ):
+        lookahead = agents.get("urbanization_aware_lookahead_greedy")
+        if lookahead and objective and lookahead["mean_runtime_seconds"] > objective["mean_runtime_seconds"]:
             lines.append(
-                "- adaptive_objective_greedy used more build actions without a higher mean final score."
+                "- urbanization_aware_lookahead_greedy is slower than the one-step objective-aware baseline."
             )
         lines.append("")
     lines.extend(

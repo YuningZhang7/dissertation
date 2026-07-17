@@ -22,7 +22,7 @@ def test_tiny_agent_animation_writes_required_artifacts() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         run_dir, returned_summary = run_agent_episode_animation(
             map_name="official_like",
-            agent_name="route_segment_greedy",
+            agent_name="objective_aware_greedy",
             seed=42,
             max_steps=5,
             output_root=temp_dir,
@@ -71,7 +71,7 @@ def test_tiny_agent_animation_writes_required_artifacts() -> None:
         }
         assert summary == returned_summary
         assert required_summary_fields.issubset(summary)
-        assert summary["agent_name"] == "route_segment_greedy"
+        assert summary["agent_name"] == "objective_aware_greedy"
         assert summary["frames_count"] == len(frame_paths)
         assert all(frame.stat().st_size > 0 for frame in frame_paths)
         assert all(
@@ -94,7 +94,7 @@ def test_events_frame_mode_writes_sparse_frames_and_full_history() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         run_dir, summary = run_agent_episode_animation(
             map_name="official_like",
-            agent_name="route_segment_greedy",
+            agent_name="objective_aware_greedy",
             seed=42,
             max_steps=10,
             frame_mode="events",
@@ -122,7 +122,7 @@ def test_agent_exception_still_writes_failure_summary() -> None:
         ):
             run_dir, summary = run_agent_episode_animation(
                 map_name="official_like",
-                agent_name="route_segment_greedy",
+                agent_name="objective_aware_greedy",
                 seed=42,
                 max_steps=5,
                 output_root=temp_dir,

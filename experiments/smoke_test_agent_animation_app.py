@@ -19,7 +19,6 @@ EXPECTED_PRESENTATION_AGENTS = [
     "objective_aware_greedy",
     "urbanization_aware_lookahead_greedy",
 ]
-NON_PRESENTATION_AGENTS = ("route_segment_greedy", "adaptive_objective_greedy")
 
 
 def test_demo_app_imports() -> None:
@@ -60,7 +59,6 @@ def test_demo_app_renders_run_configuration() -> None:
     selectors = {item.label: list(item.options) for item in rendered.selectbox}
     assert selectors["Map"] == ["official_like", "expanded_official_style"]
     assert selectors["Agent"] == EXPECTED_PRESENTATION_AGENTS
-    assert not set(selectors["Agent"]).intersection(NON_PRESENTATION_AGENTS)
     assert selectors["Frame mode"] == ["all", "events"]
     assert rendered.selectbox[0].value == "official_like"
     assert rendered.selectbox[1].value == "objective_aware_greedy"
