@@ -43,7 +43,7 @@ DEFAULT_OUTPUT_ROOT = (
 
 def run_agent_episode_animation(
     map_name: str = "official_like",
-    agent_name: str = "route_segment_greedy",
+    agent_name: str = "objective_aware_greedy",
     seed: int = 42,
     max_steps: int = 60,
     map_path: str | Path | None = None,
@@ -884,7 +884,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--agent",
         choices=list_agent_names(),
-        default="route_segment_greedy",
+        default="objective_aware_greedy",
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-steps", type=int, default=60)

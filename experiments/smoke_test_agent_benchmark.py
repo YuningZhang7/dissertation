@@ -16,9 +16,10 @@ from experiments.analyse_agent_benchmark import analyse_summary
 
 def test_quick_agent_benchmark_outputs() -> None:
     agents = [
-        "route_segment_greedy",
+        "random",
+        "greedy_delivery",
+        "greedy_expansion",
         "objective_aware_greedy",
-        "adaptive_objective_greedy",
     ]
     with tempfile.TemporaryDirectory() as temp_dir:
         rows, summary, output = run_benchmark(
@@ -36,7 +37,7 @@ def test_quick_agent_benchmark_outputs() -> None:
         with csv_path.open(newline="", encoding="utf-8") as file:
             csv_rows = list(csv.DictReader(file))
         saved_summary = json.loads(json_path.read_text(encoding="utf-8"))
-        assert len(rows) == len(csv_rows) == 6
+        assert len(rows) == len(csv_rows) == len(agents) * 2
         assert set(CSV_COLUMNS).issubset(csv_rows[0])
         for field in (
             "delivery_actions",
@@ -77,7 +78,6 @@ def test_quick_agent_benchmark_outputs() -> None:
         analysis = analyse_summary(json_path)
         assert "Best agent" in analysis
         assert "objective_aware_greedy" in analysis
-        assert "adaptive_objective_greedy" in analysis
 
 
 def run_all() -> None:
