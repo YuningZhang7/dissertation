@@ -28,13 +28,14 @@ APP_DESCRIPTION = (
     "routes, and Major Line / Rail Baron objectives are evaluated on the "
     "completed-route network."
 )
-RECOMMENDED_AGENT = "objective_aware_greedy"
+RECOMMENDED_AGENT = "presentation_lookahead_greedy"
 PRESENTATION_AGENT_OPTIONS = (
     "random",
     "greedy_delivery",
     "greedy_expansion",
     "objective_aware_greedy",
     "urbanization_aware_lookahead_greedy",
+    "presentation_lookahead_greedy",
 )
 DEFAULT_MAP = "official_like"
 DEFAULT_FRAME_MODE = "events"
@@ -43,10 +44,12 @@ MAP_SELECTION_CAPTION = (
     "provides a larger route-segment network with more objectives."
 )
 AGENT_SELECTION_CAPTION = (
-    "Select one of the presentation agents. objective_aware_greedy is the "
-    "recommended heuristic; random, greedy_delivery, and greedy_expansion are "
+    "Select one of the presentation agents. random, greedy_delivery, and "
+    "greedy_expansion are "
     "included as simple baselines. urbanization_aware_lookahead_greedy is "
-    "available for delayed-reward urbanization experiments."
+    "available for delayed-reward urbanization experiments. "
+    "presentation_lookahead_greedy is a replay-friendly lookahead variant that "
+    "prioritizes route completion and delivery before conservative urbanization."
 )
 
 

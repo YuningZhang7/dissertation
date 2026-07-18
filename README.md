@@ -12,13 +12,24 @@ dissertation-facing public agents.
 
 ## Meeting/Demo Scope
 
-The meeting/demo version exposes and retains five agents:
-random, greedy_delivery, greedy_expansion, objective_aware_greedy, and
-urbanization_aware_lookahead_greedy.
+The main meeting/demo build includes five core agents plus one
+presentation-friendly lookahead variant for replay demonstration.
 
-The main registry, Streamlit selector, replay demo, and benchmark defaults are
-kept aligned to those five agents so the presentation version is focused,
-interpretable, and easy to validate.
+Core agents:
+
+- `random`
+- `greedy_delivery`
+- `greedy_expansion`
+- `objective_aware_greedy`
+- `urbanization_aware_lookahead_greedy`
+
+Replay-friendly variant:
+
+- `presentation_lookahead_greedy`
+
+The presentation variant is a conservative lookahead agent tuned for readable
+replays: it prioritizes route completion and delivery before using urbanization
+near the built network or objective cities.
 
 See [notes/MEETING_DEMO_SCOPE.md](notes/MEETING_DEMO_SCOPE.md).
 
@@ -125,7 +136,6 @@ Replay generation and animation support live in:
 
 ```text
 experiments/animate_agent_episode.py
-experiments/agent_animation.py
 ```
 
 ## Smoke Tests
@@ -145,6 +155,7 @@ python experiments/smoke_test_app_import.py
 python experiments/smoke_test_agent_animation_app.py
 python experiments/smoke_test_agent_animation.py
 python experiments/smoke_test_urbanization_aware_lookahead_greedy_agent.py
+python experiments/smoke_test_presentation_lookahead_greedy_agent.py
 python experiments/smoke_test_meeting_demo.py
 python experiments/smoke_test_official_like_baselines.py
 python experiments/smoke_test_expanded_official_style_baselines.py
@@ -178,6 +189,12 @@ Run selected agents explicitly:
 python experiments/run_agent_benchmark.py --maps official_like --agents objective_aware_greedy urbanization_aware_lookahead_greedy --episodes 5 --max-steps 50
 ```
 
+Generate a replay-friendly lookahead episode:
+
+```bash
+python experiments/animate_agent_episode.py --map official_like --agent presentation_lookahead_greedy --seed 42 --max-steps 60 --frame-mode events
+```
+
 Benchmark outputs are written under:
 
 ```text
@@ -209,7 +226,7 @@ For current dissertation comparisons, prefer `experiments/run_agent_benchmark.py
 ## Historical Results
 
 Historical notes and generated outputs from earlier exploratory phases are
-retained for provenance. They are not part of the current five-agent
+retained for provenance. They are not part of the current core-agent
 meeting/demo runtime.
 
 Main evidence locations include:
@@ -262,6 +279,7 @@ railways-world-ai/
 |   |-- greedy_delivery_agent.py
 |   |-- greedy_expansion_agent.py
 |   |-- objective_aware_greedy_agent.py
+|   |-- presentation_lookahead_greedy_agent.py
 |   |-- random_agent.py
 |   |-- registry.py
 |   `-- urbanization_aware_lookahead_greedy_agent.py
@@ -277,6 +295,7 @@ railways-world-ai/
 |   |-- smoke_test_agent_animation_app.py
 |   |-- smoke_test_app_import.py
 |   |-- smoke_test_meeting_demo.py
+|   |-- smoke_test_presentation_lookahead_greedy_agent.py
 |   |-- smoke_test_urbanization_aware_lookahead_greedy_agent.py
 |   `-- validate_baselines.py
 `-- notes/
