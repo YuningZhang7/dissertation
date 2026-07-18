@@ -32,6 +32,7 @@ def test_demo_options_are_discoverable() -> None:
     ]
     assert demo_app.available_agent_names() == EXPECTED_PRESENTATION_AGENTS
     assert demo_app.FRAME_MODE_OPTIONS == ("all", "events")
+    assert demo_app.DEFAULT_MAX_STEPS == 30
 
 
 def test_replay_interface_content_is_presentation_focused() -> None:
@@ -46,6 +47,8 @@ def test_replay_interface_content_is_presentation_focused() -> None:
         "Show all agents",
     ):
         assert removed_label not in source
+    assert "Terminal final score" in source
+    assert "Truncated score" in source
 
 
 def test_demo_app_renders_run_configuration() -> None:
@@ -64,8 +67,9 @@ def test_demo_app_renders_run_configuration() -> None:
     assert rendered.selectbox[1].value == "lookahead_greedy"
     assert rendered.selectbox[2].value == "events"
     assert not any(item.label == "Show all agents" for item in rendered.checkbox)
-    assert any(item.label == "Seed" for item in rendered.number_input)
-    assert any(item.label == "Max steps" for item in rendered.number_input)
+    number_inputs = {item.label: item.value for item in rendered.number_input}
+    assert "Seed" in number_inputs
+    assert number_inputs["Max steps"] == 30
     assert any(
         item.label == "Run agent and generate replay" for item in rendered.button
     )
