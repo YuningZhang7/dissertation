@@ -1,120 +1,134 @@
 # Rules Coverage
 
-## Implemented Rules
+## Current Mainline Runtime
 
-- Visual railway map using a graph of cities and links.
-- Cities with demand colors, goods, urbanized status, gray-city support, and empty city markers.
-- Railway links with fixed build costs, built status, and single-player ownership.
-- Single-player turn structure with an action phase and income phase.
+The active simulator is a single-player route-segment abstraction. It is not a full implementation of *Railways of the World*. The current dissertation comparison uses the `official_like` and `expanded` artificial route-segment scenarios and the five public agents exposed by `agents/registry.py`.
+
+Legacy edge-only maps and early MCTS/CardAware experiments are not part of the current mainline runtime.
+
+## Implemented State and Turn Rules
+
+- Cities with demand colours, goods, grey-city status, urbanised status, and empty-city markers.
+- City-to-city routes represented by ordered track segments.
+- Segment terrain labels and fixed scenario-defined costs.
+- Single-player ownership of built and completed track.
+- Action and income phases.
 - Configurable actions per turn.
-- Track construction as one city-to-city edge per action.
-- Optional connected track-building restriction. With `require_connected_track_building = true`, the first track may start anywhere, then later track must touch the player's existing network. This is a simplifying network-contiguity assumption, not an official fixed-start rule.
-- Goods delivery over built links only.
-- Explicit route-based delivery actions with a selected `path` field.
-- Locomotive level limiting delivery path length.
-- Delivery scoring based on path length.
-- Rule preventing a delivery from skipping an intermediate city that demands the delivered good color.
-- Internal share/bond financing during payments, configurable financing value, and configurable final penalty.
-- Financing interest/dividend during income phase.
-- Score-based income using a configurable income table.
-- Engine upgrades using configurable level-by-level costs.
-- Empty city markers when a city loses its last good.
-- Fixed-turn end condition.
-- Empty-city-marker end condition with optional extra turn after the trigger.
-- Simplified urbanize action for gray or non-urbanized cities.
-- Major-line data loading, connection-based claiming, one-time bonus scoring, and action-history logging.
-- Minimal representative operation-card framework with JSON loading, card selection actions, immediate cash effects, delivery objectives, network objectives, and end-game scoring cards.
-- AI-ready environment functions: reset, legal actions, apply action, copy state, terminal check, final score.
+- `pass` and `next_turn` actions.
+- Score-based income.
+- Internal automatic financing during paid actions.
+- Financing obligation during the income phase.
+- Configurable fixed-turn or empty-city-marker end-condition modes.
+- Optional extra turn after the end condition is triggered.
+- Final scoring from score, financing penalty, Major Line bonus, Rail Baron bonus, and enabled operation-card bonuses.
 
-## Supervisor Feedback Corrections
+## Track Construction
 
-- The model has no fixed player starting city, home city, train position, or moving train token.
-- The first built edge can be anywhere on the map. If connected track building is enabled, later builds must touch the player's existing network only as a simplifying continuity assumption.
-- Goods delivery is based on source-city goods, target demand, built paths, locomotive level, and route validity. It is not based on a player origin city.
-- Issuing shares/bonds is no longer exposed as an agent action. The legacy `issue_bond` action is also rejected by the external action interface. Financing is handled internally by `pay_money` when an action cost must be paid and automatic financing is enabled.
-- The code still uses the historical field name `bonds` in some places. This currently approximates Railways of the World's share certificate financing mechanism.
+A `build_track_segments` action currently follows these rules:
 
-## Simplified Rules
+1. It must contain between one and four segments.
+2. Every selected segment must exist and must not already be built.
+3. All selected segments must belong to the same route.
+4. Segment indices must be consecutive and supplied in increasing order.
+5. The selected chain must touch one of that route's city endpoints or an existing incomplete endpoint on the same route.
+6. The construction cost is paid through available cash and, when enabled, automatic financing.
+7. A route becomes completed only when all of its segments are built.
+8. Completed routes and segments remain available for delivery and objective checks.
+9. Built but incomplete segments are removed during the income phase.
 
-- Each city-to-city link is modelled as one edge, not individual track tiles.
-- Track costs are fixed edge costs rather than detailed terrain, track tile, river, or mountain costs.
-- Connected track building checks only whether a candidate edge touches the player's existing graph; it does not yet enforce tile placement or terrain constraints.
-- All built links are owned by the single player.
-- Delivery route selection uses explicit simple graph paths, but does not yet model opponent track fees or complex official route constraints.
-- Income uses a small configurable score table rather than the full official income chart.
-- Share/bond financing is simplified to a fixed certificate value and fixed income-phase obligation.
-- Urbanize uses a simple cost, demand color, and random new goods.
-- Major lines are represented as source-target connection bonuses rather than full official route cards.
-- Operation cards use a small original test deck rather than the official deck or official card text.
-- The map is a toy map rather than an official board map.
-- End condition can be set to `fixed_turns` or `empty_city_markers`.
+The active validator therefore enforces route-local continuity. The legacy `require_connected_track_building` configuration field is still present in configuration and model data, but the current route-segment validator does not enforce global connection to the player's previously completed network. Documentation and dissertation claims must follow the implemented validator rather than the legacy field name.
+
+## Goods Delivery
+
+A `deliver_good` action currently requires:
+
+- distinct source and target cities;
+- the selected good colour to be present at the source;
+- the target demand colour to match the good colour;
+- the target not to be a grey city;
+- an explicit simple path through completed routes owned by the player;
+- total path length, measured in completed track segments, not exceeding the locomotive level;
+- no intermediate city on the path demanding the same colour, because such a path would skip an earlier valid destination.
+
+A successful delivery removes one good from the source, updates its empty-city marker if necessary, adds path-length-based score, and consumes one action.
+
+## Locomotive Upgrades
+
+- Locomotive level is capped by the configured maximum.
+- Upgrade costs are configured by target level.
+- Payment can trigger automatic financing.
+- Higher levels permit deliveries over longer completed-route paths.
+
+## Financing
+
+- Voluntary `issue_bond` actions are not part of the legal action space.
+- Paid actions call `pay_money`.
+- If cash is insufficient and automatic financing is enabled, the minimum required number of financing certificates is issued automatically.
+- The historical field name `bonds` remains in the code, but it approximates share-certificate financing in this abstraction.
+- Each certificate creates an income-phase obligation and a configurable final-score penalty.
+
+## Urbanisation
+
+- Each legal urbanisation action selects one grey city and one allowed demand colour.
+- Urbanisation pays the configured cost through the same financing mechanism.
+- The city becomes non-grey and receives the chosen demand colour.
+- The city receives a configured number of randomly generated goods.
+- Random outcomes are controlled by the experiment seed at environment level.
+
+The public `lookahead_greedy` agent uses a deterministic surrogate seed when simulating candidate urbanisation actions. The real environment transition still uses the active experiment random state, so the simulated and realised new goods are not guaranteed to match exactly.
+
+## Major Line and Rail Baron Objectives
+
+- Major Lines are source-target connectivity objectives evaluated on the completed-route graph.
+- Each Major Line can be claimed once and awards its configured bonus.
+- One active Rail Baron objective is selected for a game state.
+- The Rail Baron objective is claimed when its source and target become connected on the completed-route graph.
+- Objective bonuses are included in the scoring formula.
+
+These are simplified connection objectives rather than full official card or map-specific implementations.
+
+## Operation Cards
+
+- A small original JSON-defined card framework is implemented.
+- Supported representative effects include immediate cash, delivery objectives, network objectives, and end-game bonuses.
+- Cards are opt-in for programmatic simulation through `card_path`.
+- The Streamlit replay path enables `data/cards_basic.json`.
+- The current public agent benchmark is card-disabled by default.
+- The five public agents do not include a dedicated card-aware policy, so card behaviour is not a primary claim of the current dissertation comparison.
+
+## Current Public Agents
+
+- `random`
+- `greedy_delivery`
+- `greedy_expansion`
+- `objective_aware_greedy`
+- `lookahead_greedy`
+
+Historical MCTS and CardAware agent implementations were removed from the active source tree during mainline cleanup. Historical notes and generated result artefacts may retain those names for provenance, but they must not be presented as current runtime components.
 
 ## Not Yet Implemented
 
-- Full official action phase details.
-- First-player auction and turn-order bidding.
-- Full urbanize deck/city rules.
-- Full empty city marker rules from each official map.
-- Full income and dividend rules.
-- Full bond and share/economic model.
-- Major Lines with official route requirements and map-specific bonuses.
-- Full official Railroad Operations Card deck and full official card timing.
-- Full Rail Baron / Tycoon objective-card system.
-- Full terrain-based track building.
-- Track tile placement and tile limits.
-- Official map-specific rules.
-- Official Eastern U.S. map data.
-- Opponent-owned track scoring.
+- Full official map data and artwork.
+- Individual official track-tile placement and tile inventory.
+- Detailed terrain, river, mountain, crossing, and city-entry construction rules.
+- Full official action phase and turn-order rules.
+- Full official income, dividend, share, and economic model.
+- Full official urbanisation deck and city rules.
+- Full official empty-city-marker rules for a selected map.
+- Full official Railroad Operations Card deck and timing rules.
+- Full Rail Baron or Tycoon card system.
+- Multiplayer auctions, blocking, shared goods competition, and opponent interaction.
+- Opponent-owned route use and payments.
+- Genetic Algorithm or Reinforcement Learning agents.
+- Proven optimal solution methods for the official-like and expanded scenarios.
 
-## Intentionally Excluded for Single-Player Version
+## Experimental Interpretation
 
-- Player-vs-player competition.
-- First player auction.
-- Turn order bidding.
-- Competition for goods.
-- Multiplayer blocking and route competition.
-- Opponent-owned track scoring.
-- Leader-follower model.
+Results are evidence about the implemented abstraction only. A benchmark must report the map, agents, seed set, step horizon, card setting, terminal rate, score type, and runtime environment.
 
-## Current Experimental Use
+`GameState.final_score()` can be evaluated before termination. Therefore:
 
-The rule engine is now used by baseline automated agents. These agents are intended as simple benchmarks before implementing MCTS, Genetic Algorithms, Reinforcement Learning, or other advanced optimisation methods.
+- a score from a terminal state is a **terminal final score**;
+- a score at `max_steps` from a non-terminal state is a **truncated score**.
 
-Baseline, MCTS, and exact-benchmark experiments currently support `micro_map`, `toy_map`, `toy_medium_map`, and `semi_realistic_map`. The maps are artificial and self-created; they are intended to create route-building and delivery trade-offs without using official copyrighted map artwork.
-
-## Phase 3A Map Realism
-
-Phase 3A improves scenario realism by adding `semi_realistic_map`, a larger artificial graph with multiple regions, bottleneck routes, grey cities, varied edge costs, and more major lines.
-
-This improves external validity compared with the small toy maps, but it still does not fully implement official multiplayer rules, official map-specific rules, terrain/tile placement, operation cards, Rail Baron cards, or opponent-owned track scoring.
-
-## Phase 3B Semi-realistic Experiment Reporting
-
-Phase 3B runs baseline and MCTS experiments on `semi_realistic_map`. The results show that the larger map changes algorithm behaviour: `greedy_expansion` benefits strongly from major-line bonuses, while MCTS improves over random and immediate-delivery greed but has higher runtime and does not yet dominate the expansion heuristic.
-
-This phase strengthens experimental reporting, but it does not add new official rules. The same single-player abstractions and exclusions still apply.
-
-## Phase 3D Exact Benchmark
-
-Phase 3D adds exact exhaustive search on `micro_map`. This is an evaluation tool rather than a new game rule: it searches the existing legal-action space to compute the true optimum under the implemented single-player abstraction.
-
-Exact search is intentionally limited to very small instances because the legal action space grows quickly on larger maps.
-
-## Phase 4 Minimal Card Framework
-
-Phase 4 adds a small representative card framework to support fuller-rule modelling without attempting to copy or implement the complete official deck. The framework loads original simplified card definitions from `data/cards_basic.json`, stores available and owned card state, exposes `select_operation_card(card_id)` as a normal player action when cards are enabled, and supports immediate cash, delivery-objective, network-objective, and end-game scoring card types.
-
-Cards are disabled by default in `reset_game` unless a `card_path` is supplied. This keeps existing card-free experiments and the `micro_map` exact benchmark comparable. The Streamlit app enables the basic card deck for demonstration. The app entry point is `app.py`; launch it with `python -m streamlit run app.py` or `python run_app.py`.
-
-## Next Rule-Fidelity Checklist
-
-1. Decide whether each turn should always have exactly three actions or allow a formal end-turn/pass phase.
-2. Add official-style route choice details such as opponent track payments if multiplayer is ever reintroduced.
-3. Add terrain and tile-level build costs.
-4. Improve urbanize rules and goods generation.
-5. Calibrate income and share-certificate financing rules against the selected official map/ruleset.
-6. Expand the minimal card framework toward a selected official-like operation-card subset.
-7. Add Rail Baron / Tycoon objective-card support.
-8. Expand major-line validation to match official card/map requirements.
-9. Calibrate `semi_realistic_map` and scenario-specific configs against dissertation experiment needs.
-10. Add automated test coverage for edge cases before implementing advanced AI.
+Fixed-horizon truncated scores are valid for equal-budget policy comparison, but they must not be described as completed-game results.
