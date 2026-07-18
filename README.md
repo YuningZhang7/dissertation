@@ -2,19 +2,21 @@
 
 ## Overview
 
-This project is a local visual simulator for a simplified single-player version
-of Railways of the World. It is intended as a dissertation testbed for
-interpretable AI and optimisation strategies.
+This project is a local visual simulator for a simplified single-player railway network problem inspired by *Railways of the World*. It is intended as a dissertation testbed for interpretable AI and optimisation strategies, not as a full commercial game implementation.
 
-The current mainline version focuses on the route-segment simulator, replay
-demo, benchmark tooling, automatic financing, colored urbanization, and the
-dissertation-facing public agents.
+The current mainline focuses on:
 
-## Meeting/Demo Scope
+- a route-segment simulator;
+- five interpretable public agents;
+- automatic financing;
+- coloured urbanisation;
+- Major Line and Rail Baron connection objectives;
+- replay visualisation;
+- reproducible multi-seed benchmark tooling.
 
-The main meeting/demo build exposes five public agents.
+## Current Public Agents
 
-Core agents:
+The public registry exposes exactly five agents:
 
 - `random`
 - `greedy_delivery`
@@ -22,79 +24,69 @@ Core agents:
 - `objective_aware_greedy`
 - `lookahead_greedy`
 
-`lookahead_greedy` is the final balanced lookahead agent for the demo path. It
-is tuned for readable replays: it prioritizes route completion and delivery
-before using urbanization near the built network or objective cities.
-Shared lookahead helper code lives in `agents/lookahead_utils.py`; only
-`lookahead_greedy` is exposed as the public lookahead agent.
+`objective_aware_greedy` is the strongest one-step heuristic baseline. It prioritises current deliveries and otherwise scores route construction and locomotive upgrades using delivery potential, route completion, objectives, construction cost, and financing.
+
+`lookahead_greedy` is the final enhanced agent. It uses a restricted candidate set, depth-two bounded lookahead, discounted future value, and conservative urbanisation gates. It is designed for interpretable replay rather than optimality guarantees.
+
+Shared lookahead helper code lives in `agents/lookahead_utils.py`.
+
+Historical MCTS and CardAware experiments are not part of the current runtime. Historical notes and generated outputs may still mention them for provenance.
 
 See [notes/MEETING_DEMO_SCOPE.md](notes/MEETING_DEMO_SCOPE.md).
 
-## Supervisor Feedback Corrections
+## Current Rule Model
 
-The basic-rule action model has been corrected after supervisor feedback:
+The active runtime requires route-segment maps. Each city-to-city route contains an ordered sequence of abstract track segments, and a route becomes usable only after all of its segments are completed.
 
-- The simulator has no fixed player starting city, home city, train position, or moving train token.
-- Goods can be delivered from any source city with the required good to any demanding destination city if a valid built route exists.
-- Issuing shares/bonds is not exposed as an agent action. Financing is handled internally during payment when automatic financing is enabled.
-- The code still uses `bonds` naming in some fields for compatibility, but it currently approximates the share certificate financing mechanism.
-- Connected track building remains configurable as a simplifying network-contiguity assumption, not as an official start-point rule.
+Implemented mainline rules include:
 
-## Current Rule Coverage
+- action and income phases;
+- configurable actions per turn;
+- building one to four consecutive segments on one route;
+- route completion after every segment on that route is built;
+- removal of incomplete segments during the income phase;
+- delivery over explicitly selected completed-route paths;
+- locomotive level limiting delivery distance by segment count;
+- prevention of skipping an intermediate city demanding the same good colour;
+- locomotive upgrades;
+- internal automatic financing during paid actions;
+- financing obligations and final financing penalties;
+- score-based income;
+- empty-city markers and configurable end conditions;
+- coloured urbanisation of grey cities;
+- Major Line and Rail Baron connectivity bonuses;
+- a minimal representative operation-card framework;
+- an AI-ready reset, legal-action, transition, copy, terminal, and scoring interface.
 
-This version is a single-player rule-development prototype. It is not yet a
-full official implementation of Railways of the World. The current goal is to
-preserve the core local rules needed for optimisation experiments, while
-excluding player-vs-player interaction for now.
+The current route-segment validator enforces continuity within a route: a new segment chain must touch that route's city endpoint or an existing incomplete endpoint. The legacy `require_connected_track_building` configuration field should not be interpreted as global connectivity enforcement to the player's existing completed network.
 
-See [notes/RULES_COVERAGE.md](notes/RULES_COVERAGE.md) and
-[notes/MODEL_VALIDITY.md](notes/MODEL_VALIDITY.md).
+The simulator has no fixed home city, train position, or moving train token. Issuing financing certificates is not an agent action; payment functions issue the minimum required amount automatically when enabled. The historical `bonds` field name approximates share-certificate financing in this abstraction.
 
-## Scenario Design
+See:
 
-The project includes self-created scenarios for smoke tests, demo runs, and
-benchmark comparisons:
+- [notes/RULES_COVERAGE.md](notes/RULES_COVERAGE.md)
+- [notes/MODEL_VALIDITY.md](notes/MODEL_VALIDITY.md)
 
-- `toy_map`
-- `toy_medium_map`
-- `semi_realistic_map`
-- `micro_map`
-- `official_like_route_segment_map`
-- `expanded_official_style_route_segment_map`
+## Scenarios
 
-See [notes/SCENARIO_DESIGN.md](notes/SCENARIO_DESIGN.md).
+The current dissertation-facing maps are:
 
-## Implemented Core Rules
+- `official_like`: compact route-segment map for the main comparison and replay;
+- `expanded`: larger route-segment map for scalability analysis.
 
-- Turn structure with action and income phases
-- Configurable actions per turn
-- Configurable connected track-building restriction after the first built edge
-- Explicit route-based goods delivery actions
-- Upgrade engine
-- Internal share/bond financing during payments
-- Financing interest/dividend during income
-- Score-based income phase
-- Basic final scoring
-- Empty city markers
-- Fixed-turn and empty-city-marker end condition modes
-- Colored urbanize actions for each gray city and allowed good color
-- Major-line loading, claiming, and final-score bonus support
-- Rail Baron objective loading, claiming, and final-score bonus support
-- Minimal representative operation-card framework
-- AI-ready environment interface
+Both maps are artificial research scenarios. They do not copy official board artwork or official map data.
 
-## Not Yet Implemented
+Earlier toy, semi-realistic, and micro scenarios may remain in repository history or historical experiment material, but they are not the main current five-agent benchmark.
 
-- Full official map
-- Full individual track tile placement
-- Full official operation-card deck
-- Multiplayer auction and interaction
-- Opponent-owned track scoring
-- Genetic Algorithm and Reinforcement Learning agents
+## Running the Streamlit Replay
 
-## Running the Streamlit Demo
+Install dependencies:
 
-From the repository root:
+```bash
+pip install -r requirements.txt
+```
+
+Launch from the repository root:
 
 ```bash
 python -m streamlit run app.py
@@ -106,46 +98,134 @@ or:
 python run_app.py
 ```
 
-The app entry point is always `app.py`. Do not run markdown files such as
-prompt notes or Codex task instructions.
-
-Install dependencies first if needed:
-
-```bash
-pip install -r requirements.txt
-```
-
-Then open the local URL shown by Streamlit, usually:
+The recommended meeting configuration is:
 
 ```text
-http://localhost:8501
+Map: official_like
+Agent: lookahead_greedy
+Seed: 42
+Max steps: 30
+Frame mode: events
 ```
 
-## Replay Demo
+The 30-step default is a presentation horizon chosen for a responsive replay. If the episode has not terminated, the app labels the displayed value as a **truncated score** rather than a terminal final score.
 
-The current replay/presentation path is route-segment focused:
+For the expanded map, prefer `objective_aware_greedy` for a live demonstration because `lookahead_greedy` is substantially slower on the larger action space.
+
+## Command-Line Replay
+
+Generate the recommended replay:
 
 ```bash
-python experiments/demo_agent_animation_app.py
+python experiments/animate_agent_episode.py \
+  --map official_like \
+  --agent lookahead_greedy \
+  --seed 42 \
+  --max-steps 30 \
+  --frame-mode events
 ```
 
-Replay generation and animation support live in:
+Replay generation and rendering support live in:
 
 ```text
 experiments/animate_agent_episode.py
+experiments/demo_agent_animation_app.py
 ```
+
+## Score Terminology
+
+`GameState.final_score()` applies the scoring formula to the current state. The name of the function does not by itself mean that the game ended.
+
+Use these terms:
+
+- **Terminal final score**: the environment reached its game-over state.
+- **Truncated score**: execution stopped at `max_steps` before game over.
+- **Evaluation score**: a generic term covering both cases.
+
+Benchmark rows include:
+
+```text
+terminal
+score_type
+final_score
+```
+
+`final_score` is retained for compatibility and represents the evaluation score at the stopping point. `score_type` is `terminal_final_score` or `truncated_score`.
+
+Do not describe a fixed-horizon group containing non-terminal episodes as completed-game final scores.
+
+## Formal Benchmark Plan
+
+The current methodology is documented in:
+
+[notes/EXPERIMENT_PLAN.md](notes/EXPERIMENT_PLAN.md)
+
+The primary planned comparison is:
+
+```text
+Map: official_like
+Agents: all five public agents
+Episodes: 20 paired seeds
+Seeds: 1000–1019
+Maximum steps: 60
+Cards: disabled
+```
+
+Run it with:
+
+```bash
+python experiments/run_agent_benchmark.py \
+  --maps official_like \
+  --agents random greedy_delivery greedy_expansion objective_aware_greedy lookahead_greedy \
+  --episodes 20 \
+  --max-steps 60 \
+  --base-seed 1000 \
+  --output-dir experiments/results/formal_benchmark/official_like_60
+```
+
+The formal plan also defines:
+
+- 30/60/90-step horizon sensitivity;
+- expanded-map scalability experiments;
+- a smaller expanded-map lookahead pilot;
+- paired seed-by-seed comparisons;
+- terminal-rate reporting;
+- score and runtime distributions;
+- cautious dissertation claim rules.
+
+Seed 42 and the 30-step replay are qualitative demo settings, not the main statistical evidence.
+
+## Benchmark Outputs
+
+Outputs are written under the selected output directory and include:
+
+```text
+benchmark_rows.csv
+benchmark_summary.json
+benchmark_summary.md
+```
+
+Recorded data include:
+
+- evaluation score and score type;
+- terminal and success flags;
+- deliveries and completed routes;
+- Major Line and Rail Baron bonuses;
+- financing;
+- action counts;
+- urbanisation diagnostics;
+- fallback and failed actions;
+- runtime;
+- efficiency ratios.
+
+The generated Markdown summary reports terminal rate and separates mean terminal final score from mean truncated score when available.
 
 ## Smoke Tests
 
-Run the core rule-engine smoke tests:
+Run the current core checks:
 
 ```bash
 python experiments/smoke_test_rules.py
-```
-
-Run the current agent and benchmark smoke tests:
-
-```bash
 python experiments/smoke_test_agents.py
 python experiments/smoke_test_agent_benchmark.py
 python experiments/smoke_test_app_import.py
@@ -157,100 +237,31 @@ python experiments/smoke_test_official_like_baselines.py
 python experiments/smoke_test_expanded_official_style_baselines.py
 ```
 
-Optional focused smoke tests remain for maps and the representative card
-framework:
+Optional focused checks remain for maps and the representative card framework:
 
 ```bash
 python experiments/smoke_test_maps.py
 python experiments/smoke_test_cards.py
 ```
 
-The smoke tests cover connected track building, explicit delivery paths,
-corrected financing action space, automatic financing during payment,
-empty-city-marker end conditions, major-line bonuses, Rail Baron bonuses,
-income, colored urbanization, action hashing, replay compatibility, and final
-scoring.
+## Operation-Card Scope
 
-## Benchmarking
+The Streamlit app enables `data/cards_basic.json` as a representative environment feature. The current benchmark runner is card-disabled by default, and the five public agents do not include a dedicated card-aware policy.
 
-Run a small current-agent benchmark:
+Therefore, do not compare replay and benchmark numbers as if they were generated from identical card settings, and do not make card-aware agent claims from the current public comparison.
 
-```bash
-python experiments/run_agent_benchmark.py --maps official_like --episodes 5 --max-steps 50
-```
+## Not Yet Implemented
 
-Run selected agents explicitly:
-
-```bash
-python experiments/run_agent_benchmark.py --maps official_like --agents objective_aware_greedy lookahead_greedy --episodes 5 --max-steps 50
-```
-
-Generate a replay-friendly lookahead episode:
-
-```bash
-python experiments/animate_agent_episode.py --map official_like --agent lookahead_greedy --seed 42 --max-steps 60 --frame-mode events
-```
-
-Benchmark outputs are written under:
-
-```text
-experiments/results/agent_benchmark/
-```
-
-The benchmark records score, bonds, deliveries, completed routes, major-line
-and Rail Baron bonuses, fallback actions, runtime, and urbanization diagnostics
-such as `urbanize_actions` and `urbanized_city_count`.
-
-## Baseline Experiments
-
-The older baseline runner remains available for the lightweight toy-map
-experiments:
-
-```bash
-python experiments/run_experiments.py --agent all --episodes 100
-python experiments/run_greedy.py
-```
-
-After running baseline experiments, validate their output with:
-
-```bash
-python experiments/validate_baselines.py --input results/raw/experiment_results.csv --episodes 100
-```
-
-For current dissertation comparisons, prefer `experiments/run_agent_benchmark.py`.
-
-## Historical Results
-
-Historical notes and generated outputs from earlier exploratory phases are
-retained for provenance. They are not part of the current core-agent
-meeting/demo runtime.
-
-Main evidence locations include:
-
-```text
-notes/
-results/
-experiments/results/
-experiments/outputs/
-```
-
-## Project Direction
-
-The simulator may later be extended with additional automated strategy methods
-such as Genetic Algorithms, reinforcement learning, or other optimisation
-approaches.
-
-The current code separates map data, game state, rules, environment interface,
-agents, and visualisation:
-
-```text
-data JSON
-    -> GameState
-    -> rules.py / scoring.py
-    -> environment.py
-    -> current public agents
-    -> visualization / Streamlit UI
-```
+- full official map data or artwork;
+- official track-tile placement and inventory;
+- complete terrain, river, mountain, and crossing rules;
+- full official financing and income model;
+- full official operation-card deck and timing;
+- full Rail Baron or Tycoon card system;
+- multiplayer auctions and opponent interaction;
+- opponent-owned track scoring and payments;
+- Genetic Algorithm or Reinforcement Learning agents;
+- proven optimal methods for the current official-like and expanded scenarios.
 
 ## Repository Structure
 
@@ -270,7 +281,6 @@ railways-world-ai/
 |   |-- scoring.py
 |   `-- visualization.py
 |-- agents/
-|   |-- __init__.py
 |   |-- base_agent.py
 |   |-- greedy_delivery_agent.py
 |   |-- greedy_expansion_agent.py
@@ -283,15 +293,19 @@ railways-world-ai/
 |   |-- animate_agent_episode.py
 |   |-- demo_agent_animation_app.py
 |   |-- run_agent_benchmark.py
-|   |-- run_experiments.py
 |   |-- simulation_runner.py
-|   |-- smoke_test_agents.py
 |   |-- smoke_test_agent_benchmark.py
-|   |-- smoke_test_agent_animation.py
 |   |-- smoke_test_agent_animation_app.py
-|   |-- smoke_test_app_import.py
-|   |-- smoke_test_meeting_demo.py
 |   |-- smoke_test_lookahead_greedy_agent.py
-|   `-- validate_baselines.py
+|   `-- smoke_test_meeting_demo.py
 `-- notes/
+    |-- EXPERIMENT_PLAN.md
+    |-- DISSERTATION_RESULTS_OUTLINE.md
+    |-- MEETING_DEMO_SCOPE.md
+    |-- MODEL_VALIDITY.md
+    `-- RULES_COVERAGE.md
 ```
+
+## Dissertation Claim Boundary
+
+Results support conclusions about the implemented single-player route-segment abstraction under the reported maps, rules, seeds, card setting, and horizons. They do not establish optimal play or performance in the complete multiplayer board game.
