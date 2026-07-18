@@ -54,6 +54,7 @@ CSV_COLUMNS = [
     "seed",
     "steps",
     "terminal",
+    "score_type",
     "success",
     "error",
     "final_score",
@@ -91,6 +92,10 @@ CSV_COLUMNS = [
     "rail_baron_claim_events",
     "urbanized_city_count",
 ]
+
+
+def _score_type(terminal: bool) -> str:
+    return "terminal_final_score" if terminal else "truncated_score"
 
 
 def run_benchmark_episode(
@@ -179,19 +184,25 @@ def run_benchmark_episode(
     except Exception as exc:
         success = False
         error = f"{type(exc).__name__}: {exc}"
+
     runtime_seconds = time.perf_counter() - started
     completed_routes = sum(route.completed for route in state.routes.values())
     final_bonds = state.player.bonds
-    result = {
+    terminal = is_terminal(state)
+    evaluation_score = state.final_score()
+    return {
         "map_name": map_name,
         "agent_name": agent_name,
         "episode": episode,
         "seed": seed,
         "steps": steps,
-        "terminal": is_terminal(state),
+        "terminal": terminal,
+        "score_type": _score_type(terminal),
         "success": success,
         "error": error,
-        "final_score": state.final_score(),
+        # Retained for compatibility. Interpret this as the evaluation score at
+        # the stopping point and use score_type to distinguish its semantics.
+        "final_score": evaluation_score,
         "score": state.player.score,
         "money": state.player.money,
         "bonds": state.player.bonds,
@@ -219,7 +230,7 @@ def run_benchmark_episode(
         "total_build_cost_estimate": total_build_cost_estimate,
         "bonds_issued_during_episode": final_bonds - initial_bonds,
         "score_delta": state.player.score - initial_score,
-        "final_score_per_step": state.final_score() / max(1, steps),
+        "final_score_per_step": evaluation_score / max(1, steps),
         "deliveries_per_bond": state.player.delivered_goods_count / max(1, final_bonds),
         "completed_routes_per_bond": completed_routes / max(1, final_bonds),
         "major_line_claim_events": sum(
@@ -236,7 +247,6 @@ def run_benchmark_episode(
             if city_id in state.cities
         ),
     }
-    return result
 
 
 def summarise_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, Any]]]:
@@ -246,15 +256,38 @@ def summarise_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, 
         map_rows = [row for row in rows if row["map_name"] == map_name]
         for agent_name in sorted({str(row["agent_name"]) for row in map_rows}):
             group = [row for row in map_rows if row["agent_name"] == agent_name]
-            finals = [float(row["final_score"]) for row in group]
+            evaluation_scores = [float(row["final_score"]) for row in group]
+            terminal_scores = [
+                float(row["final_score"]) for row in group if bool(row["terminal"])
+            ]
+            truncated_scores = [
+                float(row["final_score"]) for row in group if not bool(row["terminal"])
+            ]
+            terminal_count = len(terminal_scores)
+            truncated_count = len(truncated_scores)
             metrics: dict[str, Any] = {
                 "episodes": len(group),
                 "success_rate": statistics.fmean(bool(row["success"]) for row in group),
-                "mean_final_score": statistics.fmean(finals),
-                "median_final_score": statistics.median(finals),
-                "best_final_score": max(finals),
-                "worst_final_score": min(finals),
-                "std_final_score": statistics.stdev(finals) if len(finals) > 1 else 0.0,
+                "terminal_rate": statistics.fmean(bool(row["terminal"]) for row in group),
+                "terminal_episodes": terminal_count,
+                "truncated_episodes": truncated_count,
+                "mean_evaluation_score": statistics.fmean(evaluation_scores),
+                # Backward-compatible key used by existing analysis scripts.
+                "mean_final_score": statistics.fmean(evaluation_scores),
+                "median_final_score": statistics.median(evaluation_scores),
+                "best_final_score": max(evaluation_scores),
+                "worst_final_score": min(evaluation_scores),
+                "std_final_score": (
+                    statistics.stdev(evaluation_scores)
+                    if len(evaluation_scores) > 1
+                    else 0.0
+                ),
+                "mean_terminal_final_score": (
+                    statistics.fmean(terminal_scores) if terminal_scores else None
+                ),
+                "mean_truncated_score": (
+                    statistics.fmean(truncated_scores) if truncated_scores else None
+                ),
             }
             for field in (
                 "score",
@@ -341,6 +374,10 @@ def write_outputs(
     return output
 
 
+def _format_optional(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.2f}"
+
+
 def _markdown_summary(
     summary: dict[str, dict[str, dict[str, Any]]],
     settings: dict[str, Any],
@@ -357,24 +394,32 @@ def _markdown_summary(
         f"- Base seed: {settings['base_seed']}",
         f"- Config path: {settings['config_path']}",
         "",
+        (
+            "Score semantics: `final_score` is the evaluation score at the stopping "
+            "point. Rows with `terminal=True` are terminal final scores; other rows "
+            "are truncated scores at the configured maximum-step horizon."
+        ),
+        "",
     ]
     headers = (
-        "Agent | Mean Final | Median Final | Best | Worst | Mean Deliveries | "
-        "Mean Bonds | Mean Major Bonus | Mean Rail Baron Bonus | Mean Routes | "
-        "Success Rate | Mean Runtime"
+        "Agent | Mean Evaluation | Median Evaluation | Terminal Rate | "
+        "Mean Terminal Final | Mean Truncated | Mean Deliveries | Mean Bonds | "
+        "Mean Major Bonus | Mean Rail Baron Bonus | Mean Routes | Success Rate | "
+        "Mean Runtime"
     )
     for map_name, agents in summary.items():
-        lines.extend([f"## {map_name}", "", f"| {headers} |", "|" + " --- |" * 12])
+        lines.extend([f"## {map_name}", "", f"| {headers} |", "|" + " --- |" * 13])
         for agent_name, item in agents.items():
             lines.append(
                 "| "
                 + " | ".join(
                     [
                         agent_name,
-                        f"{item['mean_final_score']:.2f}",
+                        f"{item['mean_evaluation_score']:.2f}",
                         f"{item['median_final_score']:.2f}",
-                        f"{item['best_final_score']:.0f}",
-                        f"{item['worst_final_score']:.0f}",
+                        f"{item['terminal_rate']:.2%}",
+                        _format_optional(item["mean_terminal_final_score"]),
+                        _format_optional(item["mean_truncated_score"]),
                         f"{item['mean_delivered_goods_count']:.2f}",
                         f"{item['mean_bonds']:.2f}",
                         f"{item['mean_major_line_bonus']:.2f}",
@@ -391,7 +436,7 @@ def _markdown_summary(
                 "",
                 "### Behaviour diagnostics",
                 "",
-                "| Agent | Build Actions | Delivery Actions | Upgrade Actions | Urbanize Actions | Urbanized Cities | Pass Actions | Bonds Issued | Build Cost | Final / Step | Deliveries / Bond | Routes / Bond | Failed Actions |",
+                "| Agent | Build Actions | Delivery Actions | Upgrade Actions | Urbanize Actions | Urbanized Cities | Pass Actions | Bonds Issued | Build Cost | Evaluation / Step | Deliveries / Bond | Routes / Bond | Failed Actions |",
                 "|" + " --- |" * 13,
             ]
         )
@@ -428,16 +473,26 @@ def _markdown_summary(
                 "",
                 "### Automatic observations",
                 "",
-                f"- Best mean final score: {best}.",
+                f"- Best mean evaluation score: {best}.",
                 f"- Lowest mean bonds: {lowest_bonds}.",
                 f"- Most deliveries: {most_deliveries}.",
             ]
         )
         objective = agents.get("objective_aware_greedy")
         lookahead = agents.get("lookahead_greedy")
-        if lookahead and objective and lookahead["mean_runtime_seconds"] > objective["mean_runtime_seconds"]:
+        if (
+            lookahead
+            and objective
+            and lookahead["mean_runtime_seconds"] > objective["mean_runtime_seconds"]
+        ):
             lines.append(
                 "- lookahead_greedy is slower than the one-step objective-aware baseline."
+            )
+        if any(item["terminal_rate"] < 1.0 for item in agents.values()):
+            lines.append(
+                "- At least one group contains truncated episodes; describe these "
+                "results as fixed-horizon evaluation scores rather than completed-game "
+                "final scores."
             )
         lines.append("")
     lines.extend(

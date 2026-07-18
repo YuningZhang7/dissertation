@@ -47,6 +47,7 @@ def test_quick_agent_benchmark_outputs() -> None:
         assert len(rows) == len(csv_rows) == len(agents) * 2
         assert set(CSV_COLUMNS).issubset(csv_rows[0])
         for field in (
+            "score_type",
             "delivery_actions",
             "build_actions",
             "upgrade_actions",
@@ -60,14 +61,30 @@ def test_quick_agent_benchmark_outputs() -> None:
             "completed_routes_per_bond",
         ):
             assert field in csv_rows[0]
+        for row in csv_rows:
+            assert row["score_type"] in {
+                "terminal_final_score",
+                "truncated_score",
+            }
+            expected = (
+                "terminal_final_score"
+                if row["terminal"].lower() == "true"
+                else "truncated_score"
+            )
+            assert row["score_type"] == expected
         assert "official_like" in saved_summary
         assert set(saved_summary["official_like"]) == set(agents)
         for agent in agents:
             group = saved_summary["official_like"][agent]
             assert group["episodes"] == 2
+            assert group["terminal_episodes"] + group["truncated_episodes"] == 2
             for field in (
                 "success_rate",
+                "terminal_rate",
+                "mean_evaluation_score",
                 "mean_final_score",
+                "mean_terminal_final_score",
+                "mean_truncated_score",
                 "mean_bonds",
                 "mean_runtime_seconds",
                 "mean_delivery_actions",
@@ -80,8 +97,9 @@ def test_quick_agent_benchmark_outputs() -> None:
                 assert field in group
         assert summary == saved_summary
         markdown = markdown_path.read_text(encoding="utf-8")
+        assert "Score semantics" in markdown
         assert "Behaviour diagnostics" in markdown
-        assert "Best mean final score" in markdown
+        assert "Best mean evaluation score" in markdown
         analysis = analyse_summary(json_path)
         assert "Best agent" in analysis
         assert "objective_aware_greedy" in analysis

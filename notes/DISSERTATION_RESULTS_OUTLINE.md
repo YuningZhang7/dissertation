@@ -1,124 +1,247 @@
-# Dissertation Results Outline
+# Dissertation Results and Discussion Outline
 
-This outline is a writing aid for the Results, Discussion, and Evaluation chapters. It is not a finished dissertation chapter. Wording should remain cautious: the project is a single-player optimisation abstraction, not a full official implementation of Railways of the World.
+This file is a writing aid for the current route-segment dissertation. It replaces earlier outlines centred on edge-only maps, MCTS, and CardAware agents.
 
-## RQ1: Can the simulator represent a useful single-player railway optimisation abstraction?
+The dissertation must remain explicit that the project is a simplified single-player railway optimisation abstraction, not a full official implementation of *Railways of the World*.
 
-Evidence:
+## RQ1: Does the simulator provide a useful and reproducible railway decision abstraction?
 
-- Implemented a rule-based simulator with cities, possible railway links, goods, demands, track building, deliveries, money, financing, locomotive upgrades, urbanisation, major-line bonuses, and representative operation cards.
-- Corrected the action model after supervisor feedback:
-  - no fixed start city, home city, train position, or moving train token
-  - delivery source chosen from cities containing goods
-  - financing handled internally through `pay_money`
-  - external `issue_bond` actions rejected by `apply_action`
-- Legal action interface supports Random, Greedy, MCTS, exact search, and UI play through the same state transition functions.
-- Smoke tests cover rule transitions, financing, delivery paths, cards, agents, MCTS, exact search, and the Streamlit import path.
-- Exact benchmark on `micro_map` gives a known optimum and validates replay of the optimal action sequence.
+### Evidence to present
 
-Possible wording:
+- A route-segment state model with cities, ordered segments, completed routes, goods, demand colours, financing, locomotive levels, urbanisation, Major Lines, and Rail Baron objectives.
+- A single legal-action and transition interface used by all five agents, replay generation, and benchmark tooling.
+- Automatic financing rather than a voluntary bond action.
+- No fixed home city, train position, or moving train token.
+- Smoke tests for construction, delivery paths, financing, urbanisation, objectives, replay compatibility, and benchmark output.
+- Artificial maps and explicit rule-scope documentation.
 
-The simulator is sufficiently expressive for controlled optimisation experiments, while deliberately excluding multiplayer auction, opponent interaction, official map detail, and the full official card deck.
+### Suggested interpretation
 
-## RQ2: How do baseline agents behave?
+The simulator is sufficiently expressive for controlled comparisons of interpretable sequential policies. Its validity is internal to the implemented abstraction: it preserves network-building and delivery trade-offs while deliberately excluding multiplayer interaction and official tile-level detail.
 
-Evidence:
+### Claims to avoid
 
-- Random agent provides a low-structure baseline.
-- GreedyDelivery prioritises immediate deliveries and can perform well on small delivery-dense maps.
-- GreedyExpansion prioritises network growth and major-line potential but can overbuild or accumulate financing penalties.
-- MCTS improves planning quality by searching legal action sequences.
-- Major-line-aware MCTS introduces a domain-specific evaluation signal for longer-term connection goals.
-- Exact benchmark on `micro_map` shows:
-  - exact optimum: 10
-  - GreedyDelivery reaches the optimum on this small instance
-  - limited-budget MCTS approaches the optimum but is not always exact
+- “Complete implementation of Railways of the World.”
+- “Official map simulation.”
+- “Validated model of expert human play.”
 
-Discussion angle:
+## RQ2: How do simple baseline policies behave?
 
-Baseline behaviour is interpretable: greedy policies reveal the trade-off between immediate delivery and expansion, while MCTS is more flexible but budget-sensitive.
+### Agents
 
-## RQ3: What changes when representative operation cards are added?
+- `random`
+- `greedy_delivery`
+- `greedy_expansion`
 
-Evidence:
+### Evidence to collect
 
-- Phase 4C compares card-disabled and card-enabled versions of the same maps and agents.
-- The card framework supports original simplified cards:
-  - immediate cash
-  - delivery objectives
-  - network objectives
-  - end-game scoring
-- Card-enabled play changes score composition:
-  - operation-card bonus
-  - end-game-card bonus
-  - changes in delivery score
-  - changes in major-line bonus
-  - changes in financing penalty
-- Random and MCTS select cards on all maps.
-- Existing greedy agents often ignore cards on larger maps because their priorities are not card-aware.
-- Card-enabled MCTS benefits on `toy_map` and `toy_medium_map`, but ordinary MCTS slightly declines on `semi_realistic_map` under the standard budget.
+- evaluation score at the stopping point;
+- deliveries;
+- completed routes;
+- financing certificates;
+- build, delivery, upgrade, urbanise, and pass actions;
+- runtime;
+- terminal rate.
 
-Discussion angle:
+### Discussion angle
 
-Cards make the environment a richer sequential optimisation problem with delayed rewards and optional objectives. The benefit of cards depends on whether an agent can coordinate card selection with future deliveries and network construction.
+The simple baselines isolate distinct decision biases:
 
-## RQ4: Does higher MCTS budget solve card branching?
+- random provides a legal-action reference;
+- delivery greed exploits immediate opportunities but may fail to create future routes;
+- expansion greed creates network capacity but may overbuild, under-deliver, or accumulate financing penalties.
 
-Evidence:
+The value of these agents is diagnostic rather than competitive: their behaviour makes the environment's trade-offs visible.
 
-- Phase 4C-MCTS100 increases MCTS iterations from 25 to 100 and rollout depth from 40 to 80.
-- Absolute MCTS scores improve, especially on medium and semi-realistic maps.
-- Runtime rises substantially.
-- The card effect on `semi_realistic_map` does not improve:
-  - ordinary MCTS card effect becomes more negative in the 10-episode diagnostic
-  - major-line-aware MCTS card effect is neutral in that run
+## RQ3: What is gained by objective-aware one-step decision-making?
 
-Discussion angle:
+### Agent
 
-More search improves raw planning quality, but it does not by itself solve the card branching problem. A larger budget can still spend effort on card plans that reduce delivery or major-line value.
+- `objective_aware_greedy`
 
-## RQ5: Do card-aware heuristics help?
+### Evidence to collect
 
-Evidence:
+Compare it with the three simple baselines using the same seeds and horizon. Examine:
 
-- Phase 4D adds:
-  - `CardAwareGreedyAgent`
-  - MCTS with `rollout_policy="card_aware"`
-- Card-aware greedy:
-  - improves over greedy expansion on all maps
-  - improves over greedy delivery on `toy_map` and `semi_realistic_map`
-  - underperforms greedy delivery on `toy_medium_map`
-- Card-aware MCTS rollout improves over ordinary card-enabled MCTS on all three maps:
-  - +7.33 on `toy_map`
-  - +13.07 on `toy_medium_map`
-  - +62.50 on `semi_realistic_map`
-- Card-aware major-line rollout also improves over major-line-aware MCTS on all three maps.
-- Runtime cost increases substantially, especially on `semi_realistic_map`.
+- paired score differences;
+- Major Line and Rail Baron bonuses;
+- completed routes and delivery opportunities;
+- financing;
+- locomotive upgrades;
+- runtime.
 
-Discussion angle:
+### Discussion angle
 
-Card-aware rollout guidance helps MCTS convert card opportunities into better plans, but this is a score-runtime trade-off. The result supports card-aware search guidance as a useful extension, not as a final optimised algorithm.
+`objective_aware_greedy` combines immediate delivery with hand-designed scores for route completion, future delivery potential, objective progress, construction cost, and financing. It is the strongest one-step baseline, but it remains myopic because it evaluates only the immediate successor state and gives currently legal deliveries hard priority.
 
-## Limitations
+### Claims to avoid
 
-- Single-player abstraction only.
-- Not a full official implementation of Railways of the World.
-- No multiplayer auction, opponent track usage, or player interaction.
-- No official full map.
-- No full official operation-card deck.
-- Representative cards are original simplified cards.
-- Terrain and tile-level track placement are abstracted as graph edges.
-- Financing field names still use `bonds` for compatibility, approximating share certificates.
-- Experimental maps are artificial research scenarios.
-- MCTS results depend on finite seeds, rollout policy, candidate action generation, and local runtime budget.
-- Phase 4D card-aware heuristics are hand-designed and not exhaustively tuned.
+- Do not call it globally optimal.
+- Do not claim it evaluates every action type uniformly; urbanisation is not part of its primary scored action set.
+
+## RQ4: Does bounded lookahead improve decisions, and at what computational cost?
+
+### Agent
+
+- `lookahead_greedy`
+
+### Evidence to collect
+
+Compare it directly with `objective_aware_greedy` on paired seeds:
+
+- evaluation score;
+- delivery and route completion;
+- urbanisation count and timing;
+- financing;
+- objective bonuses;
+- runtime;
+- fallback and failed actions.
+
+### Method description
+
+`lookahead_greedy`:
+
+- generates a restricted candidate set;
+- keeps top delivery and build actions, upgrades, and at most one gated urbanisation candidate;
+- simulates candidate transitions;
+- performs depth-two bounded rollout;
+- combines immediate heuristic value with discounted future value.
+
+### Discussion angle
+
+The central question is not only whether lookahead scores more highly, but whether any improvement justifies the additional computation. A strong result would be a measured score–runtime trade-off, not a claim of universal superiority.
+
+### Limitations to state
+
+- candidate pruning can exclude the best action;
+- evaluation weights are hand-designed;
+- depth is limited;
+- urbanisation simulation uses a deterministic surrogate seed that may not match realised random goods exactly;
+- runtime grows rapidly with the action space.
+
+## RQ5: How robust are findings across horizons, seeds, and map size?
+
+### Evidence to collect
+
+- `official_like` at 30, 60, and 90 steps;
+- 20 paired seeds for the primary 60-step comparison;
+- expanded-map comparison for faster agents;
+- focused expanded-map lookahead pilot;
+- score distributions and confidence intervals;
+- terminal versus truncated episode counts;
+- runtime distributions.
+
+### Discussion angle
+
+Seed 42 is a qualitative replay example only. Formal conclusions should be based on multi-seed results. Rankings that change across horizons or maps should be reported as scenario-dependent rather than treated as contradictions.
+
+The expanded map is especially important for demonstrating the computational cost of lookahead. A smaller lookahead pilot can support a scalability observation, but not a fully powered quality ranking.
+
+## Score Reporting
+
+`GameState.final_score()` is a scoring formula, not proof that the game ended.
+
+Use the following terminology consistently:
+
+- **terminal final score** when `terminal=True`;
+- **truncated score at the N-step horizon** when `terminal=False` because `max_steps=N` was reached;
+- **evaluation score** when referring generically to both categories.
+
+Do not report a mixed group as “mean final score” without qualification. Preferred wording:
+
+> At the 60-step horizon, `agent_name` achieved a mean evaluation score of X across 20 seeds; Y% of episodes were terminal.
+
+For a fully terminal subset:
+
+> Among terminal episodes, the mean terminal final score was X.
+
+## Recommended Results Structure
+
+### 1. Experimental setup
+
+- commit SHA and environment;
+- maps and configuration;
+- agents;
+- seed sets;
+- action horizons;
+- card-disabled benchmark setting;
+- score terminology;
+- hardware and serial/parallel execution.
+
+### 2. Primary compact-map comparison
+
+- main metric table;
+- score distribution;
+- behaviour metrics;
+- paired differences against `objective_aware_greedy`;
+- runtime comparison.
+
+### 3. Horizon sensitivity
+
+- 30-, 60-, and 90-step comparison;
+- terminal rates;
+- changes in ranking or behaviour.
+
+### 4. Expanded-map scalability
+
+- faster-agent main comparison;
+- focused lookahead pilot;
+- explicit sample-size and horizon differences;
+- runtime growth.
+
+### 5. Qualitative replay case study
+
+- seed 42, official-like, 30 steps;
+- selected action trace or screenshots;
+- explanation of route completion, delivery, objective planning, and controlled urbanisation;
+- explicit statement that this is illustrative rather than statistical evidence.
+
+### 6. Discussion
+
+- objective awareness versus simple greed;
+- bounded lookahead versus one-step scoring;
+- quality versus runtime;
+- sensitivity to scenario and horizon;
+- implications for interpretable OR/AI methods.
+
+## Threats to Validity
+
+### Internal validity
+
+- hand-designed heuristic weights;
+- random urbanisation goods;
+- finite candidate sets and horizons;
+- possible non-terminal episodes;
+- runtime dependence on implementation and hardware.
+
+### Construct validity
+
+- artificial maps;
+- simplified financing and income;
+- abstract route segments rather than official tiles;
+- simplified Major Line and Rail Baron objectives;
+- cards enabled in the visual app but disabled in the main benchmark.
+
+### External validity
+
+- single-player only;
+- no auctions, blocking, shared goods competition, or opponent-owned track;
+- no evidence about expert or multiplayer performance;
+- no claim of transfer to the full commercial game.
+
+### Conclusion validity
+
+- limited seeds for expensive experiments;
+- multiple comparisons;
+- potential score–runtime trade-offs hidden by score-only rankings;
+- expanded lookahead pilot too small for strong inferential claims.
 
 ## Future Work
 
-- Expand the card framework with a broader representative operation-card set.
-- Add Rail Baron / Tycoon-style objective cards in a controlled abstraction.
-- Improve card-aware MCTS with explicit value features or learned rollout policies.
-- Compare larger map sets and more seed runs.
-- Add sensitivity analysis for financing, major-line bonus values, and card reward values.
-- Consider GA or reinforcement learning only after the current rule abstraction and card framework are stable.
-- Explore multiplayer interaction as a separate future model rather than mixing it into the current single-player experiments.
+- dedicated fixed-turn configuration for guaranteed terminal comparisons;
+- more systematic heuristic-weight sensitivity analysis;
+- deterministic or expectation-based urbanisation transition modelling;
+- larger expanded-map lookahead experiments if computation permits;
+- exact or optimisation-based comparison on a deliberately small route-segment instance;
+- learned or adaptive policies only after the current benchmark and rule abstraction are stable;
+- multiplayer interaction as a separate future model.
