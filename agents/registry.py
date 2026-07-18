@@ -6,9 +6,6 @@ from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
 from agents.presentation_lookahead_greedy_agent import PresentationLookaheadGreedyAgent
 from agents.random_agent import RandomAgent
-from agents.urbanization_aware_lookahead_greedy_agent import (
-    UrbanizationAwareLookaheadGreedyAgent,
-)
 
 
 AGENT_CLASSES: dict[str, type[BaseAgent]] = {
@@ -16,7 +13,6 @@ AGENT_CLASSES: dict[str, type[BaseAgent]] = {
     "greedy_delivery": GreedyDeliveryAgent,
     "greedy_expansion": GreedyExpansionAgent,
     "objective_aware_greedy": ObjectiveAwareGreedyAgent,
-    "urbanization_aware_lookahead_greedy": UrbanizationAwareLookaheadGreedyAgent,
     "presentation_lookahead_greedy": PresentationLookaheadGreedyAgent,
 }
 

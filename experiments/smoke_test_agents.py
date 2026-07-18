@@ -14,9 +14,6 @@ from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
 from agents.presentation_lookahead_greedy_agent import PresentationLookaheadGreedyAgent
 from agents.random_agent import RandomAgent
-from agents.urbanization_aware_lookahead_greedy_agent import (
-    UrbanizationAwareLookaheadGreedyAgent,
-)
 from agents.registry import AGENT_CLASSES, list_agent_names
 from experiments.run_experiments import run_batch
 from experiments.simulation_runner import run_episode
@@ -64,7 +61,6 @@ def test_agents_do_not_choose_issue_bond() -> None:
         GreedyDeliveryAgent(seed=1),
         GreedyExpansionAgent(seed=1),
         ObjectiveAwareGreedyAgent(seed=1),
-        UrbanizationAwareLookaheadGreedyAgent(seed=1),
         PresentationLookaheadGreedyAgent(seed=1),
     ]
     legal_actions = get_legal_actions(state)
@@ -79,7 +75,6 @@ def test_main_registry_exposes_registered_agents() -> None:
         "greedy_delivery",
         "greedy_expansion",
         "objective_aware_greedy",
-        "urbanization_aware_lookahead_greedy",
         "presentation_lookahead_greedy",
     ]
     assert list(AGENT_CLASSES) == expected
