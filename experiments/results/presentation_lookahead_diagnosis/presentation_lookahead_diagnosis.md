@@ -4,9 +4,9 @@ Scenario: `official_like`, seed `42`, max steps `60`.
 
 | agent | first 20 urbanize | total urbanize | bonds | deliveries | completed routes | urbanized cities | final score | terminal | runtime seconds |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
-| urbanization_aware_lookahead_greedy | 2 | 2 | 100 | 21 | 15 | 10 | 20 | True | 18.9075 |
-| presentation_lookahead_greedy | 0 | 1 | 66 | 19 | 15 | 9 | 55 | True | 23.7891 |
-| objective_aware_greedy | 0 | 0 | 111 | 12 | 15 | 8 | -41 | False | 1.3260 |
+| urbanization_aware_lookahead_greedy | 2 | 2 | 100 | 21 | 15 | 10 | 20 | True | 19.8515 |
+| presentation_lookahead_greedy | 1 | 2 | 71 | 21 | 15 | 10 | 51 | True | 23.9987 |
+| objective_aware_greedy | 0 | 0 | 111 | 12 | 15 | 8 | -41 | False | 1.3503 |
 
 ## Interpretation
 
@@ -18,12 +18,12 @@ Scenario: `official_like`, seed `42`, max steps `60`.
 ## Before/After Summary
 
 - Original lookahead first-20 urbanize actions: 2
-- Presentation lookahead first-20 urbanize actions: 0
+- Presentation lookahead first-20 urbanize actions: 1
 - Original lookahead total urbanize actions: 2
-- Presentation lookahead total urbanize actions: 1
+- Presentation lookahead total urbanize actions: 2
 - Original lookahead bonds: 100
-- Presentation lookahead bonds: 66
+- Presentation lookahead bonds: 71
 - Original lookahead deliveries: 21
-- Presentation lookahead deliveries: 19
+- Presentation lookahead deliveries: 21
 - Original lookahead completed routes: 15
 - Presentation lookahead completed routes: 15
