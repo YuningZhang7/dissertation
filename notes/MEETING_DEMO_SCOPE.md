@@ -24,9 +24,11 @@ Do not state that MCTS or CardAware source files remain in the current runtime, 
 
 ## Card System
 
-The representative operation-card framework remains enabled in the visual app through `data/cards_basic.json`. It demonstrates that the environment can load and apply simplified cards.
+The repository contains a representative operation-card framework and the example deck `data/cards_basic.json`. This optional environment functionality can be enabled explicitly through `reset_game(..., card_path=...)`.
 
-The public agents do not contain a dedicated card-aware decision policy, and the current benchmark runner is card-disabled by default. The card panel should therefore be presented as an environment feature rather than as a validated part of the current agent-performance comparison.
+The current Streamlit replay and public benchmark runners do not supply a card path, so both are card-disabled. The compatibility helper `app.create_game_state()` can construct a card-enabled state, but the current Streamlit `main()` entry path does not use it.
+
+The current meeting replay focuses on route-segment construction, automatic financing, delivery, urbanisation, objectives, and interpretable agent behaviour. Operation cards are implemented optional functionality but are not enabled in the current replay and are not part of the current five-agent performance comparison.
 
 ## Recommended Meeting Configuration
 
@@ -71,3 +73,4 @@ python experiments/run_agent_benchmark.py --quick
 ```
 
 is a smoke/development comparison only. It uses very few episodes, a short horizon, and excludes `lookahead_greedy` for speed. It must not be used as the main dissertation evidence.
+

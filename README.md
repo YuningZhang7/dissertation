@@ -55,7 +55,7 @@ Implemented mainline rules include:
 - empty-city markers and configurable end conditions;
 - coloured urbanisation of grey cities;
 - Major Line and Rail Baron connectivity bonuses;
-- a minimal representative operation-card framework;
+- an optional representative operation-card framework;
 - an AI-ready reset, legal-action, transition, copy, terminal, and scoring interface.
 
 The current route-segment validator enforces continuity within a route: a new segment chain must touch that route's city endpoint or an existing incomplete endpoint. The legacy `require_connected_track_building` configuration field should not be interpreted as global connectivity enforcement to the player's existing completed network.
@@ -246,9 +246,11 @@ python experiments/smoke_test_cards.py
 
 ## Operation-Card Scope
 
-The Streamlit app enables `data/cards_basic.json` as a representative environment feature. The current benchmark runner is card-disabled by default, and the five public agents do not include a dedicated card-aware policy.
+The repository contains a representative operation-card framework and the example deck `data/cards_basic.json`. Cards are opt-in environment functionality and are enabled explicitly through `reset_game(..., card_path=...)`.
 
-Therefore, do not compare replay and benchmark numbers as if they were generated from identical card settings, and do not make card-aware agent claims from the current public comparison.
+The current Streamlit replay and public benchmark runners do not supply a card path, so both are card-disabled. The compatibility helper `app.create_game_state()` can construct a card-enabled state, but the current Streamlit `main()` entry path does not use that helper.
+
+The five public agents do not include a dedicated card-aware policy. Operation cards are therefore not a primary variable or performance claim in the current five-agent dissertation comparison.
 
 ## Not Yet Implemented
 
@@ -309,3 +311,4 @@ railways-world-ai/
 ## Dissertation Claim Boundary
 
 Results support conclusions about the implemented single-player route-segment abstraction under the reported maps, rules, seeds, card setting, and horizons. They do not establish optimal play or performance in the complete multiplayer board game.
+

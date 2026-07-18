@@ -90,11 +90,13 @@ These are simplified connection objectives rather than full official card or map
 ## Operation Cards
 
 - A small original JSON-defined card framework is implemented.
+- The representative example deck is stored at `data/cards_basic.json`.
 - Supported representative effects include immediate cash, delivery objectives, network objectives, and end-game bonuses.
-- Cards are opt-in for programmatic simulation through `card_path`.
-- The Streamlit replay path enables `data/cards_basic.json`.
-- The current public agent benchmark is card-disabled by default.
-- The five public agents do not include a dedicated card-aware policy, so card behaviour is not a primary claim of the current dissertation comparison.
+- Cards are opt-in environment functionality enabled explicitly through `reset_game(..., card_path=...)`.
+- The current Streamlit replay does not supply a card path and is therefore card-disabled.
+- The current public benchmark runner also does not supply a card path and is therefore card-disabled.
+- The compatibility helper `app.create_game_state()` can load `data/cards_basic.json`, but the current Streamlit `main()` entry path does not use that helper.
+- The five public agents do not include a dedicated card-aware policy, so card behaviour is not a primary variable or performance claim in the current dissertation comparison.
 
 ## Current Public Agents
 
@@ -132,3 +134,4 @@ Results are evidence about the implemented abstraction only. A benchmark must re
 - a score at `max_steps` from a non-terminal state is a **truncated score**.
 
 Fixed-horizon truncated scores are valid for equal-budget policy comparison, but they must not be described as completed-game results.
+

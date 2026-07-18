@@ -19,7 +19,7 @@ The current mainline runtime is route-segment based. A city-to-city route contai
 - Major Line connection bonuses.
 - One active Rail Baron connection objective.
 - Coloured urbanisation of grey cities.
-- A minimal representative operation-card framework for the visual environment.
+- An optional representative operation-card framework that can be enabled explicitly.
 - A common legal-action and state-transition interface for all public agents.
 - Reproducible replay and multi-seed benchmark tooling.
 
@@ -47,8 +47,9 @@ The dissertation-facing mainline exposes five interpretable agents:
 - Multiplayer auctions, blocking, opponent track fees, and shared goods competition are excluded.
 - Income, financing, urbanisation, end conditions, Major Lines, and Rail Baron objectives are simplified abstractions.
 - Urbanisation adds randomly generated goods under the configured random seed.
-- The operation-card framework uses a small original test deck rather than official card text or the full official timing rules.
-- Public agents do not contain a dedicated card-aware decision model; the card framework is primarily an environment and demo feature.
+- The operation-card framework uses the small original test deck `data/cards_basic.json` rather than official card text or the full official timing rules.
+- Cards are enabled only when a caller supplies `reset_game(..., card_path=...)`.
+- Public agents do not contain a dedicated card-aware decision model; the card framework is optional environment functionality rather than a primary part of the current five-agent comparison.
 - There is no fixed player start city, home city, train position, or moving train token.
 
 ## Why the Simplified Model Is Useful
@@ -71,7 +72,7 @@ The experiments compare agents only under the implemented rules, maps, scoring f
 
 The project should not claim optimality for `lookahead_greedy`. It is a hand-designed bounded-lookahead heuristic with a restricted candidate set, not exhaustive search or a proven solver.
 
-The replay interface enables `data/cards_basic.json`, whereas the current agent benchmark is card-disabled unless a card path is explicitly supplied. Replay and benchmark results must therefore not be compared as if they used identical environments without stating this difference.
+The current Streamlit replay and public benchmark runners do not supply a card path, so both are card-disabled. The compatibility helper `app.create_game_state()` can construct a card-enabled state using `data/cards_basic.json`, but the current Streamlit `main()` entry path does not use that helper. Operation cards are therefore outside the primary five-agent performance comparison unless a separate card-enabled experiment is explicitly designed and reported.
 
 ## Score Terminology
 
@@ -89,3 +90,4 @@ A truncated score is useful for fixed-horizon comparison, but it must not be des
 3. Define a dedicated fixed-turn terminal benchmark configuration if completed-game comparisons are required.
 4. Extend operation cards only after deciding whether card-aware decision-making remains in dissertation scope.
 5. Treat multiplayer interaction as a separate future model rather than mixing it into the current single-player evaluation.
+
