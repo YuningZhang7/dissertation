@@ -34,7 +34,6 @@ PRESENTATION_AGENT_OPTIONS = (
     "greedy_delivery",
     "greedy_expansion",
     "objective_aware_greedy",
-    "urbanization_aware_lookahead_greedy",
     "presentation_lookahead_greedy",
 )
 DEFAULT_MAP = "official_like"
@@ -45,10 +44,9 @@ MAP_SELECTION_CAPTION = (
 )
 AGENT_SELECTION_CAPTION = (
     "Select one of the presentation agents. random, greedy_delivery, and "
-    "greedy_expansion are "
-    "included as simple baselines. urbanization_aware_lookahead_greedy is "
-    "available for delayed-reward urbanization experiments. "
-    "presentation_lookahead_greedy is a replay-friendly lookahead variant that "
+    "greedy_expansion are included as simple baselines. objective_aware_greedy "
+    "is the one-step heuristic baseline. presentation_lookahead_greedy is the "
+    "balanced replay-friendly lookahead variant that "
     "prioritizes route completion and delivery before conservative urbanization."
 )
 

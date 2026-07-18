@@ -12,8 +12,7 @@ dissertation-facing public agents.
 
 ## Meeting/Demo Scope
 
-The main meeting/demo build includes five core agents plus one
-presentation-friendly lookahead variant for replay demonstration.
+The main meeting/demo build exposes five public agents.
 
 Core agents:
 
@@ -21,15 +20,13 @@ Core agents:
 - `greedy_delivery`
 - `greedy_expansion`
 - `objective_aware_greedy`
-- `urbanization_aware_lookahead_greedy`
-
-Replay-friendly variant:
-
 - `presentation_lookahead_greedy`
 
-The presentation variant is a conservative lookahead agent tuned for readable
-replays: it prioritizes route completion and delivery before using urbanization
-near the built network or objective cities.
+`presentation_lookahead_greedy` is the final balanced lookahead agent for the
+demo path. It is tuned for readable replays: it prioritizes route completion and
+delivery before using urbanization near the built network or objective cities.
+The original aggressive `urbanization_aware_lookahead_greedy` implementation is
+kept as internal helper code, but is no longer exposed as a public demo agent.
 
 See [notes/MEETING_DEMO_SCOPE.md](notes/MEETING_DEMO_SCOPE.md).
 
@@ -154,7 +151,6 @@ python experiments/smoke_test_agent_benchmark.py
 python experiments/smoke_test_app_import.py
 python experiments/smoke_test_agent_animation_app.py
 python experiments/smoke_test_agent_animation.py
-python experiments/smoke_test_urbanization_aware_lookahead_greedy_agent.py
 python experiments/smoke_test_presentation_lookahead_greedy_agent.py
 python experiments/smoke_test_meeting_demo.py
 python experiments/smoke_test_official_like_baselines.py
@@ -186,7 +182,7 @@ python experiments/run_agent_benchmark.py --maps official_like --episodes 5 --ma
 Run selected agents explicitly:
 
 ```bash
-python experiments/run_agent_benchmark.py --maps official_like --agents objective_aware_greedy urbanization_aware_lookahead_greedy --episodes 5 --max-steps 50
+python experiments/run_agent_benchmark.py --maps official_like --agents objective_aware_greedy presentation_lookahead_greedy --episodes 5 --max-steps 50
 ```
 
 Generate a replay-friendly lookahead episode:

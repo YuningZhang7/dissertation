@@ -16,6 +16,7 @@ from experiments.analyse_agent_benchmark import analyse_summary
 
 def test_quick_agent_benchmark_outputs() -> None:
     assert "presentation_lookahead_greedy" in DEFAULT_AGENTS
+    assert "urbanization_aware_lookahead_greedy" not in DEFAULT_AGENTS
     agents = [
         "random",
         "greedy_delivery",

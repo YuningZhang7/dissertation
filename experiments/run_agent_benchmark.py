@@ -37,11 +37,10 @@ DEFAULT_AGENTS = (
     "greedy_delivery",
     "greedy_expansion",
     "objective_aware_greedy",
-    "urbanization_aware_lookahead_greedy",
     "presentation_lookahead_greedy",
 )
-# Keep --quick lightweight; the depth-2 urbanization-aware agent is covered by
-# its focused smoke test and can be selected explicitly for benchmark runs.
+# Keep --quick lightweight; presentation_lookahead_greedy is slower and can be
+# selected explicitly for focused replay-oriented benchmark runs.
 QUICK_AGENTS = (
     "random",
     "greedy_delivery",
@@ -435,10 +434,10 @@ def _markdown_summary(
             ]
         )
         objective = agents.get("objective_aware_greedy")
-        lookahead = agents.get("urbanization_aware_lookahead_greedy")
+        lookahead = agents.get("presentation_lookahead_greedy")
         if lookahead and objective and lookahead["mean_runtime_seconds"] > objective["mean_runtime_seconds"]:
             lines.append(
-                "- urbanization_aware_lookahead_greedy is slower than the one-step objective-aware baseline."
+                "- presentation_lookahead_greedy is slower than the one-step objective-aware baseline."
             )
         lines.append("")
     lines.extend(

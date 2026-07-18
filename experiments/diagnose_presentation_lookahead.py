@@ -17,9 +17,8 @@ from railways.environment import apply_action, get_legal_actions, is_terminal, r
 
 
 AGENTS = (
-    "urbanization_aware_lookahead_greedy",
-    "presentation_lookahead_greedy",
     "objective_aware_greedy",
+    "presentation_lookahead_greedy",
 )
 MAP_PATH = PROJECT_ROOT / "data" / "official_like_route_segment_map.json"
 CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
@@ -187,30 +186,22 @@ def _write_markdown(summaries: list[dict[str, Any]], path: Path) -> None:
     presentation = next(
         item for item in summaries if item["agent_name"] == "presentation_lookahead_greedy"
     )
-    original = next(
-        item for item in summaries if item["agent_name"] == "urbanization_aware_lookahead_greedy"
-    )
     lines.extend(
         [
             "",
             "## Interpretation",
             "",
-            "- `presentation_lookahead_greedy` is intended for replay clarity, not maximum benchmark score.",
+            "- `presentation_lookahead_greedy` is the public replay-friendly lookahead agent.",
             "- It gates early/speculative urbanization and gives more weight to completed routes, deliveries, and bond control.",
-            "- Lower first-20-step urbanization than the experimental lookahead agent indicates a more readable early replay.",
+            "- The original aggressive urbanization-aware lookahead remains internal helper code and is not part of the public demo agent set.",
             "- Remaining urbanization is expected to occur near the built network or when it opens direct delivery potential.",
             "",
-            "## Before/After Summary",
+            "## Presentation Summary",
             "",
-            f"- Original lookahead first-20 urbanize actions: {original['first_20_urbanize_actions']}",
             f"- Presentation lookahead first-20 urbanize actions: {presentation['first_20_urbanize_actions']}",
-            f"- Original lookahead total urbanize actions: {original['total_urbanize_actions']}",
             f"- Presentation lookahead total urbanize actions: {presentation['total_urbanize_actions']}",
-            f"- Original lookahead bonds: {original['bonds']}",
             f"- Presentation lookahead bonds: {presentation['bonds']}",
-            f"- Original lookahead deliveries: {original['deliveries']}",
             f"- Presentation lookahead deliveries: {presentation['deliveries']}",
-            f"- Original lookahead completed routes: {original['completed_routes']}",
             f"- Presentation lookahead completed routes: {presentation['completed_routes']}",
         ]
     )

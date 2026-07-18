@@ -6,9 +6,6 @@ from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
 from agents.presentation_lookahead_greedy_agent import PresentationLookaheadGreedyAgent
 from agents.random_agent import RandomAgent
-from agents.urbanization_aware_lookahead_greedy_agent import (
-    UrbanizationAwareLookaheadGreedyAgent,
-)
 
 __all__ = [
     "BaseAgent",
@@ -17,5 +14,4 @@ __all__ = [
     "GreedyExpansionAgent",
     "ObjectiveAwareGreedyAgent",
     "PresentationLookaheadGreedyAgent",
-    "UrbanizationAwareLookaheadGreedyAgent",
 ]
