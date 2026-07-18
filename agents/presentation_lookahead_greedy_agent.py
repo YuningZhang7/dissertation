@@ -199,8 +199,10 @@ def _score_urbanize_action(
     new_deliveries = max(0, after["legal_delivery_count"] - before["legal_delivery_count"])
     network_bonus = _urbanized_city_network_bonus(state, city_id)
     objective_bonus = _urbanized_city_objective_bonus(state, city_id)
+    chosen_color = str(action.params.get("demand_color") or "")
+    matching_goods = _available_goods_count(state, chosen_color, exclude_city=city_id)
 
-    if high_value_delivery_available and new_deliveries <= 0:
+    if high_value_delivery_available and new_deliveries <= 0 and objective_bonus <= 0:
         return float("-inf"), new_deliveries
     if not _is_urbanize_allowed_for_presentation(
         state,
@@ -212,11 +214,10 @@ def _score_urbanize_action(
         new_deliveries=new_deliveries,
         network_bonus=network_bonus,
         objective_bonus=objective_bonus,
+        matching_goods=matching_goods,
     ):
         return float("-inf"), new_deliveries
 
-    chosen_color = str(action.params.get("demand_color") or "")
-    matching_goods = _available_goods_count(state, chosen_color, exclude_city=city_id)
     new_goods = max(0, len(candidate.cities[city_id].goods) - len(city.goods))
     potential_delta = max(
         0,
@@ -230,16 +231,16 @@ def _score_urbanize_action(
 
     score = (
         130.0 * min(1, matching_goods)
-        + 40.0 * matching_goods
-        + 260.0 * new_deliveries
-        + 40.0 * potential_delta
-        + 120.0 * network_bonus
-        + 90.0 * objective_bonus
-        + 100.0 * rail_progress
-        + 10.0 * major_progress
-        + 8.0 * new_goods
-        - 90.0 * new_bonds
-        - 3.0 * state.config.urbanize_cost
+        + 70.0 * matching_goods
+        + 280.0 * new_deliveries
+        + 55.0 * potential_delta
+        + 130.0 * network_bonus
+        + 110.0 * objective_bonus
+        + 120.0 * rail_progress
+        + 16.0 * major_progress
+        + 12.0 * new_goods
+        - 75.0 * new_bonds
+        - 2.4 * state.config.urbanize_cost
     )
     return score, new_deliveries
 
@@ -255,22 +256,38 @@ def _is_urbanize_allowed_for_presentation(
     new_deliveries: int,
     network_bonus: float,
     objective_bonus: float,
+    matching_goods: int,
 ) -> bool:
     touches_network = _city_touches_built_or_completed_route(state, city_id)
     if not touches_network:
         return False
 
     is_objective_endpoint = _is_active_objective_endpoint(state, city_id)
-    if before["completed_routes_count"] == 0 and not is_objective_endpoint:
+    if (
+        before["completed_routes_count"] == 0
+        and new_deliveries <= 0
+        and not is_objective_endpoint
+    ):
         return False
 
-    if new_deliveries <= 0 and network_bonus <= 0 and objective_bonus <= 0:
+    has_near_term_value = (
+        new_deliveries > 0
+        or matching_goods > 0
+        or network_bonus > 0
+        or objective_bonus > 0
+        or is_objective_endpoint
+    )
+    if not has_near_term_value:
         return False
 
-    if before["bonds"] >= 3 and new_bonds > 0:
+    if before["bonds"] >= 4 and new_bonds > 0 and new_deliveries <= 0:
         return False
 
-    if _urbanized_city_count(state) >= 2 and new_deliveries <= 0:
+    if (
+        _urbanized_city_count(state) >= 2
+        and new_deliveries <= 0
+        and objective_bonus <= 0
+    ):
         return False
 
     return after["completed_routes_count"] >= before["completed_routes_count"]
@@ -382,11 +399,11 @@ def _evaluate_state(state: GameState) -> float:
         22.0 * float(features["final_score"])
         + 150.0 * float(features["delivered_goods_count"])
         + 220.0 * float(features["completed_routes_count"])
-        + 45.0 * float(features["legal_delivery_count"])
-        + 25.0 * float(features["goods_demand_potential"])
+        + 55.0 * float(features["legal_delivery_count"])
+        + 35.0 * float(features["goods_demand_potential"])
         + 40.0 * float(features["completed_network_city_count"])
-        + 20.0 * useful_urbanized
-        - 70.0 * float(features["bonds"])
+        + 35.0 * useful_urbanized
+        - 60.0 * float(features["bonds"])
         - 50.0 * incomplete_segments
         - 20.0 * rail_distance_penalty
     )
