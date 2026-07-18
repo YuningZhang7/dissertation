@@ -18,7 +18,10 @@ def test_quick_agent_benchmark_outputs() -> None:
     assert "lookahead_greedy" in DEFAULT_AGENTS
     previous_public_name = "_".join(("presentation", "lookahead", "greedy"))
     assert previous_public_name not in DEFAULT_AGENTS
-    assert "urbanization_aware_lookahead_greedy" not in DEFAULT_AGENTS
+    previous_internal_name = "_".join(
+        ("urbanization", "aware", "lookahead", "greedy")
+    )
+    assert previous_internal_name not in DEFAULT_AGENTS
     agents = [
         "random",
         "greedy_delivery",

@@ -13,6 +13,7 @@ The meeting demo presents the parts of the dissertation prototype that are easie
 - `LookaheadGreedyAgent`: the final balanced lookahead agent for readable replay demonstrations.
 
 These are the only agents exposed by `agents/registry.py`, the Streamlit selector, and the public benchmark defaults.
+Shared lookahead support code lives in `agents/lookahead_utils.py`.
 
 ## Excluded From the Main Demo
 

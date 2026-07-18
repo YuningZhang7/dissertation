@@ -57,7 +57,7 @@ def test_baseline_outputs_have_required_structure_and_are_deterministic() -> Non
         assert {row["agent_name"] for row in csv_rows} == set(BASELINE_AGENT_NAMES)
         assert set(summary_data) == set(BASELINE_AGENT_NAMES)
         assert "objective_aware_greedy" in summary_data
-        assert "urbanization_aware_lookahead_greedy" in summary_data
+        assert "lookahead_greedy" in summary_data
         assert all("success" in row for row in first_rows)
         assert all(
             row["final_score"] != ""

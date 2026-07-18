@@ -16,7 +16,7 @@ from agents.objective_aware_greedy_agent import (
     _score_upgrade_action,
     _state_features,
 )
-from agents.urbanization_aware_lookahead_greedy_agent import (
+from agents.lookahead_utils import (
     _available_goods_count,
     _city_touches_built_or_completed_route,
     _city_touches_completed_network,

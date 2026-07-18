@@ -40,9 +40,7 @@ def test_tiny_baseline_run_supports_expanded_map() -> None:
         assert any(
             row["agent_name"] == "objective_aware_greedy" for row in rows
         )
-        assert any(
-            row["agent_name"] == "urbanization_aware_lookahead_greedy" for row in rows
-        )
+        assert any(row["agent_name"] == "lookahead_greedy" for row in rows)
         assert temp_csv.exists()
         assert temp_summary.exists()
         assert all(row["success"] in {True, False} for row in rows)
