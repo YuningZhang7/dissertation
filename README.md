@@ -311,4 +311,3 @@ railways-world-ai/
 ## Dissertation Claim Boundary
 
 Results support conclusions about the implemented single-player route-segment abstraction under the reported maps, rules, seeds, card setting, and horizons. They do not establish optimal play or performance in the complete multiplayer board game.
-

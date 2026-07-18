@@ -90,4 +90,3 @@ A truncated score is useful for fixed-horizon comparison, but it must not be des
 3. Define a dedicated fixed-turn terminal benchmark configuration if completed-game comparisons are required.
 4. Extend operation cards only after deciding whether card-aware decision-making remains in dissertation scope.
 5. Treat multiplayer interaction as a separate future model rather than mixing it into the current single-player evaluation.
-

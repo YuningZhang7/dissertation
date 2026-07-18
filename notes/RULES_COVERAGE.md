@@ -134,4 +134,3 @@ Results are evidence about the implemented abstraction only. A benchmark must re
 - a score at `max_steps` from a non-terminal state is a **truncated score**.
 
 Fixed-horizon truncated scores are valid for equal-budget policy comparison, but they must not be described as completed-game results.
-
