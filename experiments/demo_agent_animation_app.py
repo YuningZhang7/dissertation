@@ -38,6 +38,7 @@ PRESENTATION_AGENT_OPTIONS = (
 )
 DEFAULT_MAP = "official_like"
 DEFAULT_FRAME_MODE = "events"
+DEFAULT_MAX_STEPS = 30
 MAP_SELECTION_CAPTION = (
     "official_like is compact and easier to inspect; expanded_official_style "
     "provides a larger route-segment network with more objectives."
@@ -91,8 +92,9 @@ def _embed_replay_html(index_path: Path) -> str:
 
 def _render_summary(summary: dict[str, Any]) -> None:
     st.subheader("Episode summary")
+    score_label = "Terminal final score" if summary["terminal"] else "Truncated score"
     first_row = st.columns(4)
-    first_row[0].metric("Final score", summary["final_score"])
+    first_row[0].metric(score_label, summary["final_score"])
     first_row[1].metric("Money", summary["money"])
     first_row[2].metric("Bonds", summary["bonds"])
     first_row[3].metric("Deliveries", summary["delivered_goods_count"])
@@ -108,6 +110,11 @@ def _render_summary(summary: dict[str, Any]) -> None:
         f"Seed: {summary['seed']} · Frame mode: {summary['frame_mode']} · "
         f"Terminal: {summary['terminal']} · Success: {summary['success']}"
     )
+    if not summary["terminal"]:
+        st.caption(
+            "The episode stopped at the maximum-step horizon before game over. "
+            "The displayed value is a truncated score, not a terminal final score."
+        )
     if summary["error"]:
         st.error(summary["error"])
 
@@ -175,8 +182,12 @@ def main() -> None:
             "Max steps",
             min_value=1,
             max_value=5000,
-            value=60,
+            value=DEFAULT_MAX_STEPS,
             step=10,
+            help=(
+                "The 30-step default is tuned for a responsive meeting replay. "
+                "Non-terminal runs are reported as truncated scores."
+            ),
         )
     )
     make_gif = settings[2].checkbox("Make GIF", value=False)
