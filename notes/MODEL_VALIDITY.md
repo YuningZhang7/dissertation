@@ -2,76 +2,90 @@
 
 ## Purpose of the Model
 
-This simulator is a rule-based single-player abstraction of Railways of the World. It is designed as an optimisation and AI testbed, not as a full commercial game implementation.
+This simulator is a rule-based single-player abstraction inspired by *Railways of the World*. It is designed as a dissertation testbed for interpretable sequential decision-making and optimisation strategies, not as a full commercial game implementation.
+
+The current mainline runtime is route-segment based. A city-to-city route contains an ordered sequence of abstract track segments, and a route becomes usable for delivery only after all of its segments have been completed.
 
 ## Core Mechanics Preserved
 
-- Graph-based railway network construction
-- City-to-city railway links
-- Goods located at cities
-- City demand colours
-- Goods delivery through built railway paths
-- Explicit delivery-route selection
-- Locomotive level limiting delivery distance
-- Money, internal share/bond financing, and financing obligations
-- Income phase
-- Empty city markers
-- Major-line bonuses
-- Minimal representative operation-card objectives and bonuses
-- Final scoring
-- Single-player action sequence
-- Legal-action interface for algorithms
-- Repeatable experiment framework for baseline and MCTS agents
+- Graph-based railway network construction.
+- Ordered route segments with build costs and completion state.
+- Cities containing goods and cities demanding goods by colour.
+- Explicit source, destination, and route-path selection for deliveries.
+- Locomotive level limiting delivery distance by completed segment count.
+- Money, internal financing certificates, and income-phase financing obligations.
+- Action and income phases with a configurable number of actions per turn.
+- Empty-city markers and configurable end-condition handling.
+- Major Line connection bonuses.
+- One active Rail Baron connection objective.
+- Coloured urbanisation of grey cities.
+- A minimal representative operation-card framework for the visual environment.
+- A common legal-action and state-transition interface for all public agents.
+- Reproducible replay and multi-seed benchmark tooling.
+
+## Current Public Decision Policies
+
+The dissertation-facing mainline exposes five interpretable agents:
+
+- `random`;
+- `greedy_delivery`;
+- `greedy_expansion`;
+- `objective_aware_greedy`;
+- `lookahead_greedy`.
+
+`objective_aware_greedy` is the strongest one-step heuristic baseline. `lookahead_greedy` adds bounded depth-two lookahead, candidate-action pruning, and conservative urbanisation planning. Historical MCTS and card-aware experiments are retained only as repository history or historical result notes; their agent implementations are not part of the current mainline comparison.
 
 ## Simplifications
 
-- Maps are artificial rather than official.
-- Each city-to-city connection is modelled as one graph edge rather than individual track tiles.
-- Track cost is a fixed edge cost rather than computed from detailed terrain tiles.
-- Terrain, rivers, mountains, tile inventory, and crossing rules are not yet modelled.
-- A minimal representative operation-card framework is implemented, but the full official deck and timing rules are not.
-- Rail Baron cards are not fully implemented.
-- Multiplayer auction and opponent interaction are excluded.
-- Opponent-owned track scoring is excluded.
-- Some official map-specific rules are not yet included.
-- Income, share/bond financing, urbanisation, and end conditions are simplified but configurable.
+- The maps and city names are artificial research scenarios rather than official board data.
+- Route segments are abstract ordered units, not individual official track tiles.
+- Segment costs are fixed in the scenario data rather than calculated from full terrain, river, mountain, crossing, and tile-inventory rules.
+- A build action may place up to four consecutive segments on one route. The active validator enforces route-local continuity from a route endpoint or an existing incomplete endpoint.
+- Incomplete segments are removed during the income phase if their route has not been completed.
+- The legacy `require_connected_track_building` configuration field should not be interpreted as enforcement of global connectivity to the player's existing completed network in the current route-segment validator.
+- All completed routes are owned by the single player.
+- Multiplayer auctions, blocking, opponent track fees, and shared goods competition are excluded.
+- Income, financing, urbanisation, end conditions, Major Lines, and Rail Baron objectives are simplified abstractions.
+- Urbanisation adds randomly generated goods under the configured random seed.
+- The operation-card framework uses a small original test deck rather than official card text or the full official timing rules.
+- Public agents do not contain a dedicated card-aware decision model; the card framework is primarily an environment and demo feature.
 - There is no fixed player start city, home city, train position, or moving train token.
-- The optional connected-track rule is a simplifying network-contiguity assumption, not a claim that the official game has a fixed origin.
 
-## Why the Simplified Model Is Still Useful
+## Why the Simplified Model Is Useful
 
-The current model captures the core sequential network design problem:
+The model captures a controlled sequential network-design problem in which an agent must:
 
-- expand a railway network;
-- manage limited money;
-- use internal financing when payments exceed available cash;
-- decide when to upgrade locomotives;
-- choose which goods to deliver;
-- balance short-term scoring and long-term network expansion;
-- pursue major-line bonuses while maintaining delivery opportunities.
-- optionally select simplified operation cards that add immediate, delivery, network, or end-game objectives.
+- choose where and when to construct routes;
+- complete a route before temporary work is removed;
+- balance immediate deliveries against future network value;
+- manage automatic financing and its penalties;
+- decide when locomotive upgrades create useful delivery opportunities;
+- pursue Major Line and Rail Baron connection rewards;
+- decide whether urbanising a grey city creates enough near-term or objective value.
 
-This is enough to compare algorithmic strategies under a defined abstraction. It also gives a clear bridge from operations research ideas such as graph search, heuristic construction, simulation, and sequential decision-making to a visual and testable local environment.
+This supports interpretable comparisons between policies under a precisely defined abstraction. It also connects graph search, heuristic construction, simulation, and sequential decision-making to a visual and reproducible environment.
 
-## Limits of Current Experimental Claims
+## Limits of Experimental Claims
 
-The current experiments do not claim to solve the full official board game. They compare algorithms under a defined single-player abstraction.
+The experiments compare agents only under the implemented rules, maps, scoring function, action horizon, and random seeds. Strong performance does not imply strong play in the complete multiplayer board game.
 
-Results should be interpreted as evidence about this simplified network-design environment. Strong performance by an agent means it performs well under the implemented rules, maps, and scoring assumptions. It does not yet imply strong play in the complete multiplayer board game.
+The project should not claim optimality for `lookahead_greedy`. It is a hand-designed bounded-lookahead heuristic with a restricted candidate set, not exhaustive search or a proven solver.
 
-After supervisor feedback, the action model was corrected so that share issuing is no longer exposed as an agent decision. The legacy `issue_bond` action is rejected by the external action interface, and all financing is handled internally through `pay_money` during paid actions. The model also avoids any fixed start-city or train-position assumption, because Railways of the World does not have a player start location in the sense used by train-token movement games.
+The replay interface enables `data/cards_basic.json`, whereas the current agent benchmark is card-disabled unless a card path is explicitly supplied. Replay and benchmark results must therefore not be compared as if they used identical environments without stating this difference.
 
-Phase 4 adds a minimal original card framework as a fuller-rule foundation. It supports JSON-defined immediate cash cards, delivery objectives, network objectives, and end-game scoring cards. It is not a complete official card system and does not copy official card text.
+## Score Terminology
 
-Cards are opt-in for programmatic simulations through `reset_game(..., card_path=...)`. The Streamlit demo enables `data/cards_basic.json`, while the exact `micro_map` benchmark remains card-disabled by default so earlier exact-search results stay comparable.
+`GameState.final_score()` applies the final scoring formula to the current state. Its interpretation depends on why an episode stopped:
+
+- **Terminal final score**: the score when the environment reached its game-over state.
+- **Truncated score**: the same scoring formula evaluated when a benchmark or replay stopped at `max_steps` before game termination.
+
+A truncated score is useful for fixed-horizon comparison, but it must not be described as a completed-game outcome. Benchmark rows record the terminal flag, and current reporting should distinguish the two score types.
 
 ## Path Toward Greater Realism
 
-1. `micro_map` for exact optimality benchmarking.
-2. `toy_map` for debugging.
-3. `toy_medium_map` for baseline comparison.
-4. `semi_realistic_map` for stronger external validity.
-5. Minimal card-enabled scenarios for fuller-rule comparison.
-6. Optional official-like map and rules if time permits.
-
-The Phase 3A goal is to move from artificial debugging maps toward a more realistic single-player optimisation scenario without copying official artwork or attempting a full commercial game implementation.
+1. Calibrate segment costs, income, financing, urbanisation, and end conditions against a selected rule interpretation.
+2. Add terrain and tile-level construction constraints only if they are needed for the research questions.
+3. Define a dedicated fixed-turn terminal benchmark configuration if completed-game comparisons are required.
+4. Extend operation cards only after deciding whether card-aware decision-making remains in dissertation scope.
+5. Treat multiplayer interaction as a separate future model rather than mixing it into the current single-player evaluation.
