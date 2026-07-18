@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from agents.presentation_lookahead_greedy_agent import PresentationLookaheadGreedyAgent
+from agents.lookahead_greedy_agent import LookaheadGreedyAgent
 from agents.registry import create_agent, list_agent_names
 from railways.environment import apply_action, get_legal_actions, is_terminal, reset_game
 
@@ -18,15 +18,15 @@ CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
 
 
 def test_agent_is_registered() -> None:
-    assert "presentation_lookahead_greedy" in list_agent_names()
-    agent = create_agent("presentation_lookahead_greedy", seed=42)
-    assert isinstance(agent, PresentationLookaheadGreedyAgent)
+    assert "lookahead_greedy" in list_agent_names()
+    agent = create_agent("lookahead_greedy", seed=42)
+    assert isinstance(agent, LookaheadGreedyAgent)
 
 
 def test_agent_returns_legal_initial_action() -> None:
     random.seed(42)
     state = reset_game(MAP_PATH, CONFIG_PATH)
-    action = create_agent("presentation_lookahead_greedy", seed=42).choose_action(state)
+    action = create_agent("lookahead_greedy", seed=42).choose_action(state)
     assert action in get_legal_actions(state)
 
 
@@ -51,7 +51,7 @@ def test_no_action_returned_outside_legal_action_set() -> None:
 def _run_trace(max_steps: int, seed: int = 42) -> list[dict[str, object]]:
     random.seed(seed)
     state = reset_game(MAP_PATH, CONFIG_PATH)
-    agent = create_agent("presentation_lookahead_greedy", seed=seed)
+    agent = create_agent("lookahead_greedy", seed=seed)
     trace: list[dict[str, object]] = []
     for step in range(1, max_steps + 1):
         if is_terminal(state):
@@ -83,7 +83,7 @@ def run_all() -> None:
     for test in tests:
         test()
         print(f"PASS {test.__name__}")
-    print(f"{len(tests)} presentation lookahead greedy smoke tests passed.")
+    print(f"{len(tests)} lookahead greedy smoke tests passed.")
 
 
 if __name__ == "__main__":

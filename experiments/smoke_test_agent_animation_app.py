@@ -17,7 +17,7 @@ EXPECTED_PRESENTATION_AGENTS = [
     "greedy_delivery",
     "greedy_expansion",
     "objective_aware_greedy",
-    "presentation_lookahead_greedy",
+    "lookahead_greedy",
 ]
 
 
@@ -36,7 +36,7 @@ def test_demo_options_are_discoverable() -> None:
 
 def test_replay_interface_content_is_presentation_focused() -> None:
     assert demo_app.APP_TITLE == "Agent Replay Interface"
-    assert demo_app.RECOMMENDED_AGENT == "presentation_lookahead_greedy"
+    assert demo_app.RECOMMENDED_AGENT == "lookahead_greedy"
     assert demo_app.PRESENTATION_AGENT_OPTIONS == tuple(EXPECTED_PRESENTATION_AGENTS)
     source = Path(demo_app.__file__).read_text(encoding="utf-8")
     for removed_label in (
@@ -61,7 +61,7 @@ def test_demo_app_renders_run_configuration() -> None:
     assert selectors["Agent"] == EXPECTED_PRESENTATION_AGENTS
     assert selectors["Frame mode"] == ["all", "events"]
     assert rendered.selectbox[0].value == "official_like"
-    assert rendered.selectbox[1].value == "presentation_lookahead_greedy"
+    assert rendered.selectbox[1].value == "lookahead_greedy"
     assert rendered.selectbox[2].value == "events"
     assert not any(item.label == "Show all agents" for item in rendered.checkbox)
     assert any(item.label == "Seed" for item in rendered.number_input)

@@ -18,7 +18,7 @@ EXPECTED_AGENTS = [
     "greedy_delivery",
     "greedy_expansion",
     "objective_aware_greedy",
-    "presentation_lookahead_greedy",
+    "lookahead_greedy",
 ]
 
 

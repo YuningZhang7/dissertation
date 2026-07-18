@@ -9,8 +9,10 @@ The meeting demo presents the parts of the dissertation prototype that are easie
 - `RandomAgent`: a legal-action reference baseline.
 - `GreedyDeliveryAgent`: prioritises immediately valuable deliveries.
 - `GreedyExpansionAgent`: prioritises network growth before delivery.
+- `ObjectiveAwareGreedyAgent`: balances route completion, delivery, and objectives.
+- `LookaheadGreedyAgent`: the final balanced lookahead agent for readable replay demonstrations.
 
-These are the only agents exposed by `agents/registry.py`, the Streamlit selector, and the main `experiments/run_experiments.py` comparison.
+These are the only agents exposed by `agents/registry.py`, the Streamlit selector, and the public benchmark defaults.
 
 ## Excluded From the Main Demo
 
@@ -27,9 +29,9 @@ The representative operation-card framework remains enabled in the visual demo. 
 
 1. Launch the Streamlit simulator with `python run_app.py`.
 2. Show the graph map, player state, legal manual actions, financing, and card panel.
-3. Run one action or a complete episode with each of the three baseline agents.
+3. Run one action or a complete episode with selected public agents.
 4. Explain that all agents share the same legal-action environment interface.
-5. Use `python experiments/run_experiments.py --agent all --episodes 10 --map all` for a small reproducible comparison.
+5. Use `python experiments/run_agent_benchmark.py --quick` for a small reproducible comparison.
 
 ## Package
 

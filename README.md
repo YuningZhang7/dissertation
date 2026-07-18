@@ -20,11 +20,11 @@ Core agents:
 - `greedy_delivery`
 - `greedy_expansion`
 - `objective_aware_greedy`
-- `presentation_lookahead_greedy`
+- `lookahead_greedy`
 
-`presentation_lookahead_greedy` is the final balanced lookahead agent for the
-demo path. It is tuned for readable replays: it prioritizes route completion and
-delivery before using urbanization near the built network or objective cities.
+`lookahead_greedy` is the final balanced lookahead agent for the demo path. It
+is tuned for readable replays: it prioritizes route completion and delivery
+before using urbanization near the built network or objective cities.
 The original aggressive `urbanization_aware_lookahead_greedy` implementation is
 kept as internal helper code, but is no longer exposed as a public demo agent.
 
@@ -151,7 +151,7 @@ python experiments/smoke_test_agent_benchmark.py
 python experiments/smoke_test_app_import.py
 python experiments/smoke_test_agent_animation_app.py
 python experiments/smoke_test_agent_animation.py
-python experiments/smoke_test_presentation_lookahead_greedy_agent.py
+python experiments/smoke_test_lookahead_greedy_agent.py
 python experiments/smoke_test_meeting_demo.py
 python experiments/smoke_test_official_like_baselines.py
 python experiments/smoke_test_expanded_official_style_baselines.py
@@ -182,13 +182,13 @@ python experiments/run_agent_benchmark.py --maps official_like --episodes 5 --ma
 Run selected agents explicitly:
 
 ```bash
-python experiments/run_agent_benchmark.py --maps official_like --agents objective_aware_greedy presentation_lookahead_greedy --episodes 5 --max-steps 50
+python experiments/run_agent_benchmark.py --maps official_like --agents objective_aware_greedy lookahead_greedy --episodes 5 --max-steps 50
 ```
 
 Generate a replay-friendly lookahead episode:
 
 ```bash
-python experiments/animate_agent_episode.py --map official_like --agent presentation_lookahead_greedy --seed 42 --max-steps 60 --frame-mode events
+python experiments/animate_agent_episode.py --map official_like --agent lookahead_greedy --seed 42 --max-steps 60 --frame-mode events
 ```
 
 Benchmark outputs are written under:
@@ -275,7 +275,7 @@ railways-world-ai/
 |   |-- greedy_delivery_agent.py
 |   |-- greedy_expansion_agent.py
 |   |-- objective_aware_greedy_agent.py
-|   |-- presentation_lookahead_greedy_agent.py
+|   |-- lookahead_greedy_agent.py
 |   |-- random_agent.py
 |   |-- registry.py
 |   `-- urbanization_aware_lookahead_greedy_agent.py
@@ -291,7 +291,7 @@ railways-world-ai/
 |   |-- smoke_test_agent_animation_app.py
 |   |-- smoke_test_app_import.py
 |   |-- smoke_test_meeting_demo.py
-|   |-- smoke_test_presentation_lookahead_greedy_agent.py
+|   |-- smoke_test_lookahead_greedy_agent.py
 |   |-- smoke_test_urbanization_aware_lookahead_greedy_agent.py
 |   `-- validate_baselines.py
 `-- notes/

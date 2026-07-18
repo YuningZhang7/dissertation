@@ -18,7 +18,7 @@ from railways.environment import apply_action, get_legal_actions, is_terminal, r
 
 AGENTS = (
     "objective_aware_greedy",
-    "presentation_lookahead_greedy",
+    "lookahead_greedy",
 )
 MAP_PATH = PROJECT_ROOT / "data" / "official_like_route_segment_map.json"
 CONFIG_PATH = PROJECT_ROOT / "data" / "official_single_player_rules_config.json"
@@ -184,14 +184,14 @@ def _write_markdown(summaries: list[dict[str, Any]], path: Path) -> None:
             f"{summary['runtime_seconds']:.4f} |"
         )
     presentation = next(
-        item for item in summaries if item["agent_name"] == "presentation_lookahead_greedy"
+        item for item in summaries if item["agent_name"] == "lookahead_greedy"
     )
     lines.extend(
         [
             "",
             "## Interpretation",
             "",
-            "- `presentation_lookahead_greedy` is the public replay-friendly lookahead agent.",
+            "- `lookahead_greedy` is the public replay-friendly lookahead agent.",
             "- It gates early/speculative urbanization and gives more weight to completed routes, deliveries, and bond control.",
             "- The original aggressive urbanization-aware lookahead remains internal helper code and is not part of the public demo agent set.",
             "- Remaining urbanization is expected to occur near the built network or when it opens direct delivery potential.",
@@ -279,7 +279,7 @@ def _write_tuning_summary_markdown(
         )
 
     presentation = next(
-        row for row in summary_rows if row["agent_name"] == "presentation_lookahead_greedy"
+        row for row in summary_rows if row["agent_name"] == "lookahead_greedy"
     )
     lines.extend(
         [

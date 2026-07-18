@@ -48,10 +48,10 @@ class CandidateAction:
     direct_new_deliveries: int = 0
 
 
-class PresentationLookaheadGreedyAgent(BaseAgent):
+class LookaheadGreedyAgent(BaseAgent):
     """Replay-friendly lookahead heuristic with conservative urbanization."""
 
-    name = "presentation_lookahead_greedy"
+    name = "lookahead_greedy"
 
     def choose_action(self, state: GameState) -> Action:
         legal_actions = get_legal_actions(state)
