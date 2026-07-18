@@ -37,9 +37,9 @@ DEFAULT_AGENTS = (
     "greedy_delivery",
     "greedy_expansion",
     "objective_aware_greedy",
-    "presentation_lookahead_greedy",
+    "lookahead_greedy",
 )
-# Keep --quick lightweight; presentation_lookahead_greedy is slower and can be
+# Keep --quick lightweight; lookahead_greedy is slower and can be
 # selected explicitly for focused replay-oriented benchmark runs.
 QUICK_AGENTS = (
     "random",
@@ -434,10 +434,10 @@ def _markdown_summary(
             ]
         )
         objective = agents.get("objective_aware_greedy")
-        lookahead = agents.get("presentation_lookahead_greedy")
+        lookahead = agents.get("lookahead_greedy")
         if lookahead and objective and lookahead["mean_runtime_seconds"] > objective["mean_runtime_seconds"]:
             lines.append(
-                "- presentation_lookahead_greedy is slower than the one-step objective-aware baseline."
+                "- lookahead_greedy is slower than the one-step objective-aware baseline."
             )
         lines.append("")
     lines.extend(

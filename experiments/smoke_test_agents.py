@@ -12,7 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from agents.greedy_expansion_agent import GreedyExpansionAgent
 from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
-from agents.presentation_lookahead_greedy_agent import PresentationLookaheadGreedyAgent
+from agents.lookahead_greedy_agent import LookaheadGreedyAgent
 from agents.random_agent import RandomAgent
 from agents.registry import AGENT_CLASSES, list_agent_names
 from experiments.run_experiments import run_batch
@@ -61,7 +61,7 @@ def test_agents_do_not_choose_issue_bond() -> None:
         GreedyDeliveryAgent(seed=1),
         GreedyExpansionAgent(seed=1),
         ObjectiveAwareGreedyAgent(seed=1),
-        PresentationLookaheadGreedyAgent(seed=1),
+        LookaheadGreedyAgent(seed=1),
     ]
     legal_actions = get_legal_actions(state)
     assert all(action.action_type != "issue_bond" for action in legal_actions)
@@ -75,7 +75,7 @@ def test_main_registry_exposes_registered_agents() -> None:
         "greedy_delivery",
         "greedy_expansion",
         "objective_aware_greedy",
-        "presentation_lookahead_greedy",
+        "lookahead_greedy",
     ]
     assert list(AGENT_CLASSES) == expected
     assert list_agent_names() == expected

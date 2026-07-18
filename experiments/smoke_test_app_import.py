@@ -32,7 +32,7 @@ def test_app_exposes_registered_agents() -> None:
         "greedy_delivery",
         "greedy_expansion",
         "objective_aware_greedy",
-        "presentation_lookahead_greedy",
+        "lookahead_greedy",
     ]
 
 
@@ -46,7 +46,7 @@ def test_app_renders_registered_agent_options() -> None:
         "greedy_delivery",
         "greedy_expansion",
         "objective_aware_greedy",
-        "presentation_lookahead_greedy",
+        "lookahead_greedy",
     ]
 
 
