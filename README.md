@@ -25,8 +25,8 @@ Core agents:
 `lookahead_greedy` is the final balanced lookahead agent for the demo path. It
 is tuned for readable replays: it prioritizes route completion and delivery
 before using urbanization near the built network or objective cities.
-The original aggressive `urbanization_aware_lookahead_greedy` implementation is
-kept as internal helper code, but is no longer exposed as a public demo agent.
+Shared lookahead helper code lives in `agents/lookahead_utils.py`; only
+`lookahead_greedy` is exposed as the public lookahead agent.
 
 See [notes/MEETING_DEMO_SCOPE.md](notes/MEETING_DEMO_SCOPE.md).
 
@@ -276,9 +276,9 @@ railways-world-ai/
 |   |-- greedy_expansion_agent.py
 |   |-- objective_aware_greedy_agent.py
 |   |-- lookahead_greedy_agent.py
+|   |-- lookahead_utils.py
 |   |-- random_agent.py
-|   |-- registry.py
-|   `-- urbanization_aware_lookahead_greedy_agent.py
+|   `-- registry.py
 |-- experiments/
 |   |-- animate_agent_episode.py
 |   |-- demo_agent_animation_app.py
@@ -292,7 +292,6 @@ railways-world-ai/
 |   |-- smoke_test_app_import.py
 |   |-- smoke_test_meeting_demo.py
 |   |-- smoke_test_lookahead_greedy_agent.py
-|   |-- smoke_test_urbanization_aware_lookahead_greedy_agent.py
 |   `-- validate_baselines.py
 `-- notes/
 ```

@@ -14,11 +14,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from agents.greedy_delivery_agent import GreedyDeliveryAgent
 from agents.greedy_expansion_agent import GreedyExpansionAgent
+from agents.lookahead_greedy_agent import LookaheadGreedyAgent
 from agents.objective_aware_greedy_agent import ObjectiveAwareGreedyAgent
 from agents.random_agent import RandomAgent
-from agents.urbanization_aware_lookahead_greedy_agent import (
-    UrbanizationAwareLookaheadGreedyAgent,
-)
 from exact.run_exact_benchmark import DEFAULT_CONFIG, DEFAULT_MAP, DEFAULT_OUTPUT, run_exact_benchmark
 from experiments.simulation_runner import run_episode
 
@@ -100,8 +98,8 @@ def compare_agents_to_exact(
             exact_optimum,
         ),
         _evaluate_agent(
-            "urbanization_aware_lookahead_greedy",
-            lambda episode_seed: UrbanizationAwareLookaheadGreedyAgent(
+            "lookahead_greedy",
+            lambda episode_seed: LookaheadGreedyAgent(
                 seed=episode_seed,
             ),
             deterministic_episodes,

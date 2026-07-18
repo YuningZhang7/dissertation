@@ -14,19 +14,18 @@ def analyse_summary(path: str | Path) -> str:
         best = max(groups, key=lambda name: groups[name]["mean_final_score"])
         lines.append(f"{map_name}: Best agent is {best}.")
         objective = groups.get("objective_aware_greedy")
-        lookahead = groups.get("urbanization_aware_lookahead_greedy")
+        lookahead = groups.get("lookahead_greedy")
         if objective and lookahead:
             delta = lookahead["mean_final_score"] - objective["mean_final_score"]
             lines.append(
-                "  urbanization_aware_lookahead_greedy vs "
-                f"objective_aware_greedy: {delta:+.2f}"
+                f"  lookahead_greedy vs objective_aware_greedy: {delta:+.2f}"
             )
             if (
                 lookahead["mean_runtime_seconds"] > objective["mean_runtime_seconds"]
                 and lookahead["mean_final_score"] < objective["mean_final_score"]
             ):
                 lines.append(
-                    "  Warning: urbanization_aware_lookahead_greedy is slower and lower-scoring."
+                    "  Warning: lookahead_greedy is slower and lower-scoring."
                 )
     return "\n".join(lines)
 
