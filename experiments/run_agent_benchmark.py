@@ -38,6 +38,7 @@ DEFAULT_AGENTS = (
     "greedy_expansion",
     "objective_aware_greedy",
     "urbanization_aware_lookahead_greedy",
+    "presentation_lookahead_greedy",
 )
 # Keep --quick lightweight; the depth-2 urbanization-aware agent is covered by
 # its focused smoke test and can be selected explicitly for benchmark runs.

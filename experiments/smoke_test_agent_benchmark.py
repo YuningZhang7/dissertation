@@ -10,11 +10,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from experiments.run_agent_benchmark import CSV_COLUMNS, run_benchmark
+from experiments.run_agent_benchmark import CSV_COLUMNS, DEFAULT_AGENTS, run_benchmark
 from experiments.analyse_agent_benchmark import analyse_summary
 
 
 def test_quick_agent_benchmark_outputs() -> None:
+    assert "presentation_lookahead_greedy" in DEFAULT_AGENTS
     agents = [
         "random",
         "greedy_delivery",
