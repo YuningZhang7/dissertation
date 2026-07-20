@@ -26,13 +26,19 @@ The public registry exposes exactly five agents:
 
 `objective_aware_greedy` is the strongest one-step heuristic baseline. It prioritises current deliveries and otherwise scores route construction and locomotive upgrades using delivery potential, route completion, objectives, construction cost, and financing.
 
-`lookahead_greedy` is the final enhanced agent. It uses a restricted candidate set, depth-two bounded lookahead, discounted future value, and conservative urbanisation gates. It is designed for interpretable replay rather than optimality guarantees.
+`lookahead_greedy` is the final enhanced agent. It uses depth-two bounded
+lookahead with a `0.55` future-value discount and conservative urbanisation gates.
+At both the root and rollout levels, delivery, build, upgrade, and urbanisation
+actions use their respective full heuristic scorers. The levels differ only in
+candidate budgets: root considers up to four deliveries, four builds, and one
+urbanisation; rollout considers two deliveries, three builds, one urbanisation,
+and five candidates overall. Each accepted candidate stores its full immediate
+score once and reuses it during rollout. This keeps the method interpretable while
+making no claim of optimality.
 
 Shared lookahead helper code lives in `agents/lookahead_utils.py`.
 
 Historical MCTS and CardAware experiments are not part of the current runtime. Historical notes and generated outputs may still mention them for provenance.
-
-See [notes/MEETING_DEMO_SCOPE.md](notes/MEETING_DEMO_SCOPE.md).
 
 ## Current Rule Model
 
@@ -72,33 +78,53 @@ See:
 The current dissertation-facing maps are:
 
 - `official_like`: compact route-segment map for the main comparison and replay;
-- `expanded`: larger route-segment map for scalability analysis.
+- `expanded_official_style`: larger route-segment map for scalability analysis.
 
 Both maps are artificial research scenarios. They do not copy official board artwork or official map data.
 
 Earlier toy, semi-realistic, and micro scenarios may remain in repository history or historical experiment material, but they are not the main current five-agent benchmark.
 
-## Running the Streamlit Replay
+## Running the Application
 
-Install dependencies:
+The full interactive simulator provides agent replay and strategy analysis for
+both public maps and all five public agents.
 
-```bash
-pip install -r requirements.txt
+### macOS Apple Silicon
+
+In Finder, double-click:
+
+```text
+Launch Railways AI.command
 ```
 
-Launch from the repository root:
+The launcher verifies an ARM-native macOS and Python 3.10+ environment, creates
+`.venv-macos-arm64`, installs `requirements.txt` when needed, and starts the full
+application. See [MACOS_SETUP.md](MACOS_SETUP.md) for first-launch, Gatekeeper,
+architecture, and manual-start instructions.
+
+### Cross-platform terminal launch
+
+On macOS or Linux:
 
 ```bash
-python -m streamlit run app.py
-```
-
-or:
-
-```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 python run_app.py
 ```
 
-The recommended meeting configuration is:
+On Windows PowerShell, activate the environment with:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python run_app.py
+```
+
+You can also start Streamlit directly with `python -m streamlit run app.py`.
+
+A useful initial replay configuration is:
 
 ```text
 Map: official_like
@@ -108,13 +134,16 @@ Max steps: 30
 Frame mode: events
 ```
 
-The 30-step default is a presentation horizon chosen for a responsive replay. If the episode has not terminated, the app labels the displayed value as a **truncated score** rather than a terminal final score.
+The 30-step default is an interactive horizon chosen for a responsive replay. If
+the episode has not terminated, the app labels the displayed value as a
+**truncated score** rather than a terminal final score.
 
-For the expanded map, prefer `objective_aware_greedy` for a live demonstration because `lookahead_greedy` is substantially slower on the larger action space.
+For an interactive run on the expanded map, `objective_aware_greedy` responds more
+quickly because `lookahead_greedy` searches a substantially larger action space.
 
 ## Command-Line Replay
 
-Generate the recommended replay:
+Generate an example replay:
 
 ```bash
 python experiments/animate_agent_episode.py \
@@ -129,7 +158,7 @@ Replay generation and rendering support live in:
 
 ```text
 experiments/animate_agent_episode.py
-experiments/demo_agent_animation_app.py
+experiments/agent_replay_app.py
 ```
 
 ## Score Terminology
@@ -193,7 +222,8 @@ The formal plan also defines:
 - score and runtime distributions;
 - cautious dissertation claim rules.
 
-Seed 42 and the 30-step replay are qualitative demo settings, not the main statistical evidence.
+Seed 42 and the 30-step replay are qualitative inspection settings, not the main
+statistical evidence.
 
 ## Benchmark Outputs
 
@@ -229,10 +259,10 @@ python experiments/smoke_test_rules.py
 python experiments/smoke_test_agents.py
 python experiments/smoke_test_agent_benchmark.py
 python experiments/smoke_test_app_import.py
-python experiments/smoke_test_agent_animation_app.py
+python experiments/smoke_test_agent_replay_app.py
 python experiments/smoke_test_agent_animation.py
 python experiments/smoke_test_lookahead_greedy_agent.py
-python experiments/smoke_test_meeting_demo.py
+python experiments/smoke_test_registered_agents.py
 python experiments/smoke_test_official_like_baselines.py
 python experiments/smoke_test_expanded_official_style_baselines.py
 ```
@@ -270,7 +300,10 @@ The five public agents do not include a dedicated card-aware policy. Operation c
 ```text
 railways-world-ai/
 |-- app.py
+|-- Launch Railways AI.command
+|-- MACOS_SETUP.md
 |-- README.md
+|-- run_app.py
 |-- requirements.txt
 |-- data/
 |-- railways/
@@ -293,17 +326,16 @@ railways-world-ai/
 |   `-- registry.py
 |-- experiments/
 |   |-- animate_agent_episode.py
-|   |-- demo_agent_animation_app.py
+|   |-- agent_replay_app.py
 |   |-- run_agent_benchmark.py
 |   |-- simulation_runner.py
 |   |-- smoke_test_agent_benchmark.py
-|   |-- smoke_test_agent_animation_app.py
+|   |-- smoke_test_agent_replay_app.py
 |   |-- smoke_test_lookahead_greedy_agent.py
-|   `-- smoke_test_meeting_demo.py
+|   `-- smoke_test_registered_agents.py
 `-- notes/
     |-- EXPERIMENT_PLAN.md
     |-- DISSERTATION_RESULTS_OUTLINE.md
-    |-- MEETING_DEMO_SCOPE.md
     |-- MODEL_VALIDITY.md
     `-- RULES_COVERAGE.md
 ```

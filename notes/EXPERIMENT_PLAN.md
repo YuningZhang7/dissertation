@@ -268,9 +268,9 @@ Run:
 python experiments/smoke_test_rules.py
 python experiments/smoke_test_agents.py
 python experiments/smoke_test_agent_benchmark.py
-python experiments/smoke_test_agent_animation_app.py
+python experiments/smoke_test_agent_replay_app.py
 python experiments/smoke_test_lookahead_greedy_agent.py
-python experiments/smoke_test_meeting_demo.py
+python experiments/smoke_test_registered_agents.py
 ```
 
 Also record:

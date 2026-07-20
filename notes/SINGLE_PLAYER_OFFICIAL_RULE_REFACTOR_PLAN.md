@@ -147,7 +147,7 @@ replay and reports its output path and summary metrics. It is intended for
 interactive inspection and debugging, not manual gameplay. `--frame-mode all` captures
 every action, while `--frame-mode events` limits rendered frames to key events while
 retaining the complete action history. Launch the demo with
-`streamlit run experiments/demo_agent_animation_app.py`.
+`streamlit run experiments/agent_replay_app.py`.
 
 Phase 6F-7 introduced an objective-aware greedy agent. Unlike the earlier
 `route_segment_greedy` baseline, this agent scores candidate actions using one-step

@@ -3,7 +3,9 @@ __pycache__/
 .pytest_cache/
 .streamlit/
 .venv/
+.venv-macos-arm64/
 venv/
+.DS_Store
 *.log
 results/*
 experiments/results/

@@ -9,10 +9,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from streamlit.testing.v1 import AppTest
 
-from experiments import demo_agent_animation_app as demo_app
+from experiments import agent_replay_app as replay_app
 
 
-EXPECTED_PRESENTATION_AGENTS = [
+EXPECTED_PUBLIC_AGENTS = [
     "random",
     "greedy_delivery",
     "greedy_expansion",
@@ -21,47 +21,51 @@ EXPECTED_PRESENTATION_AGENTS = [
 ]
 
 
-def test_demo_app_imports() -> None:
-    assert callable(demo_app.main)
+def test_replay_app_imports() -> None:
+    assert callable(replay_app.main)
 
 
-def test_demo_options_are_discoverable() -> None:
-    assert demo_app.available_map_names() == [
+def test_replay_options_are_discoverable() -> None:
+    assert replay_app.available_map_names() == [
         "official_like",
         "expanded_official_style",
     ]
-    assert demo_app.available_agent_names() == EXPECTED_PRESENTATION_AGENTS
-    assert demo_app.FRAME_MODE_OPTIONS == ("all", "events")
-    assert demo_app.DEFAULT_MAX_STEPS == 30
+    assert replay_app.available_agent_names() == EXPECTED_PUBLIC_AGENTS
+    assert replay_app.FRAME_MODE_OPTIONS == ("all", "events")
+    assert replay_app.DEFAULT_MAX_STEPS == 30
 
 
-def test_replay_interface_content_is_presentation_focused() -> None:
-    assert demo_app.APP_TITLE == "Agent Replay Interface"
-    assert demo_app.RECOMMENDED_AGENT == "lookahead_greedy"
-    assert demo_app.PRESENTATION_AGENT_OPTIONS == tuple(EXPECTED_PRESENTATION_AGENTS)
-    source = Path(demo_app.__file__).read_text(encoding="utf-8")
+def test_replay_interface_uses_formal_product_naming() -> None:
+    assert replay_app.APP_TITLE == "Railways AI Simulator"
+    assert replay_app.APP_SUBTITLE == "Agent Replay and Strategy Analysis"
+    assert replay_app.RECOMMENDED_AGENT == "lookahead_greedy"
+    assert replay_app.PUBLIC_AGENT_OPTIONS == tuple(EXPECTED_PUBLIC_AGENTS)
+    source = Path(replay_app.__file__).read_text(encoding="utf-8")
     for removed_label in (
-        "Simulator rule summary",
-        "Recommended agent: objective_aware_greedy",
-        "Benchmark status",
-        "Show all agents",
+        "Simulator" + " rule summary",
+        "Recommended agent:" + " objective_aware_greedy",
+        "Benchmark" + " status",
+        "Show all" + " agents",
+        "meeting" + " replay",
+        "presentation" + " agents",
     ):
         assert removed_label not in source
     assert "Terminal final score" in source
     assert "Truncated score" in source
 
 
-def test_demo_app_renders_run_configuration() -> None:
-    app_path = PROJECT_ROOT / "experiments" / "demo_agent_animation_app.py"
+def test_replay_app_renders_run_configuration() -> None:
+    app_path = PROJECT_ROOT / "experiments" / "agent_replay_app.py"
     rendered = AppTest.from_file(str(app_path)).run(
         timeout=20,
     )
     assert not rendered.exception
-    assert rendered.title[0].value == demo_app.APP_TITLE
+    assert rendered.title[0].value == replay_app.APP_TITLE
+    assert rendered.subheader[0].value == replay_app.APP_SUBTITLE
     assert not rendered.expander
     selectors = {item.label: list(item.options) for item in rendered.selectbox}
     assert selectors["Map"] == ["official_like", "expanded_official_style"]
-    assert selectors["Agent"] == EXPECTED_PRESENTATION_AGENTS
+    assert selectors["Agent"] == EXPECTED_PUBLIC_AGENTS
     assert selectors["Frame mode"] == ["all", "events"]
     assert rendered.selectbox[0].value == "official_like"
     assert rendered.selectbox[1].value == "lookahead_greedy"
@@ -77,15 +81,15 @@ def test_demo_app_renders_run_configuration() -> None:
 
 def run_all() -> None:
     tests = [
-        test_demo_app_imports,
-        test_demo_options_are_discoverable,
-        test_replay_interface_content_is_presentation_focused,
-        test_demo_app_renders_run_configuration,
+        test_replay_app_imports,
+        test_replay_options_are_discoverable,
+        test_replay_interface_uses_formal_product_naming,
+        test_replay_app_renders_run_configuration,
     ]
     for test in tests:
         test()
         print(f"PASS {test.__name__}")
-    print(f"{len(tests)} agent animation app smoke tests passed.")
+    print(f"{len(tests)} agent replay app smoke tests passed.")
 
 
 if __name__ == "__main__":

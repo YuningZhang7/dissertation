@@ -21,7 +21,8 @@ from experiments.animate_agent_episode import (
 
 MAP_OPTIONS = tuple(MAP_PATHS)
 FRAME_MODE_OPTIONS = ("all", "events")
-APP_TITLE = "Agent Replay Interface"
+APP_TITLE = "Railways AI Simulator"
+APP_SUBTITLE = "Agent Replay and Strategy Analysis"
 APP_DESCRIPTION = (
     "This interface uses the route-segment official-style simulator. Track "
     "construction is performed at segment level, deliveries require completed "
@@ -29,7 +30,7 @@ APP_DESCRIPTION = (
     "completed-route network."
 )
 RECOMMENDED_AGENT = "lookahead_greedy"
-PRESENTATION_AGENT_OPTIONS = (
+PUBLIC_AGENT_OPTIONS = (
     "random",
     "greedy_delivery",
     "greedy_expansion",
@@ -44,7 +45,7 @@ MAP_SELECTION_CAPTION = (
     "provides a larger route-segment network with more objectives."
 )
 AGENT_SELECTION_CAPTION = (
-    "Select one of the presentation agents. random, greedy_delivery, and "
+    "Select one of the five public agents. random, greedy_delivery, and "
     "greedy_expansion are included as simple baselines. objective_aware_greedy "
     "is the one-step heuristic baseline. lookahead_greedy is the "
     "balanced replay-friendly lookahead variant that "
@@ -60,7 +61,7 @@ def available_agent_names() -> list[str]:
     registered_agents = set(list_agent_names())
     return [
         agent_name
-        for agent_name in PRESENTATION_AGENT_OPTIONS
+        for agent_name in PUBLIC_AGENT_OPTIONS
         if agent_name in registered_agents
     ]
 
@@ -145,6 +146,7 @@ def main() -> None:
         layout="wide",
     )
     st.title(APP_TITLE)
+    st.subheader(APP_SUBTITLE)
     st.caption(APP_DESCRIPTION)
 
     selector_col, agent_col = st.columns(2)
@@ -185,7 +187,7 @@ def main() -> None:
             value=DEFAULT_MAX_STEPS,
             step=10,
             help=(
-                "The 30-step default is tuned for a responsive meeting replay. "
+                "The 30-step default keeps an interactive replay responsive. "
                 "Non-terminal runs are reported as truncated scores."
             ),
         )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from experiments.demo_agent_animation_app import main
+from experiments.agent_replay_app import main
 from railways.environment import DEFAULT_CARDS_PATH, reset_game
 from railways.game_state import GameState
 
