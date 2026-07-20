@@ -57,17 +57,6 @@ def _stable_urbanize_seed(state: GameState, action: Action) -> int:
     return int(digest[:16], 16)
 
 
-def _delivery_sort_key(action: Action) -> tuple[int, int, str, str, str, tuple[str, ...]]:
-    return (
-        -int(action.params.get("score", 0)),
-        int(action.params.get("path_length", 0)),
-        str(action.params.get("source", "")),
-        str(action.params.get("target", "")),
-        str(action.params.get("good_color", "")),
-        tuple(str(item) for item in action.params.get("path", [])),
-    )
-
-
 def _available_goods_count(
     state: GameState,
     good_color: str,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 import math
 from typing import Any
@@ -20,7 +21,6 @@ from agents.lookahead_utils import (
     _available_goods_count,
     _city_touches_built_or_completed_route,
     _city_touches_completed_network,
-    _delivery_sort_key,
     _score_delivery_action,
     _simulate_action,
     _urbanized_city_network_bonus,
@@ -35,6 +35,8 @@ DEPTH = 2
 TOP_K_BUILDS = 4
 TOP_K_URBANIZE = 1
 TOP_K_DELIVERIES = 4
+ROLLOUT_TOP_K_DELIVERIES = 2
+ROLLOUT_TOP_K_BUILDS = 3
 ROLLOUT_TOP_K = 5
 DISCOUNT = 0.55
 MINIMUM_USEFUL_SCORE = 1.0
@@ -42,6 +44,8 @@ MINIMUM_USEFUL_SCORE = 1.0
 
 @dataclass(frozen=True)
 class CandidateAction:
+    """A legal candidate paired with its full immediate heuristic score."""
+
     action: Action
     return_action: Action
     priority_score: float
@@ -89,46 +93,58 @@ def _candidate_actions(
     state: GameState,
     legal_actions: list[Action],
 ) -> list[CandidateAction]:
-    candidates: list[CandidateAction] = []
-
-    deliveries = [action for action in legal_actions if action.action_type == "deliver_good"]
-    ranked_deliveries = sorted(deliveries, key=_delivery_sort_key)[:TOP_K_DELIVERIES]
-    candidates.extend(
-        CandidateAction(action, action, _score_delivery_action(state, action))
-        for action in ranked_deliveries
+    return _collect_candidate_actions(
+        state,
+        legal_actions,
+        delivery_limit=TOP_K_DELIVERIES,
+        build_limit=TOP_K_BUILDS,
+        urbanize_limit=TOP_K_URBANIZE,
+        total_limit=None,
     )
+
+
+def _rollout_candidate_actions(
+    state: GameState,
+    legal_actions: list[Action],
+) -> list[CandidateAction]:
+    return _collect_candidate_actions(
+        state,
+        legal_actions,
+        delivery_limit=ROLLOUT_TOP_K_DELIVERIES,
+        build_limit=ROLLOUT_TOP_K_BUILDS,
+        urbanize_limit=TOP_K_URBANIZE,
+        total_limit=ROLLOUT_TOP_K,
+    )
+
+
+def _collect_candidate_actions(
+    state: GameState,
+    legal_actions: list[Action],
+    *,
+    delivery_limit: int,
+    build_limit: int,
+    urbanize_limit: int,
+    total_limit: int | None,
+) -> list[CandidateAction]:
+    candidates: list[CandidateAction] = []
+    candidates.extend(
+        _rank_delivery_candidates(state, legal_actions, delivery_limit)
+    )
+    candidates.extend(_rank_build_candidates(state, legal_actions, build_limit))
+    candidates.extend(_rank_upgrade_candidates(state, legal_actions))
+
+    deliveries = [
+        action for action in legal_actions if action.action_type == "deliver_good"
+    ]
     high_value_delivery_available = any(
         float(action.params.get("score", 0)) >= 4.0 for action in deliveries
     )
-
-    build_actions = [
-        action for action in legal_actions if action.action_type == "build_track_segments"
-    ]
-    scored_builds = [
-        (_score_build_action(state, action), action)
-        for action in build_actions
-    ]
-    scored_builds = [item for item in scored_builds if math.isfinite(item[0])]
-    scored_builds.sort(key=lambda item: (-item[0], _objective_action_sort_key(item[1])))
-    candidates.extend(
-        CandidateAction(action, action, score)
-        for score, action in scored_builds[:TOP_K_BUILDS]
-    )
-
-    upgrade_actions = [
-        action for action in legal_actions if action.action_type == "upgrade_engine"
-    ]
-    candidates.extend(
-        CandidateAction(action, action, _score_upgrade_action(state, action))
-        for action in upgrade_actions
-    )
-
     candidates.extend(
         _urbanize_candidates(
             state,
             legal_actions,
             high_value_delivery_available=high_value_delivery_available,
-        )
+        )[:urbanize_limit]
     )
 
     deduped: dict[tuple[str, str], CandidateAction] = {}
@@ -138,10 +154,69 @@ def _candidate_actions(
         if existing is None or candidate.priority_score > existing.priority_score:
             deduped[key] = candidate
 
-    return sorted(
+    ordered = sorted(
         deduped.values(),
-        key=lambda candidate: (-candidate.priority_score, _candidate_sort_key(candidate)),
+        key=_candidate_order_key,
     )
+    return ordered if total_limit is None else ordered[:total_limit]
+
+
+def _rank_delivery_candidates(
+    state: GameState,
+    actions: list[Action],
+    limit: int,
+) -> list[CandidateAction]:
+    candidates = _score_candidates(
+        state,
+        actions,
+        action_type="deliver_good",
+        scorer=_score_delivery_action,
+    )
+    return candidates[:limit]
+
+
+def _rank_build_candidates(
+    state: GameState,
+    actions: list[Action],
+    limit: int,
+) -> list[CandidateAction]:
+    candidates = _score_candidates(
+        state,
+        actions,
+        action_type="build_track_segments",
+        scorer=_score_build_action,
+    )
+    return candidates[:limit]
+
+
+def _rank_upgrade_candidates(
+    state: GameState,
+    actions: list[Action],
+) -> list[CandidateAction]:
+    return _score_candidates(
+        state,
+        actions,
+        action_type="upgrade_engine",
+        scorer=_score_upgrade_action,
+    )
+
+
+def _score_candidates(
+    state: GameState,
+    actions: list[Action],
+    *,
+    action_type: str,
+    scorer: Callable[[GameState, Action], float],
+) -> list[CandidateAction]:
+    candidates: list[CandidateAction] = []
+    for action in actions:
+        if action.action_type != action_type:
+            continue
+        score = float(scorer(state, action))
+        if not math.isfinite(score):
+            continue
+        candidates.append(CandidateAction(action, action, score))
+    return sorted(candidates, key=_candidate_order_key)
 
 
 def _urbanize_candidates(
@@ -173,7 +248,7 @@ def _urbanize_candidates(
                 direct_new_deliveries=direct_new_deliveries,
             )
         )
-    candidates.sort(key=lambda item: (-item.priority_score, _candidate_sort_key(item)))
+    candidates.sort(key=_candidate_order_key)
     return candidates[:TOP_K_URBANIZE]
 
 
@@ -204,7 +279,7 @@ def _score_urbanize_action(
 
     if high_value_delivery_available and new_deliveries <= 0 and objective_bonus <= 0:
         return float("-inf"), new_deliveries
-    if not _is_urbanize_allowed_for_presentation(
+    if not _is_urbanize_allowed(
         state,
         action,
         before,
@@ -245,7 +320,7 @@ def _score_urbanize_action(
     return score, new_deliveries
 
 
-def _is_urbanize_allowed_for_presentation(
+def _is_urbanize_allowed(
     state: GameState,
     action: Action,
     before: dict[str, Any],
@@ -298,7 +373,7 @@ def _rollout_value(state: GameState, depth: int) -> float:
         return _evaluate_state(state)
 
     legal_actions = get_legal_actions(state)
-    candidates = _rollout_candidate_actions(state, legal_actions)[:ROLLOUT_TOP_K]
+    candidates = _rollout_candidate_actions(state, legal_actions)
     if not candidates:
         return _evaluate_state(state)
 
@@ -307,76 +382,10 @@ def _rollout_value(state: GameState, depth: int) -> float:
         simulated, applied = _simulate_action(state, candidate.action)
         if not applied:
             continue
-        immediate = _score_action_immediate(state, candidate.action)
+        immediate = candidate.priority_score
         value = immediate + DISCOUNT * _rollout_value(simulated, depth - 1)
         best = max(best, value)
     return best
-
-
-def _rollout_candidate_actions(
-    state: GameState,
-    legal_actions: list[Action],
-) -> list[CandidateAction]:
-    candidates: list[CandidateAction] = []
-
-    deliveries = [action for action in legal_actions if action.action_type == "deliver_good"]
-    candidates.extend(
-        CandidateAction(action, action, _score_delivery_action(state, action))
-        for action in sorted(deliveries, key=_delivery_sort_key)[:2]
-    )
-
-    build_actions = [
-        action for action in legal_actions if action.action_type == "build_track_segments"
-    ]
-    ranked_builds = sorted(
-        build_actions,
-        key=lambda action: (-_simple_build_priority(state, action), _objective_action_sort_key(action)),
-    )
-    candidates.extend(
-        CandidateAction(action, action, _simple_build_priority(state, action))
-        for action in ranked_builds[:3]
-    )
-
-    candidates.extend(
-        CandidateAction(action, action, _score_upgrade_action(state, action))
-        for action in legal_actions
-        if action.action_type == "upgrade_engine"
-    )
-
-    high_value_delivery_available = any(
-        action.action_type == "deliver_good"
-        and float(action.params.get("score", 0)) >= 4.0
-        for action in legal_actions
-    )
-    candidates.extend(
-        _urbanize_candidates(
-            state,
-            legal_actions,
-            high_value_delivery_available=high_value_delivery_available,
-        )[:1]
-    )
-
-    return sorted(
-        candidates,
-        key=lambda candidate: (-candidate.priority_score, _candidate_sort_key(candidate)),
-    )
-
-
-def _score_action_immediate(state: GameState, action: Action) -> float:
-    if action.action_type == "deliver_good":
-        return _score_delivery_action(state, action)
-    if action.action_type == "build_track_segments":
-        return _score_build_action(state, action)
-    if action.action_type == "upgrade_engine":
-        return _score_upgrade_action(state, action)
-    if action.action_type == "urbanize":
-        score, _ = _score_urbanize_action(
-            state,
-            action,
-            high_value_delivery_available=False,
-        )
-        return score
-    return float("-inf")
 
 
 def _evaluate_state(state: GameState) -> float:
@@ -409,56 +418,6 @@ def _evaluate_state(state: GameState) -> float:
     )
 
 
-def _simple_build_priority(state: GameState, action: Action) -> float:
-    segment_ids = [
-        str(item) for item in action.params.get("segment_ids", [])
-    ]
-    segments = [
-        state.segments[segment_id]
-        for segment_id in segment_ids
-        if segment_id in state.segments
-    ]
-    if not segments:
-        return float("-inf")
-
-    route = state.routes.get(segments[0].route_id)
-    if route is None:
-        return float("-inf")
-
-    action_ids = {segment.id for segment in segments}
-    completes_route = all(
-        state.segments[segment_id].built or segment_id in action_ids
-        for segment_id in route.segment_ids
-        if segment_id in state.segments
-    )
-    extends_incomplete = any(
-        state.segments[segment_id].built
-        and not state.segments[segment_id].completed
-        for segment_id in route.segment_ids
-        if segment_id in state.segments
-    )
-    endpoint_bonus = _endpoint_goods_demand_bonus(state, route.city_a)
-    endpoint_bonus += _endpoint_goods_demand_bonus(state, route.city_b)
-    return (
-        150.0 * completes_route
-        + 25.0 * extends_incomplete
-        + endpoint_bonus
-        - 1.5 * sum(segment.cost for segment in segments)
-    )
-
-
-def _endpoint_goods_demand_bonus(state: GameState, city_id: str) -> float:
-    city = state.cities.get(city_id)
-    if city is None:
-        return 0.0
-    available_goods = {
-        good for candidate in state.cities.values() for good in candidate.goods
-    }
-    return 12.0 * bool(city.goods) + 14.0 * (
-        city.demand_color in available_goods if city.demand_color else False
-    )
-
-
 def _is_active_objective_endpoint(state: GameState, city_id: str) -> bool:
     objective_id = state.active_rail_baron_objective_id
     objective = state.rail_baron_objectives.get(objective_id or "")
@@ -484,6 +443,16 @@ def _candidate_sort_key(
         str(action.params.get("city_id", "")),
         str(action.params.get("demand_color", "")),
         tuple(str(item) for item in action.params.get("path", [])),
+    )
+
+
+def _candidate_order_key(
+    candidate: CandidateAction,
+) -> tuple[float, tuple[str, str, str, str, tuple[str, ...]], str]:
+    return (
+        -candidate.priority_score,
+        _candidate_sort_key(candidate),
+        _action_identity(candidate.action),
     )
 
 
