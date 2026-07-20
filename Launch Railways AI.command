@@ -96,4 +96,14 @@ export PYTHONUNBUFFERED=1
 export STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
 echo "Starting Railways AI Simulator..."
-"$VENV_DIR/bin/python" "$SCRIPT_DIR/run_app.py"
+if "$VENV_DIR/bin/python" "$SCRIPT_DIR/run_app.py"; then
+    echo "Railways AI Simulator stopped."
+else
+    APP_STATUS=$?
+    if (( APP_STATUS == 130 )); then
+        echo
+        echo "Railways AI Simulator stopped."
+        exit 0
+    fi
+    exit "$APP_STATUS"
+fi
